@@ -39,6 +39,8 @@ Once this is successful, we can populate the virtual environment with the requir
     # load packages
     pip3 install -r requirements.txt
     
+Your terminal is now running a complete copy of the production environment; when you are done working on the project for the day, run `deactivate` to exit from the virtual environment. When you wish to start working again, all you need to run is `source env/bin/activate`. 
+    
 *You're all set! - start developing!*
 
 
