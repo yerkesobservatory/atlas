@@ -51,7 +51,7 @@ There are several independent modules necessary for the operation of this system
 * `web/` : This contains the complete web interface for controlling and working with the Stone Edge Observatory telescope; this is the only public facing component. This is a Python Flask application; see the [README](https://github.com/yerkesobservatory/seo/web/) for more information
 * `queue/` : This contains the backend control server for managing and scheduling the queue. These is only accessed *via* the web app. See the [README](https://github.com/yerkesobservatory/seo/queue/)
 * `pipeline` : This is the image reduction pipeline that is run on SEO images that are captured by the telescope. See the [README](https://github.com/yerkesobservatory/seo/pipeline/)
-* * `queue/` : This contains the backend control servers and interfaces for controlling and communicating with the telescope. These are only used by the web app and the queue to control and query the telescope. See the [README](https://github.com/yerkesobservatory/seo/telescope/)
+* `queue/` : This contains the backend control servers and interfaces for controlling and communicating with the telescope. These are only used by the web app and the queue to control and query the telescope. See the [README](https://github.com/yerkesobservatory/seo/telescope/)
 
 
 
