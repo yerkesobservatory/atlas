@@ -21,7 +21,7 @@ def create_app(config_name):
     """
 
     # create app and load config from file
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder='templates/')
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
     

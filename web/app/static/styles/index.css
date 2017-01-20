@@ -1,0 +1,8 @@
+body {
+    background-color: #000000;
+    background-size: 20% Auto;
+    background-image: url('../images/logo.png');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: center center;  
+} 
