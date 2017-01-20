@@ -1,13 +1,14 @@
 from flask import Flask, render_template
-#from flask_bootstrap import Bootstrap
-#from flask_mail import Mail
-#from flask_sqlalchemy import SQLAlchemy
 from config import config
+import flask_mail
+import flask_bootstrap
+import flask_sqlalchemy
+import flask_login
 
 # initialize global contexts
 mail = flask_mail.Mail()
 db = flask_sqlalchemy.SQLAlchemy()
-boostrap = flask_boostrap.Bootstrap()
+boostrap = flask_bootstrap.Bootstrap()
 
 # init authentication
 login_manager = flask_login.LoginManager()
@@ -36,7 +37,7 @@ def create_app(config_name):
     app.register_blueprint(main_blueprint)
 
     # register authentication routing
-    from .auth import auth as auth_bluerpint
+    from .auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
 
     # done
