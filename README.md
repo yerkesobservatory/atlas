@@ -5,14 +5,20 @@
 *If you are here to develop or extend the Stone Edge Observatory code base, then continue!*
 
 #### Setting up the environment
-To setup a copy of the production environment on your local machine, you will need `python3` and `git`. 
+To setup a copy of the production environment on your local machine, you will need a few dependencies. 
 
 If you are running on OS X with Homebrew, 
 
     # install python 3
     brew install python3
 
-If you don't have Homebrew, go and install [it](http://brew.sh/) and then repeat the above.
+    # install git (if you don't already have it)
+    brew install git
+
+    # install the mosquitto message broker
+    brew install mosquitto
+
+If you don't have Homebrew, go and install [it](http://brew.sh/) and then repeat the above. If you are running on something else, all of the above should be already installed, or available in your distro's package manager. 
 
 Once you have the software tools, start by cloning the repo:
 

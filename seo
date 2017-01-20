@@ -14,7 +14,7 @@ args = parser.parse_args()
 import subprocess
 
 if args.start_broker is True:
-    subprocess.call("mosquitto", stdin=None, 
+    subprocess.call("mosquitto -c broker/mosquitto.conf", stdin=None, 
     				 stdout=open( 'logs/mosquitto_stdout.log', 'w'),
 				 stderr=open( 'logs/mosquitto_stderr.log', 'w'))
     
