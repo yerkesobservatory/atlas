@@ -1,0 +1,21 @@
+#!env/bin/python3.5
+
+#################### COMMAND LINE PARSER ####################
+import argparse
+parser = argparse.ArgumentParser(prog='seo', description='Control Stone Edge Observatory infrastructure')
+parser.add_argument('--start-broker', '-b', help='Start the messaging broker without starting other services',  
+				      action='store_true', default=False)
+parser.add_argument('--version', action='version', version='%(prog)s 0.0.1')
+
+#################### PARSE COMMAND LINE ARGS ####################
+args = parser.parse_args()
+
+#################### BROKER MANAGEMENT ####################
+import subprocess
+
+if args.start_broker is True:
+    subprocess.call("mosquitto", stdin=None, 
+    				 stdout=open( 'logs/mosquitto_stdout.log', 'w'),
+				 stderr=open( 'logs/mosquitto_stderr.log', 'w'))
+    
+    

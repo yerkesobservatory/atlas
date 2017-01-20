@@ -4,6 +4,9 @@ config.py
 app/__pycache__/
 *.pyc
 venv/
+*~
+\#*
+#*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
