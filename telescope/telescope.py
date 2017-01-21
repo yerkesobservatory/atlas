@@ -14,7 +14,35 @@ class Telescope(object):
     """
 
     def __init__(self):
-        pass
+        """ This function is responsible for establishing the 
+        connection with aster. 
+        """
+        # create an SSH client
+        self.ssh = paramiko.SSHClient()
+
+        # allow connection to unknown hosts - TODO FIX
+        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        # connect!
+        try:
+            self.ssh.connect('mail.stoneedgevineyard.com', username='rprechelt')
+        except AuthenticationException: # unable to authenticate
+            self.log('Unable to authenticate connection to aster', color='red')
+            # TODO: Email Remy
+        except: # something else went wrong
+            self.log('sirius has encountered an unknown error in connecting to aster',
+                     color='red')
+
+    def __del__(self):
+        """ This function is called just prior to the object being garbage
+        collected - this only happens when something has gone wrong, so we
+        shutdown the telescope, and then disconnect from aster. 
+        """
+        # closedown the telescope 
+        self.ssh.exec_command("closedown")
+        
+        # disconnect
+        self.ssh.close()
 
     def open_dome(self) -> bool:
         """ Checks that the weather is acceptable, and then opens the dome, 
@@ -230,7 +258,6 @@ class Telescope(object):
         pass
 
     
-
     def log(self, msg: str, color: str = "white") -> bool:
         """ Prints a log message to STDOUT. Returns True if successful, False
         otherwise.
@@ -238,7 +265,7 @@ class Telescope(object):
         colors = {"red":"31", "green":"32", "blue":"34", "cyan":"36",
                   "white":"37", "yellow":"33", "magenta":"34"}
         logtime = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
-        log = "\033[1;"+colors[color]+"m"+logtime+" SESSION: "+msg+"\033[0m"
+        log = "\033[1;"+colors[color]+"m"+logtime+" TELESCOPE: "+msg+"\033[0m"
         print(log)
         return True
 
@@ -251,9 +278,11 @@ class Telescope(object):
         ## THIS NEEDS TO RETURN THE OUTPUT STRING AS SECOND RETURN ARGUMENT
         self.log("Executing {}".format(command), color="magenta")
         try:
-            return subprocess.check_output(command)
+            stdin, stdout, stderr = self.ssh.exec_command(command)
+            return True, stdout.readlines()[0]+' '
         except:
             self.log("Failed while executing {}".format(command), color="red")
+            self.log("{}".format(stderr.readlines()), color="red")
             self.log("Please manually close the dome by running"
                        " `closedown` and `logout`.", color="red")
             exit(1)

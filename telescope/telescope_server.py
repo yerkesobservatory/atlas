@@ -1,67 +1,97 @@
-import paramiko
-import flask
-import Telescope
+import paho.mqtt.client as mqtt
+import telescope
+import json
 
-app = flask.Flask("TelescopeServer")
+def on_connect(client, userdata, flags, rc):
+    """ This function handles subscribing to the appropriate MQTT topics
+    as well as establishing other setup procedures. 
+    """
 
-telescope = Telescope.Telescope()
+    client.subscribe('/seo/request')
+    client.subscribe('/seo/control')
 
-@app.route('/status/weather', methods=['GET'])
-def get_weather():
-    """ Return all available weather data from the telescope. 
+
+def on_message(client, userdata, msg):
+    """ This function is called whenever a message is received. 
+    """
+    message = json.loads(msg.payload.decode())
+
+    if msg.topic == '/seo/request':
+
+        # request for new weather data
+        if message['type'] == 'weather':
+            update_weather(client, telescope)
+        if message['type'] == 'dome':
+            update_dome(client, telescope)
+
+                
+def update_weather(client, telescope):
+    """ Publish the latest weather data to /seo/request.
     """
     weather = telescope.get_weather()
     if weather is not None:
-        return flask.jsonify(weather)
-    else:
-        flask.abort(503)
 
-@app.route('/status/weather_ok', methods=['GET'])
-def weather_ok():
-    """ Indicates whether the weather is currently OK.
-    """
-    weather = telescope.weather_ok()
-    if weather is not None:
-        return flask.jsonify({'weather':'ok'})
-    else:
-        flask.abort(503)
+        # check whether this is OK
+        weather_ok = telescope.weather_ok()
+        if weather_ok is True:
+            weather['ok': True]
+        else:
+            weather['ok': False]
 
-@app.route('/status/dome_open', methods=['GET'])
-def dome_open():
-    """ Returns true if the dome is open, or false if it is closed.
-    """
-    status = telescope.dome_open()
-    if status is True:
-        return flask.jsonify({'status':'open'})
-    elif status is False:
-        return flask.jsonify({'status':'closed'})
-    else:
-        flask.abort(503)
+            # publish results to topic
+            client.publish('/seo/status/', json.dumps(weather))
+            return True
 
-@app.route('/status/target_visible/<string:target>', methods=['GET'])
-def target_visible(target):
-    """ Indicates whether a given target is visible.
-    """
-    # status = telescope.target_visible(target)
-    status = True
-    if status is True:
-        return flask.jsonify({target:'true'})
-    elif status is False:
-        return flask.jsonify({target:'false'})
-    else:
-        flask.abort(503)
+    return False
 
-@app.route('/control/open_dome', methods=['POST'])
-def open_dome():
-    """ Opens the dome. 
-    """
-    status = telescope.open_dome()
-    if status is True:
-         return flask.jsonify({'open_dome':'success'})
-    else:
-        flask.abort(503)
+
+# def dome_open():
+#     """ Returns true if the dome is open, or false if it is closed.
+#     """
+#     status = telescope.dome_open()
+#     if status is True:
+#         return flask.jsonify({'status':'open'})
+#     elif status is False:
+#         return flask.jsonify({'status':'closed'})
+#     else:
+#         flask.abort(503)
+
+# @app.route('/status/target_visible/<string:target>', methods=['GET'])
+# def target_visible(target):
+#     """ Indicates whether a given target is visible.
+#     """
+#     # status = telescope.target_visible(target)
+#     status = True
+#     if status is True:
+#         return flask.jsonify({target:'true'})
+#     elif status is False:
+#         return flask.jsonify({target:'false'})
+#     else:
+#         flask.abort(503)
+
+# @app.route('/control/open_dome', methods=['POST'])
+# def open_dome():
+#     """ Opens the dome. 
+#     """
+#     status = telescope.open_dome()
+#     if status is True:
+#          return flask.jsonify({'open_dome':'success'})
+#     else:
+#         flask.abort(503)
 
         
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    ## CREATE TELESCOPE 
+    telescope = telescope.Telescope()
+
+    #################### CREATE CLIENT ####################
+    client = mqtt.Client()
+    client.on_connect = on_connect
+    client.on_message = on_message
+
+    ## connect to local mosquitto instance
+    client.connect('localhost',  1883, 60)
+
+    # start receiving messages
+    client.loop_forever()
