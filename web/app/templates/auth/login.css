@@ -1,0 +1,38 @@
+ .img-responsive{
+
+  }
+  
+  body {
+   background:
+    linear-gradient(
+      rgba(0, 0, 0, 0.5),
+      rgba(0, 0, 0, 0.5)
+      ),
+    url("SEO_Front.jpg");
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-attachment: fixed;
+    background-size: cover;
+    color: #fff;
+    text-align: center;
+    margin-top: 500px;
+
+  }
+  
+ h1 {
+    font-size: 70px
+    font-family: Helvetica;
+    color: white;
+  }
+  
+ .btn-primary {
+    color: #fff;
+    background: #41474B;
+  }
+  
+ #containter {
+    height: 400px;
+    display: flex;
+    align-items: center; 
+}
+ #content {}
