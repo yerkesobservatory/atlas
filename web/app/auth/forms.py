@@ -7,5 +7,5 @@ class LoginForm(Form):
     """ Represents the login form for the SEO website. 
     """
     email = StringField('Email', validators=[DataRequired(), Email(), Length(5, 64)])
-    password = PasswordField('Password', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired(), Length(8, 64)])
     submit = SubmitField('Submit')
