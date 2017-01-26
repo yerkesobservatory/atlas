@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+import argparse
+import paho.mqtt.client as mqtt
+import os
+from os.path import dirname, realpath
+import json
+import yaml
+
+#################### CREATE COMMAND LINE ARGUMENT PARSER #######################
+parser = argparse.ArgumentParser(description='Submit imaging requests to the Stone Edge Observatory queue')
+parser.add_argument('--target', '-t', help="The target to be imaged", required=True,
+                    type=str, nargs=1 )
+parser.add_argument('--exposure_time', '-e', help="The exposure time for each frame",
+                    default=60, type=float)
+parser.add_argument('--exposure_count', '-c', help="The total exposure count for each filter",
+                    default=1, type=int)
+parser.add_argument('--filters', '-f', help="The list of filters to be used for each exposure",
+                    default="clear", type=str)
+parser.add_argument('--binning', '-b', help="The desired CCD binning",
+                    default=2, type=int)
+
+######################### PARSE COMMAND LINE ARGUMENTS #########################
+args = parser.parse_args()
+
+
+######################### IMPORT CONFIGURATION PARAMETERS ######################
+config_dir = dirname(dirname(realpath(__file__))) ## locate file containing config
+try:
+    with open(config_dir+"/config.yaml", 'r') as config_file:
+        try:
+            config = yaml.safe_load(config_file)
+        except yaml.YAMLError as exception:
+            print("\033[1;31mInvalid YAML configuration file; please check syntax...\033[0m")
+            exit(-1)
+except:
+    print("\033[1;31mUnable to locate config.yaml; please make sure that it exists...\033[0m")
+    exit(-1)
+
+################################ BUILD REQUEST #################################
+# Build imaging session request
+msg = {}
+msg['type'] = 'request'
+msg['targets'] = args.target
+msg['exposure_time'] = args.exposure_time
+msg['exposure_count'] = args.exposure_count
+msg['filters'] = args.filters
+msg['binning'] = args.binning
+msg['user'] = os.environ['USER']
+
+######################### CONNECT TO STONE EDGE SERVER #########################
+
+# mqtt client to handle connection
+client = mqtt.Client()
+
+# connect to stone edge observatory
+try:
+    client.connect(config['server']['host'], config['mosquitto']['port'], 60)
+    print("\033[1;32mSuccessfully connected to Stone Edge Observatory!\033[0m")
+except:
+    print("\033[1;31mUnable to connect to Stone Edge Observatory. Please try again later. "
+          "If the problem persists, please contact <admin@stoneedgeobservatory.com>\033[0m")
+    exit(-1)
+
+
+###################### SEND REQUEST TO STONE EDGE SERVER #######################
+try:
+    client.publish('/seo/queue', json.dumps(msg))
+    print("\033[1;32mRequest successfully submitted!\033[0m")
+except:
+    print("\033[1;31mUnable to submit request to server. "
+          "Please contact <admin@stoneedgeobservatory.com>\033[0m")
+    exit(-1)
+    

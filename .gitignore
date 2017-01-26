@@ -7,9 +7,6 @@ venv/
 *~
 \#*
 #*
-web/app/static/images/*.png
-web/app/static/images/*.jpg
-web/app/static/images/*.bmp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
