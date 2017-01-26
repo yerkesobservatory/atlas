@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+import sys
+import argparse
+import paho.mqtt.client as mqtt
+import os
+from os.path import dirname, realpath
+import json
+import yaml
+import inspect
+
+#################### CREATE COMMAND LINE ARGUMENT PARSER #######################
+parser = argparse.ArgumentParser(description='Listen to MQTT topics from Stone Edge Observatory')
+parser.add_argument('--topics', '-t', help="A list of topics to subscribe to",
+                    type=str, nargs='+' )
+
+######################### PARSE COMMAND LINE ARGUMENTS #########################
+args = parser.parse_args()
+
+
+######################### IMPORT CONFIGURATION PARAMETERS ######################
+config_dir = dirname(dirname(realpath(__file__))) ## locate file containing config
+try:
+    with open(config_dir+"/config.yaml", 'r') as config_file:
+        try:
+            config = yaml.safe_load(config_file)
+        except yaml.YAMLError as exception:
+            print("\033[1;31mInvalid YAML configuration file; please check syntax...\033[0m")
+            exit(-1)
+except:
+    print("\033[1;31mUnable to locate config.yaml; please make sure that it exists...\033[0m")
+    exit(-1)
+
+
+######################### MESSAGE HANDLING FUNCTION ###########################
+def on_message(client, userdata, msg):
+    """ This function is called whenever a message is received. 
+    """
+    msgbody = json.loads(msg.payload.decode())
+    topic = msg.topic
+    print("\033[1;36m"+topic+"\033[0m: "+str(msgbody))
+
+    
+######################### CONNECT TO STONE EDGE SERVER #########################
+
+# mqtt client to handle connection
+client = mqtt.Client()
+client.on_message = on_message
+
+# connect to stone edge observatory
+try:
+    client.connect(config['server']['host'], config['mosquitto']['port'], 60)
+    print("\033[1;32mSuccessfully connected to Stone Edge Observatory!\033[0m")
+except:
+    print("\033[1;31mUnable to connect to Stone Edge Observatory. Please try again later. "
+          "If the problem persists, please contact <admin@stoneedgeobservatory.com>\033[0m")
+
+
+###################### SEND REQUEST TO STONE EDGE SERVER #######################
+try:
+    for topic in args.topics:
+        client.subscribe(topic)
+        print("\033[1;32mSuccessfully subscribed to all topics!\033[0m")
+
+        # loop waiting until messages are received
+        client.loop_forever()
+except:
+    print("\033[1;31mUnable to subscribe to one of your topics. "
+          "Please contact <admin@stoneedgeobservatory.com>\033[0m")
+    
