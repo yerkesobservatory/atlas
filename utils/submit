@@ -59,6 +59,7 @@ try:
 except:
     print("\033[1;31mUnable to connect to Stone Edge Observatory. Please try again later. "
           "If the problem persists, please contact <admin@stoneedgeobservatory.com>\033[0m")
+    exit(-1)
 
 
 ###################### SEND REQUEST TO STONE EDGE SERVER #######################
@@ -68,4 +69,5 @@ try:
 except:
     print("\033[1;31mUnable to submit request to server. "
           "Please contact <admin@stoneedgeobservatory.com>\033[0m")
+    exit(-1)
     
