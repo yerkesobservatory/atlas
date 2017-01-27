@@ -63,7 +63,7 @@ class Server(object):
 
         # file name for JSON store
         qdir = config['queue']['dir']
-        qname = config['queue']['name']
+        qname = config['queue']['name']+'_'
         currdate = time.strftime('%Y-%m-%d', time.gmtime())
         self.filename = qdir+"/"+qname+currdate+"_imaging_queue.json"
         self.file = open(self.filename, 'a')
