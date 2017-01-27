@@ -23,9 +23,9 @@ class Server(object):
         """
 
         ######################### IMPORT CONFIGURATION PARAMETERS ######################
-        config_dir = dirname(dirname(realpath(__file__))) ## locate file containing config
+        root_dir = dirname(dirname(realpath(__file__))) ## locate file containing config
         try:
-            with open(config_dir+'/config.yaml', 'r') as config_file:
+            with open(root_dir+'/config.yaml', 'r') as config_file:
                 try:
                     config = yaml.safe_load(config_file)
                 except yaml.YAMLError as exception:
@@ -65,8 +65,8 @@ class Server(object):
         qdir = config['queue']['dir']
         qname = config['queue']['name']+'_'
         currdate = time.strftime('%Y-%m-%d', time.gmtime())
-        self.filename = qdir+"/"+qname+currdate+"_imaging_queue.json"
-        self.file = open(self.filename, 'a')
+        self.filename = root_dir+"/"+qdir+"/"+qname+currdate+"_imaging_queue.json"
+        self.file = open(self.filename, 'w')
         if self.file is None:
             self.__log('Unable to open queue!', color='red')
         self.__log('Storing queue in %s' % self.filename)
