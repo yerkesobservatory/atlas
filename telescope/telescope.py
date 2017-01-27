@@ -13,25 +13,27 @@ class Telescope(object):
     server using paramiko. 
     """
 
-    def __init__(self):
+    def __init__(self, dryrun=False):
         """ This function is responsible for establishing the 
         connection with aster. 
         """
-        # create an SSH client
-        self.ssh = paramiko.SSHClient()
+        self.dryrun = dryrun
+        if self.dryrun is not True:
+            # create an SSH client
+            self.ssh = paramiko.SSHClient()
 
-        # allow connection to unknown hosts - TODO FIX
-        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            # allow connection to unknown hosts - TODO FIX
+            self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-        # connect!
-        try:
-            self.ssh.connect('mail.stoneedgevineyard.com', username='rprechelt')
-        except AuthenticationException: # unable to authenticate
-            self.log('Unable to authenticate connection to aster', color='red')
-            # TODO: Email Remy
-        except: # something else went wrong
-            self.log('sirius has encountered an unknown error in connecting to aster',
-                     color='red')
+            # connect!
+            try:
+                self.ssh.connect('mail.stoneedgevineyard.com', username='rprechelt')
+            except AuthenticationException: # unable to authenticate
+                self.log('Unable to authenticate connection to aster', color='red')
+                # TODO: Email Remy
+            except: # something else went wrong
+                self.log('sirius has encountered an unknown error in connecting to aster',
+                         color='red')
 
     def __del__(self):
         """ This function is called just prior to the object being garbage
@@ -39,10 +41,11 @@ class Telescope(object):
         shutdown the telescope, and then disconnect from aster. 
         """
         # closedown the telescope 
-        self.ssh.exec_command("closedown")
-        
-        # disconnect
-        self.ssh.close()
+        self.run_command("closedown")
+
+        if self.dryrun is False:
+            # disconnect
+            self.ssh.close()
 
     def open_dome(self) -> bool:
         """ Checks that the weather is acceptable, and then opens the dome, 
@@ -65,11 +68,17 @@ class Telescope(object):
             return False
 
     
-    def close_dome(self) -> bool:
+    def close_down(self) -> bool:
         """ Closes the current session, closes the dome, and logs out. Returns
         True if successful in closing down, False otherwise.
         """
         return self.run_command("closedown && logout")
+
+    def close_dome(self) -> bool:
+        """ Closes the dome, but leaves the session connected. Returns
+        True if successful in closing down, False otherwise.
+        """
+        return self.run_command("closedown")
 
     
     def get_cloud(self) -> float:
@@ -164,7 +173,7 @@ class Telescope(object):
         return False
 
     
-    def goto_target(self, name: str) -> bool:
+    def goto_target(self, target: str) -> bool:
         """ Points the telescope at the target in question. Returns True if
         successfully (object was visible), and returns False if unable to set
         telescope (failure, object not visible).
@@ -172,19 +181,22 @@ class Telescope(object):
         if self.target_visible(target) == True:
             # Check if we're using coordinates or target names
             cmd = "catalog "+target+" | dopoint"
-            result = self.runcommand(cmd)
+            result = self.run_command(cmd)
             return result
             
         return False
                     
-    def target_visible(self, name: str) -> bool:
+    def target_visible(self, target: str) -> bool:
         """ Checks whether a target is visible, and whether it is > 40 degrees
         in altitude. Returns True if visible and >40, False otherwise
         """
-        cmd = "catalog "+target+" | altaz"
-        altaz = self.run_command(cmd)
-        alt = float(re.search(r"(?<=alt=).*?(?= )", altaz).group(0))
-        if alt >= 40:
+        if self.dryrun is False:
+            cmd = "catalog "+target+" | altaz"
+            altaz = self.run_command(cmd)
+            alt = float(re.search(r"(?<=alt=).*?(?= )", altaz).group(0))
+            if alt >= 40:
+                return True
+        else:
             return True
         
         return False
@@ -210,35 +222,35 @@ class Telescope(object):
             return self.run_command("pfilter "+name+"-band")
 
     
-    def take_exposure(self, filename: str) -> bool:
-        """ Takes an exposure of length self.exposure_time saves it in the FITS 
+    def take_exposure(self, filename: str, time: int, binning: int) -> bool:
+        """ Takes an exposure of length time saves it in the FITS 
         file with the specified filename. Returns True if imaging
         was successful, False otherwise. 
         """
-        cmd = "image time="+self.exposure_time+" bin="+self.binning+" "
-        cmd += "outfile="+filename+".fits"
+        cmd = "image time="+str(time)+" bin="+str(binning)
+        cmd += " outfile="+filename+".fits"
         status = self.run_command(cmd)
         self.log("Saved exposure frame to "+filename, color="cyan")
         return status
 
     
-    def take_bias(self, filename: str) -> bool:
+    def take_bias(self, filename: str, binning: int) -> bool:
         """ Takes a bias frame and saves it in the FITS file with the specified
         filename. Returns True if imaging was successful, False otherwise. 
         """
-        cmd = "image time=0.5 bin="+self.binning+" "
+        cmd = "image time=0.5 bin="+str(binning)+" "
         cmd += "outfile="+filename+"_bias.fits"
         status = self.run_command(cmd)
         self.log("Saved bias frame to "+filename, color="cyan")
         return status
         
     
-    def take_dark(self, filename: str) -> bool:
+    def take_dark(self, filename: str, time: int, binning: int) -> bool:
         """ Takes an dark exposure of length self.exposure_time saves it in the
         FITS file with the specified filename. Returns True if imaging
         was successful, False otherwise. 
         """
-        cmd = "image time="+self.exposure_time+" bin="+self.binning+" dark "
+        cmd = "image time="+str(time)+" bin="+str(binning)+" dark "
         cmd += "outfile="+filename+"_dark.fits"
         status = self.run_command(cmd)
         self.log("Saved dark frame to "+filename, color="cyan")
@@ -276,13 +288,15 @@ class Telescope(object):
         """
         ## THIS NEEDS TO APPEND A WHITESPACE TO EVERY STRING
         ## THIS NEEDS TO RETURN THE OUTPUT STRING AS SECOND RETURN ARGUMENT
-        self.log("Executing {}".format(command), color="magenta")
-        try:
-            stdin, stdout, stderr = self.ssh.exec_command(command)
-            return True, stdout.readlines()[0]+' '
-        except:
-            self.log("Failed while executing {}".format(command), color="red")
-            self.log("{}".format(stderr.readlines()), color="red")
-            self.log("Please manually close the dome by running"
-                       " `closedown` and `logout`.", color="red")
-            exit(1)
+        self.log("Executing: {}".format(command), color="magenta")
+        if not self.dryrun:
+            try:
+                stdin, stdout, stderr = self.ssh.exec_command(command)
+                return True, stdout.readlines()[0]+' '
+            except:
+                self.log("Failed while executing {}".format(command), color="red")
+                self.log("{}".format(stderr.readlines()), color="red")
+                self.log("Please manually close the dome by running"
+                         " `closedown` and `logout`.", color="red")
+                exit(1)
+
