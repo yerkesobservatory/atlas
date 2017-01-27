@@ -9,7 +9,7 @@ import yaml
 #################### CREATE COMMAND LINE ARGUMENT PARSER #######################
 parser = argparse.ArgumentParser(description='Submit imaging requests to the Stone Edge Observatory queue')
 parser.add_argument('--target', '-t', help="The target to be imaged", required=True,
-                    type=str, nargs=1 )
+                    type=str)
 parser.add_argument('--exposure_time', '-e', help="The exposure time for each frame",
                     default=60, type=float)
 parser.add_argument('--exposure_count', '-c', help="The total exposure count for each filter",
