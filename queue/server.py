@@ -139,7 +139,7 @@ class Server(object):
         msg = json.loads(msg.payload.decode())
         ## we have received a new request from the queue
         if msg['type'] == 'request':
-            self.__log('Adding new request to queue.')
+            self.__log('Adding new request from {} to queue.'.format(msg['user']))
             self.save_request(msg)
         ## change state of the server
         elif msg['type'] == 'state':

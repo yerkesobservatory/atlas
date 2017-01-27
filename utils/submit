@@ -15,7 +15,7 @@ parser.add_argument('--exposure_time', '-e', help="The exposure time for each fr
 parser.add_argument('--exposure_count', '-c', help="The total exposure count for each filter",
                     default=1, type=int)
 parser.add_argument('--filters', '-f', help="The list of filters to be used for each exposure",
-                    default="clear", type=str)
+                    default="clear", type=str, nargs='+')
 parser.add_argument('--binning', '-b', help="The desired CCD binning",
                     default=2, type=int)
 
@@ -40,7 +40,7 @@ except:
 # Build imaging session request
 msg = {}
 msg['type'] = 'request'
-msg['targets'] = args.target
+msg['target'] = args.target
 msg['exposure_time'] = args.exposure_time
 msg['exposure_count'] = args.exposure_count
 msg['filters'] = args.filters
