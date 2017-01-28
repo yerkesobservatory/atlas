@@ -54,9 +54,14 @@ class Executor(object):
                        'red')
             exit(-1)
 
+            
     def execute_queue(self) -> bool:
         """ Executes the list of session objects for this queue. 
         """
+
+        # open telescope
+        self.telescope.open_dome()
+        
         count = 1
         for session in self.sessions:
             # check whether every session executed correctly
@@ -64,6 +69,9 @@ class Executor(object):
             if not self.execute(session):
                 return False
             count += 1
+
+        # close down
+        self.telescope.close_down()
 
         return True
 
@@ -88,6 +96,7 @@ class Executor(object):
 
             # for each filter
             for filt in session['filters']:
+                self.telescope.enable_tracking()
                 self.take_exposures(basename, exposure_time, exposure_count, binning, filt)
 
             # reset filter back to clear

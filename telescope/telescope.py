@@ -57,7 +57,7 @@ class Telescope(object):
 
         # check that weather is OK to open
         if self.weather_ok() == True:
-            result, output = self.run_command("openup nocloud &&" 
+            result = self.run_command("openup nocloud " 
                                         "&& track on")
             if result == True: # everything was good
                 return True
@@ -139,19 +139,20 @@ class Telescope(object):
         false otherwise. 
         """
 
-        # check sun has set
-        if self.get_sun_alt() >= -1.0:
-            return False
+        if self.dryrun is False:
+            # check sun has set
+            if self.get_sun_alt() >= -1.0:
+                return False
 
-        # check that it isn't raining
-        if get_rain != 0:
-            self.close_dome()
-            return False
+            # check that it isn't raining
+            if get_rain != 0:
+                self.close_dome()
+                return False
 
-        # check cloud cover is below 40%
-        if get_cloud >= 0.40:
-            self.close_dome()
-            return False
+            # check cloud cover is below 40%
+            if get_cloud >= 0.40:
+                self.close_dome()
+                return False
 
         # weather is good!
         return True
@@ -161,13 +162,16 @@ class Telescope(object):
         """ Checks whether the slit is open or closed. Returns True if open, 
         False if closed.
         """
-        status = self.run_command("tx slit")
-        slit = re.search(r"(?<=slit=).*?(?= )", status).group(0)
+        if self.dryrun is False:
+            status = self.run_command("tx slit")
+            slit = re.search(r"(?<=slit=).*?(?= )", status).group(0)
 
-        # if open, return true
-        if slit == "open":
-            return True
-        elif slit == "closed":
+            # if open, return true
+            if slit == "open":
+                return True
+            elif slit == "closed":
+                return False
+        else:
             return False
 
         return False
