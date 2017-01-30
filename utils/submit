@@ -2,12 +2,13 @@
 import argparse
 import paho.mqtt.client as mqtt
 import os
+import sys
 from os.path import dirname, realpath
 import json
 import yaml
 
 #################### CREATE COMMAND LINE ARGUMENT PARSER #######################
-parser = argparse.ArgumentParser(description='Submit imaging requests to the Stone Edge Observatory queue')
+parser = argparse.ArgumentParser(description='Submit imaging requests to an imaging queue')
 parser.add_argument('--target', '-t', help="The target to be imaged", required=True,
                     type=str)
 parser.add_argument('--exposure_time', '-e', help="The exposure time for each frame",
@@ -31,9 +32,11 @@ try:
             config = yaml.safe_load(config_file)
         except yaml.YAMLError as exception:
             print("\033[1;31mInvalid YAML configuration file; please check syntax...\033[0m")
+            print(sys.exc_info())
             exit(-1)
 except:
     print("\033[1;31mUnable to locate config.yaml; please make sure that it exists...\033[0m")
+    print(sys.exc_info())
     exit(-1)
 
 ################################ BUILD REQUEST #################################
@@ -55,19 +58,20 @@ client = mqtt.Client()
 # connect to stone edge observatory
 try:
     client.connect(config['server']['host'], config['mosquitto']['port'], 60)
-    print("\033[1;32mSuccessfully connected to Stone Edge Observatory!\033[0m")
+    self.__log('Successfully connected to '+config['general']['name'], color='green')
 except:
-    print("\033[1;31mUnable to connect to Stone Edge Observatory. Please try again later. "
-          "If the problem persists, please contact <admin@stoneedgeobservatory.com>\033[0m")
+    self.__log('Unable to connect to '+config['general']['name']+'. Please try again later. '
+               'If the problem persists, please contact '+config['general']['email'], 'red')
+    print(sys.exc_info())
     exit(-1)
-
 
 ###################### SEND REQUEST TO STONE EDGE SERVER #######################
 try:
     client.publish('/seo/queue', json.dumps(msg))
     print("\033[1;32mRequest successfully submitted!\033[0m")
 except:
-    print("\033[1;31mUnable to submit request to server. "
-          "Please contact <admin@stoneedgeobservatory.com>\033[0m")
+    print('\033[1;31mUnable to publish message to server. '
+          'Please contact '+config['general']['email']+'\033[0m')
+    print(sys.exc_info())
     exit(-1)
     
