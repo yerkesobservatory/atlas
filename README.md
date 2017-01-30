@@ -35,17 +35,20 @@ Change to the directory you just cloned, and create a new python virtual environ
     cd seo
     
     # create a new Python virtual environment
-    pyvenv env
+    pyvenv .env
+    
+    # OR, if pyvenv is not aliased
+    virtualenv .env
     
     # load virtual environment
-    source env/bin/activate
+    source .env/bin/activate
     
 Once this is successful, we can populate the virtual environment with the required packages:
 
     # load packages
     pip3 install -r requirements.txt
     
-Your terminal is now running a complete copy of the production environment; when you are done working on the project for the day, run `deactivate` to exit from the virtual environment. When you wish to start working again, all you need to run is `source env/bin/activate`. 
+Your terminal is now running a complete copy of the production environment; when you are done working on the project for the day, run `deactivate` to exit from the virtual environment. When you wish to start working again, all you need to run is `source .env/bin/activate`. 
     
 *You're all set! - start developing!*
 
@@ -55,9 +58,13 @@ Your terminal is now running a complete copy of the production environment; when
 There are several independent modules necessary for the operation of this system; they are each contained within their own folder in the repository. 
 
 * `web/` : This contains the complete web interface for controlling and working with the Stone Edge Observatory telescope; this is the only public facing component. This is a Python Flask application; see the [README](https://github.com/yerkesobservatory/seo/web/) for more information
-* `queue/` : This contains the backend control server for managing and scheduling the queue. These is only accessed *via* the web app. See the [README](https://github.com/yerkesobservatory/seo/queue/)
+* `queue/` : This contains the backend control server for managing and scheduling the queue. See the [README](https://github.com/yerkesobservatory/seo/queue/)
 * `pipeline` : This is the image reduction pipeline that is run on SEO images that are captured by the telescope. See the [README](https://github.com/yerkesobservatory/seo/pipeline/)
-* `queue/` : This contains the backend control servers and interfaces for controlling and communicating with the telescope. These are only used by the web app and the queue to control and query the telescope. See the [README](https://github.com/yerkesobservatory/seo/telescope/)
+* `telescope/` : This contains the backend control servers and interfaces for controlling and communicating with the telescope. See the [README](https://github.com/yerkesobservatory/seo/telescope/)
+* `logserver` : This provides an implementation of a logging server that saves every message sent through the message broker. 
+* `utils` : This folder contains a set of utilites for publishing and subscribing to/from the message broker, as well as submitting queue requests via the command line
+* `broker` : This contains the configuration and password files for the MQTT broker
+* `docs` : This contains the Sphinx documentation of the project
 
 
 
