@@ -29,6 +29,7 @@ class Pipeline(object):
                 except yaml.YAMLError as exception:
                     self.__log('Invalid YAML configuration file; '
                                'please check syntax.', 'red')
+                    print(sys.exc_info())
                     exit(-1)
         except:
             self.__log('Pipeline unable to locate config.yaml; '
@@ -41,13 +42,14 @@ class Pipeline(object):
         # mqtt client to handle connection
         self.client = mqtt.Client()
 
-        # connect to stone edge observatory
+        # connect to message broker
         try:
             self.client.connect(config['server']['host'], config['mosquitto']['port'], 60)
             self.__log('Successfully connected to '+config['general']['name'], color='green')
         except:
             self.__log('Unable to connect to '+config['general']['name']+'. Please try again later. '
                      'If the problem persists, please contact '+config['general']['email'], 'red')
+            print(sys.exc_info())
             exit(-1)
         
         # create a handler for SIGINT

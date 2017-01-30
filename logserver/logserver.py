@@ -16,45 +16,43 @@ class LogServer(object):
     writes the message to a log file
     """
 
-    def __init__(self):
+    def __init__(self, rootdir: str = rootdir):
         """ This creates a new server listening on the specified port; this does
         not start the server listening, it just creates the server. start() must
         be called for the server to be initialized. 
         """
 
         ######################### IMPORT CONFIGURATION PARAMETERS ######################
-        root_dir = dirname(dirname(realpath(__file__))) ## locate file containing config
         try:
-            with open(root_dir+'/config.yaml', 'r') as config_file:
+            with open(rootdir+'/config.yaml', 'r') as config_file:
                 try:
                     config = yaml.safe_load(config_file)
                 except yaml.YAMLError as exception:
                     self.__log('Invalid YAML configuration file; '
                                'please check syntax.', 'red')
+                    print(sys.exc_info())
                     exit(-1)
         except:
             self.__log('Log server unable to locate config.yaml; '
                        'please make sure that it exists.', 'red')
+            print(sys.exc_info())
             exit(-1)
                     
         self.__log('Creating new log server...', 'green')
         
-        # the port to be used for communication
-        self.port = config['mosquitto']['port']
-
         # mqtt client to handle connection
         self.client = mqtt.Client()
 
-        # connect to stone edge observatory
+        # connect to message broker
         try:
             self.client.connect(config['server']['host'], config['mosquitto']['port'], 60)
-            self.__log('Successfully connected to Stone Edge Observatory!', color='green')
+            self.__log('Successfully connected to '+config['general']['name'], color='green')
         except:
-            self.__log('Unable to connect to Stone Edge Observatory. Please try again later. '
-                     'If the problem persists, please contact <admin@stoneedgeobservatory.com>', 'red')
+            self.__log('Unable to connect to '+config['general']['name']+'. Please try again later. '
+                     'If the problem persists, please contact '+config['general']['email'], 'red')
+            print(sys.exc_info())
             exit(-1)
         
-
         # file name for JSON log
         qdir = config['log']['dir']
         qname = config['log']['name']+'_'
@@ -125,5 +123,6 @@ class LogServer(object):
         self.client.loop_forever()
 
 if __name__ == "__main__":
-    s = LogServer()
+    rootdir = dirname(dirname(realpath(__file__))) ## locate file containing config
+    s = LogServer(rootdir = rootdir)
     s.start()
