@@ -27,6 +27,8 @@ except:
 ########################## COMMAND LINE PARSER ########################
 parser = argparse.ArgumentParser(prog='atlas',
                                  description='Manage '+config['general']['name'])
+parser.add_argument('--start-all', '-a', action='store_true',
+                    default='True', help='Start all components')
 parser.add_argument('--start-pipeline', '-p', action='store_true',
                     default='True', help='Start the pipeline server')
 parser.add_argument('--start-queue', '-q', action='store_true',
