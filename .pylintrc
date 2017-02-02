@@ -323,7 +323,7 @@ init-import=no
 # defining-attr-methods=__init__,__new__,setUp
 
 # List of valid names for the first argument in a class method.
-# valid-classmethod-first-arg=cls
+valid-classmethod-first-arg=cls
 
 # List of valid names for the first argument in a metaclass class method.
 # valid-metaclass-classmethod-first-arg=mcs
@@ -340,7 +340,7 @@ max-args=7
 
 # Argument names that match this expression will be ignored. Default to name
 # with leading underscore
-# ignored-argument-names=_.*
+ignored-argument-names=_.*
 
 # Maximum number of locals for function / method body
 max-locals=15
