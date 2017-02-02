@@ -36,9 +36,9 @@ class Pipeline(object):
                        'please make sure that it exists.', 'red')
             print(sys.exc_info())
             exit(-1)
-                    
+
         self.__log('Creating new pipeline...', 'green')
-        
+
         # mqtt client to handle connection
         self.client = mqtt.Client()
 
@@ -51,14 +51,14 @@ class Pipeline(object):
                      'If the problem persists, please contact '+config['general']['email'], 'red')
             print(sys.exc_info())
             exit(-1)
-        
+
         # create a handler for SIGINT
         signal.signal(signal.SIGINT, self.handle_exit)
 
         # Add tasks to Luigi
         # TODO
 
-        
+
     def handle_exit(self, signal, frame):
         """ SIGINT handler to check for Ctrl+C for quitting the server. 
         """
