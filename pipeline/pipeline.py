@@ -1,13 +1,13 @@
 import time
-import paho.mqtt.client as mqtt
 import typing
 import signal
 import sys
 import json
-import yaml
-import os
 from os.path import dirname, realpath
 import luigi
+import yaml
+import paho.mqtt.client as mqtt
+
 
 class Pipeline(object):
     """ This class represents a server that subscribes to messages from every
@@ -15,10 +15,10 @@ class Pipeline(object):
     writes the message to a log file
     """
 
-    def __init__(self, rootdir: str = ""):
+    def __init__(self, rootdir: str=""):
         """ This creates a new server listening on the specified port; this does
         not start the server listening, it just creates the server. start() must
-        be called for the server to be initialized. 
+        be called for the server to be initialized.
         """
 
         ######################### IMPORT CONFIGURATION PARAMETERS ######################
@@ -27,17 +27,17 @@ class Pipeline(object):
                 try:
                     config = yaml.safe_load(config_file)
                 except yaml.YAMLError as exception:
-                    self.__log('Invalid YAML configuration file; '
-                               'please check syntax.', 'red')
-                    print(sys.exc_info())
+                    self.log('Invalid YAML configuration file; '
+                             'please check syntax.', 'red')
+                    print(str(exception)+' '+sys.exc_info())
                     exit(-1)
         except:
-            self.__log('Pipeline unable to locate config.yaml; '
-                       'please make sure that it exists.', 'red')
+            self.log('Pipeline unable to locate config.yaml; '
+                     'please make sure that it exists.', 'red')
             print(sys.exc_info())
             exit(-1)
 
-        self.__log('Creating new pipeline...', 'green')
+        self.log('Creating new pipeline...', 'green')
 
         # mqtt client to handle connection
         self.client = mqtt.Client()
@@ -45,9 +45,9 @@ class Pipeline(object):
         # connect to message broker
         try:
             self.client.connect(config['server']['host'], config['mosquitto']['port'], 60)
-            self.__log('Successfully connected to '+config['general']['name'], color='green')
+            self.log('Successfully connected to '+config['general']['name'], color='green')
         except:
-            self.__log('Unable to connect to '+config['general']['name']+'. Please try again later. '
+            self.log('Unable to connect to '+config['general']['name']+'. Please try again later.'
                      'If the problem persists, please contact '+config['general']['email'], 'red')
             print(sys.exc_info())
             exit(-1)
@@ -59,27 +59,28 @@ class Pipeline(object):
         # TODO
 
 
-    def handle_exit(self, signal, frame):
-        """ SIGINT handler to check for Ctrl+C for quitting the server. 
+    def handle_exit(self, *_):
+        """ SIGINT handler to check for Ctrl+C for quitting the server.
         """
-        self.__log('Are you sure you would like to quit [y/n]?', 'cyan')
+        self.log('Are you sure you would like to quit [y/n]?', 'cyan')
         choice = input().lower()
         if choice == 'y':
-            self.__log('Quitting pipeline server...', 'cyan')
+            self.log('Quitting pipeline server...', 'cyan')
 
             # disconnect from MQTT broker
             self.client.disconnect()
             sys.exit(0)
 
-            
+
     def __del__(self):
-        """ Called when the server is garbage collected - at this point, 
+        """ Called when the server is garbage collected - at this point,
         this function does nothing.
         """
         pass
 
-    
-    def __log(self, msg: str, color: str = 'white') -> bool:
+
+    @staticmethod
+    def log(msg: str, color: str='white') -> bool:
         """ Prints a log message to STDOUT. Returns True if successful, False
         otherwise.
         """
@@ -90,7 +91,7 @@ class Pipeline(object):
         print(log)
         return True
 
-    
+
     def process_message(self, client, userdata, msg) -> list:
         """ This function is called whenever a message is received.
         """
@@ -107,6 +108,6 @@ class Pipeline(object):
         self.client.loop_forever()
 
 if __name__ == "__main__":
-    rootdir = dirname(dirname(realpath(__file__))) ## locate file containing config
-    p = Pipeline(rootdir = rootdir)
-    p.start()
+    ROOT_DIR = dirname(dirname(realpath(__file__))) ## locate file containing config
+    PIPELINE = Pipeline(rootdir=ROOT_DIR)
+    PIPELINE.start()
