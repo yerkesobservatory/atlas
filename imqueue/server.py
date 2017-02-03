@@ -62,8 +62,9 @@ class Server(object):
         # file name for JSON store
         qdir = config['queue']['dir']
         qname = config['queue']['name']+'_'
+        rootdir = config['rootdir']
         currdate = time.strftime('%Y-%m-%d', time.gmtime())
-        self.filename = root_dir+"/"+qdir+"/"+qname+currdate+"_imaging_queue.json"
+        self.filename = rootdir+"/"+qdir+"/"+qname+currdate+"_imaging_queue.json"
         self.file = open(self.filename, 'w')
         if self.file is None:
             self.__log('Unable to open queue!', color='red')
