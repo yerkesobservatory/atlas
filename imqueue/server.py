@@ -1,6 +1,5 @@
 # This file implements a Server that listens for requests from Submit programs
 # to add Sessions to the queue for tonight's imaging session
-import time
 import paho.mqtt.client as mqtt
 import typing
 import signal
@@ -8,18 +7,22 @@ import sys
 import json
 import yaml
 import os
+import maya
 from os.path import dirname, realpath
 
 class QueueServer(object):
-    """ This class represents a server that listens for queueing requests from 
+    """ This class represents a server that listens for queueing requests from
     clients; once it has received a request, process_message() is called, which
     adds the request to the queue.
+
+    It can also be used to enable/disable the queue, as well as to enable the queue
+    for future observing dates. 
     """
 
     def __init__(self, config: dict):
         """ This creates a new server listening on the specified port; this does
-        not start the server listening, it just creates the server. start() must
-        be called for the server to be initialized. 
+        not start the server listening, it just creates the server. run() must
+        be called for the server to be initialized.
         """
 
         self.log('Creating new queue server...', 'green')
@@ -43,21 +46,46 @@ class QueueServer(object):
             print(sys.exc_info())
             exit(-1)
 
-        # file name for JSON store
+        # get list of all files in queue dir
         qdir = config['queue']['dir']
-        qname = config['queue']['name']+'_'
-        rootdir = config['rootdir']
-        currdate = time.strftime('%Y-%m-%d', time.gmtime())
-        self.filename = rootdir+"/"+qdir+"/"+qname+currdate+"_imaging_queue.json"
-        self.file = open(self.filename, 'w')
-        if self.file is None:
+        files = []
+        for (_, _, filenames) in os.walk(qdir):
+            files.extend(filenames)
+            break
+
+        # extract only valid queue dates
+        dates = []
+        for f in files:
+            splitname = f.split('_')
+            if len(splitname) >= 3:
+                if splitname[2] == 'imaging':
+                    dates.append(maya.parse(splitname[1]))
+
+        # sort by date
+        dates.sort()
+
+        # pick earliest date
+        self.qdate = dates[0].datetime(to_timezone="UTC").strftime('%Y-%m-%d')
+
+        # file name for JSON queue store
+        self.qdir = config['queue']['dir']
+        self.qname = config['queue']['name']+'_'
+        self.rootdir = config['rootdir']
+        qfile = self.rootdir+"/"+self.qdir+"/"
+        qfile += self.qname+self.qdate+"_imaging_queue.json"
+        self.qfile = qfile
+
+        # try and open queue - file should already exist
+        try:
+            self.queue = open(self.qfile, 'a')
+            self.log('Storing queue in %s' % self.qfile)
+            self.queue.close()
+        except:
             self.log('Unable to open queue!', color='red')
-        self.log('Storing queue in %s' % self.filename)
-        self.file.close()
 
 
     def __del__(self):
-        """ Called when the server is garbage collected - at this point, 
+        """ Called when the server is garbage collected - at this point,
         this function does nothing.
         """
         pass
@@ -69,7 +97,7 @@ class QueueServer(object):
         """
         colors = {'red':'31', 'green':'32', 'blue':'34', 'cyan':'36',
                   'white':'37', 'yellow':'33', 'magenta':'34'}
-        logtime = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        logtime = maya.now().datetime(to_timezone="UTC").strftime('%Y-%m-%d %H:%M:%S')
         log = '\033[1;'+colors[color]+'m'+logtime+' SERVER: '+msg+'\033[0m'
         print(log)
         return True
@@ -82,18 +110,52 @@ class QueueServer(object):
 
 
     def disable(self) -> bool:
-        """ Disable the queue server from taking any requests. 
+        """ Disable the queue server from taking any requests.
         """
         self.enabled = False
 
 
-    def save_request(self, msg: str) -> list:
+    def save_request(self, msg: str) -> bool:
         """ This takes a raw message from process_message and writes the JSON data
-        into the queue file. 
+        into the queue file.
         """
-        self.file = open(self.filename, 'a')
-        self.file.write(json.dumps(msg)+'\n')
-        self.file.close()
+        self.log('Adding new request from {} to queue.'.format(msg['user']))
+        self.queue = open(self.qfile, 'a')
+        self.queue.write(json.dumps(msg)+'\n')
+        self.queue.close()
+
+        return True
+
+    def create_queue(self, msg: str) -> bool:
+        """ This takes a raw message from process_message and writes the JSON data
+        into the queue file.
+        """
+        qfile = self.rootdir+"/"+self.qdir+"/"
+        qdate = msg['date'].datetime(to_timezone="UTC").strftime('%Y-%m-%d')
+        qfile += self.qname+qdate+"_imaging_queue.json"
+
+        # try and open file
+        try:
+            self.queue = open(qfile, 'w')
+            self.queue.close()
+        except:
+            self.log('Unable to open new queue for {}!'.format(date), color='red')
+
+        return True
+
+
+    def update_state(self, msg: str) -> bool:
+        """ This takes a raw message from process_message and updates
+        the internal server state
+        """
+        if msg['action'] == 'enable':
+            self.log('Enabling queueing server...', color='cyan')
+            self.enabled = True
+        elif msg['action'] == 'disable':
+            self.log('Disabling queueing server...', color='cyan')
+            self.enabled = False
+        else:
+            self.log('Received invalid queue state message...', color='magenta')
 
 
     def process_message(self, client, userdata, msg) -> list:
@@ -102,20 +164,15 @@ class QueueServer(object):
         msg = json.loads(msg.payload.decode())
         ## we have received a new request from the queue
         if msg['type'] == 'request':
-            self.log('Adding new request from {} to queue.'.format(msg['user']))
             self.save_request(msg)
+        ## create new queue for future date
+        if msg['type'] == 'create':
+            self.create_queue(msg)
         ## change state of the server
         elif msg['type'] == 'state':
-            if msg['action'] == 'enable':
-                self.log('Enabling queueing server...', color='cyan')
-                self.enabled = True
-            elif msg['action'] == 'disable':
-                self.log('Disabling queueing server...', color='cyan')
-                self.enabled = False
-            else:
-                self.log('Received invalid admin state message...', color='magenta')
+            self.update_state(msg)
         else:
-            self.log('Received unknown admin message...', color+'magenta')
+            self.log('Received unknown queue message...', color+'magenta')
 
 
     def run(self):
@@ -125,8 +182,3 @@ class QueueServer(object):
         self.client.on_message = self.process_message
         self.client.subscribe('/seo/queue')
         self.client.loop_forever()
-
-if __name__ == "__main__":
-    rootdir = dirname(dirname(realpath(__file__))) ## locate file containing config
-    s = Server(rootdir = rootdir)
-    s.start()
