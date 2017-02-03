@@ -24,7 +24,7 @@ def on_message(client, userdata, msg):
         if message['type'] == 'dome':
             update_dome(client, telescope)
 
-                
+
 def update_weather(client, telescope):
     """ Publish the latest weather data to /seo/request.
     """

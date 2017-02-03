@@ -3,39 +3,20 @@ import typing
 import signal
 import sys
 import json
-from os.path import dirname, realpath
-import luigi
-import yaml
 import paho.mqtt.client as mqtt
 
 
-class Pipeline(object):
+class PipelineServer(object):
     """ This class represents a server that subscribes to messages from every
     topic; once it has received a request, process_message() is called, which
     writes the message to a log file
     """
 
-    def __init__(self, rootdir: str=""):
+    def __init__(self, config: dict):
         """ This creates a new server listening on the specified port; this does
         not start the server listening, it just creates the server. start() must
         be called for the server to be initialized.
         """
-
-        ######################### IMPORT CONFIGURATION PARAMETERS ######################
-        try:
-            with open(rootdir+'/config.yaml', 'r') as config_file:
-                try:
-                    config = yaml.safe_load(config_file)
-                except yaml.YAMLError as exception:
-                    self.log('Invalid YAML configuration file; '
-                             'please check syntax.', 'red')
-                    print(str(exception)+' '+sys.exc_info())
-                    exit(-1)
-        except:
-            self.log('Pipeline unable to locate config.yaml; '
-                     'please make sure that it exists.', 'red')
-            print(sys.exc_info())
-            exit(-1)
 
         self.log('Creating new pipeline...', 'green')
 
@@ -51,25 +32,6 @@ class Pipeline(object):
                      'If the problem persists, please contact '+config['general']['email'], 'red')
             print(sys.exc_info())
             exit(-1)
-
-        # create a handler for SIGINT
-        signal.signal(signal.SIGINT, self.handle_exit)
-
-        # Add tasks to Luigi
-        # TODO
-
-
-    def handle_exit(self, *_):
-        """ SIGINT handler to check for Ctrl+C for quitting the server.
-        """
-        self.log('Are you sure you would like to quit [y/n]?', 'cyan')
-        choice = input().lower()
-        if choice == 'y':
-            self.log('Quitting pipeline server...', 'cyan')
-
-            # disconnect from MQTT broker
-            self.client.disconnect()
-            sys.exit(0)
 
 
     def __del__(self):
@@ -92,22 +54,17 @@ class Pipeline(object):
         return True
 
 
-    def process_message(self, client, userdata, msg) -> list:
+    def process_message(self, _client, _userdata, msg) -> list:
         """ This function is called whenever a message is received.
         """
         ## THIS MUST ADD TASK TO LUIGI
         print(msg.payload)
 
 
-    def start(self):
+    def run(self):
         """ Starts the servers listening for new requests; server blocks
         on the specified port until it receives a request
         """
         self.client.on_message = self.process_message
         self.client.subscribe('/seo/pipeline')
         self.client.loop_forever()
-
-if __name__ == "__main__":
-    ROOT_DIR = dirname(dirname(realpath(__file__))) ## locate file containing config
-    PIPELINE = Pipeline(rootdir=ROOT_DIR)
-    PIPELINE.start()

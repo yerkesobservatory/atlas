@@ -16,82 +16,47 @@ class LogServer(object):
     writes the message to a log file
     """
 
-    def __init__(self, rootdir: str = rootdir):
+    def __init__(self, config: dict):
         """ This creates a new server listening on the specified port; this does
         not start the server listening, it just creates the server. start() must
-        be called for the server to be initialized. 
+        be called for the server to be initialized.
         """
 
-        ######################### IMPORT CONFIGURATION PARAMETERS ######################
-        try:
-            with open(rootdir+'/config.yaml', 'r') as config_file:
-                try:
-                    config = yaml.safe_load(config_file)
-                except yaml.YAMLError as exception:
-                    self.__log('Invalid YAML configuration file; '
-                               'please check syntax.', 'red')
-                    print(sys.exc_info())
-                    exit(-1)
-        except:
-            self.__log('Log server unable to locate config.yaml; '
-                       'please make sure that it exists.', 'red')
-            print(sys.exc_info())
-            exit(-1)
-                    
-        self.__log('Creating new log server...', 'green')
-        
+        self.log('Creating new log server...', 'green')
+
         # mqtt client to handle connection
         self.client = mqtt.Client()
 
         # connect to message broker
         try:
             self.client.connect(config['server']['host'], config['mosquitto']['port'], 60)
-            self.__log('Successfully connected to '+config['general']['name'], color='green')
+            self.log('Successfully connected to '+config['general']['name'], color='green')
         except:
-            self.__log('Unable to connect to '+config['general']['name']+'. Please try again later. '
+            self.log('Unable to connect to '+config['general']['name']+'. Please try again later. '
                      'If the problem persists, please contact '+config['general']['email'], 'red')
             print(sys.exc_info())
             exit(-1)
-        
+
         # file name for JSON log
-        qdir = config['log']['dir']
-        qname = config['log']['name']+'_'
+        qdir = config['logging']['dir']
+        qname = config['logging']['name']+'_'
+        rootdir = config['rootdir']
         currdate = time.strftime('%Y-%m-%d', time.gmtime())
-        self.filename = root_dir+"/"+qdir+"/"+qname+currdate+"_all_messages.json"
+        self.filename = rootdir+"/"+qdir+"/"+qname+currdate+"_all_messages.json"
         self.file = open(self.filename, 'a')
         if self.file is None:
-            self.__log('Unable to open log file!', color='red')
-        self.__log('Storing logs in %s' % self.filename)
+            self.log('Unable to open log file!', color='red')
+        self.log('Storing logs in %s' % self.filename)
 
-        # create a handler for SIGINT
-        signal.signal(signal.SIGINT, self.handle_exit)
 
-        
-    def handle_exit(self, signal, frame):
-        """ SIGINT handler to check for Ctrl+C for quitting the server. 
-        """
-        self.__log('Are you sure you would like to quit [y/n]?', 'cyan')
-        choice = input().lower()
-        if choice == 'y':
-            self.__log('Quitting server...', 'cyan')
-
-            # if the file is open, close it
-            if not self.file.closed:
-                self.file.close()
-
-            # disconnect from MQTT broker
-            self.client.disconnect()
-            sys.exit(0)
-
-            
     def __del__(self):
         """ Called when the server is garbage collected - at this point, 
         this function does nothing.
         """
         pass
 
-    
-    def __log(self, msg: str, color: str = 'white') -> bool:
+
+    def log(self, msg: str, color: str = 'white') -> bool:
         """ Prints a log message to STDOUT. Returns True if successful, False
         otherwise.
         """
@@ -102,16 +67,16 @@ class LogServer(object):
         print(log)
         return True
 
-    
+
     def process_message(self, client, userdata, msg) -> list:
         """ This function is called whenever a message is received.
         """
         self.file.write(msg.topic+": ")
         self.file.write(msg.payload.decode()+'\n')
-        self.__log(msg.topic+": "+msg.payload.decode())
+        self.log(msg.topic+": "+msg.payload.decode())
 
 
-    def start(self):
+    def run(self):
         """ Starts the servers listening for new requests; server blocks
         on the specified port until it receives a request
         """
@@ -121,8 +86,3 @@ class LogServer(object):
         self.client.subscribe('/seo/pipeline')
         self.client.subscribe('/seo/queue')
         self.client.loop_forever()
-
-if __name__ == "__main__":
-    rootdir = dirname(dirname(realpath(__file__))) ## locate file containing config
-    s = LogServer(rootdir = rootdir)
-    s.start()
