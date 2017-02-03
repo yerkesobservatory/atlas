@@ -2,8 +2,16 @@
 
 import sys
 import argparse
+import signal
 from os.path import dirname, realpath
 import yaml
+import multiprocessing
+import time
+
+import telescope.server
+import pipeline.server
+import logserver.server
+import imqueue.server
 
 ###################### OPEN CONFIG FILE ######################
 # directory containing config.yaml
@@ -12,6 +20,7 @@ try:
     with open(rootdir+'/config.yaml', 'r') as config_file:
         try:
             config = yaml.safe_load(config_file)
+            config['rootdir'] = rootdir
         except yaml.YAMLError as exception:
             print('Invalid YAML configuration file; '
                   'please check syntax.')
@@ -37,11 +46,105 @@ parser.add_argument('--start-mqtt', '-m', action='store_true',
                     default='True', help='Start the MQTT messaging broker')
 parser.add_argument('--start-telescope', '-t', action='store_true',
                     default='True', help='Start the telescope control server')
-parser.add_argument('--start-logging', '-l', action='store_true',
+parser.add_argument('--start-logserver', '-l', action='store_true',
                     default='True', help='Start the logging server')
 parser.add_argument('--start-web', '-w', action='store_true',
                     default='True', help='Start the web application')
 parser.add_argument('--version', action='version', version='%(prog)s 0.0.1')
 
 ####################### PARSE COMMAND LINE ARGS ####################
-args = parser.parse_args()
+ARGS = parser.parse_args()
+
+# create logging function for easy colorized printing
+def log(msg: str, color: str='white') -> bool:
+    """ Prints a log message to STDOUT. Returns True if successful, False
+    otherwise.
+    """
+    colors = {'red':'31', 'green':'32', 'blue':'34', 'cyan':'36',
+              'white':'37', 'yellow':'33', 'magenta':'34'}
+    logtime = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+    name = ' '+config['general']['shortname']+': '
+    log = '\033[1;'+colors[color]+'m'+logtime+name+msg+'\033[0m'
+    print(log)
+    return True
+
+# create a handler for SIGINT
+def handle_exit(self, *_):
+    """ SIGINT handler to check for Ctrl+C for quitting the server.
+    """
+    log('Are you sure you would like to quit [y/n]?', 'cyan')
+    choice = input().lower()
+    if choice == 'y':
+        log('Closing down...', 'cyan')
+
+        # terminate all started processes
+        for process in processes:
+            process.terminate()
+
+        exit(0)
+
+# force children to ignore SIGING
+signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+# list of processes that have been created
+processes = []
+
+
+############################ TELESCOPE SERVER ######################
+if ARGS.start_telescope is True:
+    try:
+        # create telescope server
+        telescope = telescope.server.TelescopeServer(config)
+        telescope_proc = multiprocessing.Process(target=telescope.run)
+        processes.append(telescope_proc)
+        telescope_proc.start()
+        log("Started telescope server with pid={}".format(telescope_proc.pid), "green")
+    except:
+        log("Unable to start telescope server", "red")
+        print(sys.exc_info())
+
+
+############################ QUEUE SERVER ######################
+if ARGS.start_queue is True:
+    try:
+        # create queue server
+        imqueue = imqueue.server.QueueServer(config)
+        imqueue_proc = multiprocessing.Process(target=imqueue.run)
+        processes.append(imqueue_proc)
+        imqueue_proc.start()
+        log("Started queue server with pid={}".format(imqueue_proc.pid), "green")
+    except:
+        log("Unable to start queue server", "red")
+        print(sys.exc_info())
+
+
+############################ PIPELINE SERVER ######################
+if ARGS.start_pipeline is True:
+    try:
+        # create pipeline server
+        pipeline = pipeline.server.PipelineServer(config)
+        pipeline_proc = multiprocessing.Process(target=pipeline.run)
+        processes.append(pipeline_proc)
+        pipeline_proc.start()
+        log("Started pipeline server with pid={}".format(pipeline_proc.pid), "green")
+    except:
+        log("Unable to start pipeline server", "red")
+        print(sys.exc_info())
+
+
+############################ LOGGING SERVER ######################
+if ARGS.start_logserver is True:
+    try:
+        # create pipeline server
+        logserver = logserver.server.LogServer(config)
+        logserver_proc = multiprocessing.Process(target=logserver.run)
+        processes.append(logserver_proc)
+        logserver_proc.start()
+        log("Started log server with pid={}".format(logserver_proc.pid), "green")
+    except:
+        log("Unable to start log server", "red")
+        print(sys.exc_info())
+
+
+# RE-REGISTER SIGNINT for parent process
+signal.signal(signal.SIGINT, handle_exit)
