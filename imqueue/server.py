@@ -10,36 +10,20 @@ import yaml
 import os
 from os.path import dirname, realpath
 
-class Server(object):
+class QueueServer(object):
     """ This class represents a server that listens for queueing requests from 
     clients; once it has received a request, process_message() is called, which
     adds the request to the queue.
     """
 
-    def __init__(self, rootdir: str = ""):
+    def __init__(self, config: dict):
         """ This creates a new server listening on the specified port; this does
         not start the server listening, it just creates the server. start() must
         be called for the server to be initialized. 
         """
 
-        ######################### IMPORT CONFIGURATION PARAMETERS ######################
-        try:
-            with open(rootdir+'/config.yaml', 'r') as config_file:
-                try:
-                    config = yaml.safe_load(config_file)
-                except yaml.YAMLError as exception:
-                    self.__log('Invalid YAML configuration file; '
-                               'please check syntax.', 'red')
-                    print(sys.exc_info())
-                    exit(-1)
-        except:
-            self.__log('Queue server unable to locate config.yaml; '
-                       'please make sure that it exists.', 'red')
-            print(sys.exc_info())
-            exit(-1)
-                    
-        self.__log('Creating new queue server...', 'green')
-        
+        self.log('Creating new queue server...', 'green')
+
         # whether we are enabled
         if config['queue']['default'] == 'on':
             self.enabled = True
@@ -52,9 +36,9 @@ class Server(object):
         # connect to message broker
         try:
             self.client.connect(config['server']['host'], config['mosquitto']['port'], 60)
-            self.__log('Successfully connected to '+config['general']['name'], color='green')
+            self.log('Successfully connected to '+config['general']['name'], color='green')
         except:
-            self.__log('Unable to connect to '+config['general']['name']+'. Please try again later. '
+            self.log('Unable to connect to '+config['general']['name']+'. Please try again later. '
                      'If the problem persists, please contact '+config['general']['email'], 'red')
             print(sys.exc_info())
             exit(-1)
@@ -67,39 +51,19 @@ class Server(object):
         self.filename = rootdir+"/"+qdir+"/"+qname+currdate+"_imaging_queue.json"
         self.file = open(self.filename, 'w')
         if self.file is None:
-            self.__log('Unable to open queue!', color='red')
-        self.__log('Storing queue in %s' % self.filename)
+            self.log('Unable to open queue!', color='red')
+        self.log('Storing queue in %s' % self.filename)
         self.file.close()
 
-        # create a handler for SIGINT
-        signal.signal(signal.SIGINT, self.handle_exit)
 
-        
-    def handle_exit(self, signal, frame):
-        """ SIGINT handler to check for Ctrl+C for quitting the server. 
-        """
-        self.__log('Are you sure you would like to quit [y/n]?', 'cyan')
-        choice = input().lower()
-        if choice == 'y':
-            self.__log('Quitting server...', 'cyan')
-
-            # if the file is open, close it
-            if not self.file.closed:
-                self.file.close()
-
-            # disconnect from MQTT broker
-            self.client.disconnect()
-            sys.exit(0)
-
-            
     def __del__(self):
         """ Called when the server is garbage collected - at this point, 
         this function does nothing.
         """
         pass
 
-    
-    def __log(self, msg: str, color: str = 'white') -> bool:
+
+    def log(self, msg: str, color: str = 'white') -> bool:
         """ Prints a log message to STDOUT. Returns True if successful, False
         otherwise.
         """
@@ -110,13 +74,13 @@ class Server(object):
         print(log)
         return True
 
-    
+
     def enable(self) -> bool:
         """ Enable the queue server to start taking imaging requests
         """
         self.enabled = True
 
-        
+
     def disable(self) -> bool:
         """ Disable the queue server from taking any requests. 
         """
@@ -131,30 +95,30 @@ class Server(object):
         self.file.write(json.dumps(msg)+'\n')
         self.file.close()
 
-        
+
     def process_message(self, client, userdata, msg) -> list:
         """ This function is called whenever a message is received.
         """
         msg = json.loads(msg.payload.decode())
         ## we have received a new request from the queue
         if msg['type'] == 'request':
-            self.__log('Adding new request from {} to queue.'.format(msg['user']))
+            self.log('Adding new request from {} to queue.'.format(msg['user']))
             self.save_request(msg)
         ## change state of the server
         elif msg['type'] == 'state':
             if msg['action'] == 'enable':
-                self.__log('Enabling queueing server...', color='cyan')
+                self.log('Enabling queueing server...', color='cyan')
                 self.enabled = True
             elif msg['action'] == 'disable':
-                self.__log('Disabling queueing server...', color='cyan')
+                self.log('Disabling queueing server...', color='cyan')
                 self.enabled = False
             else:
-                self.__log('Received invalid admin state message...', color='magenta')
+                self.log('Received invalid admin state message...', color='magenta')
         else:
-            self.__log('Received unknown admin message...', color+'magenta')
+            self.log('Received unknown admin message...', color+'magenta')
 
 
-    def start(self):
+    def run(self):
         """ Starts the servers listening for new requests; server blocks
         on the specified port until it receives a request
         """
