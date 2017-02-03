@@ -1,10 +1,10 @@
-from flask_wtf import Form
+from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField
 from wtforms import DecimalField, BooleanField, IntegerField
 from wtforms.validators import DataRequired, Email, Length
 
-class LoginForm(Form):
-    """ Represents the login form for the SEO website. 
+class LoginForm(FlaskForm):
+    """ Represents the login form for the SEO website.
     """
     email = StringField('Email', validators=[DataRequired(), Email(), Length(5, 64)])
     password = PasswordField('Password', validators=[DataRequired(), Length(8, 64)])
