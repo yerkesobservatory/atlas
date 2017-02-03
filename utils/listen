@@ -36,7 +36,11 @@ except:
 def on_message(client, userdata, msg):
     """ This function is called whenever a message is received. 
     """
-    msgbody = json.loads(msg.payload.decode())
+    try:
+        msgbody = json.loads(msg.payload.decode())
+    except:
+        msgbody = msg.payload.decode()
+
     topic = msg.topic
     print("\033[1;36m"+topic+"\033[0m: "+str(msgbody))
 
@@ -50,10 +54,10 @@ client.on_message = on_message
 # connect to stone edge observatory
 try:
     client.connect(config['server']['host'], config['mosquitto']['port'], 60)
-    self.__log('Successfully connected to '+config['general']['name'], color='green')
+    print('Successfully connected to '+config['general']['name'])
 except:
-    self.__log('Unable to connect to '+config['general']['name']+'. Please try again later. '
-               'If the problem persists, please contact '+config['general']['email'], 'red')
+    print('Unable to connect to '+config['general']['name']+'. Please try again later. '
+               'If the problem persists, please contact '+config['general']['email'])
     print(sys.exc_info())
     exit(-1)
 
@@ -61,12 +65,12 @@ except:
 try:
     for topic in args.topics:
         client.subscribe(topic)
-        print("\033[1;32mSuccessfully subscribed to all topics!\033[0m")
+        print("\033[1;32mSuccessfully subscribed to all requested topics!\033[0m")
 
         # loop waiting until messages are received
         client.loop_forever()
 except:
-    print('\033[1;31mUnable to publish message to server. '
+    print('\033[1;31mUnable to listen to messages from server. '
           'Please contact '+config['general']['email']+'\033[0m')
     print(sys.exc_info())
     exit(-1)
