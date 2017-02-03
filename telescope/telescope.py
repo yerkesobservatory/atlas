@@ -5,6 +5,7 @@ import typing
 import re
 import paramiko
 import time
+import sys
 
 class Telescope(object):
     """ This class is the sole point of contact between the system and the telescope
@@ -40,10 +41,9 @@ class Telescope(object):
         collected - this only happens when something has gone wrong, so we
         shutdown the telescope, and then disconnect from aster. 
         """
-        # closedown the telescope 
-        self.run_command("closedown")
-
+        # closedown the telescope
         if self.dryrun is False:
+            self.ssh.exec_command("closedown")
             # disconnect
             self.ssh.close()
 
@@ -296,10 +296,10 @@ class Telescope(object):
         if not self.dryrun:
             try:
                 stdin, stdout, stderr = self.ssh.exec_command(command)
-                return True, stdout.readlines()[0]+' '
+                return True, sys.stdout.readlines()[0]+' '
             except:
                 self.log("Failed while executing {}".format(command), color="red")
-                self.log("{}".format(stderr.readlines()), color="red")
+                self.log("{}".format(sys.stderr.readlines()), color="red")
                 self.log("Please manually close the dome by running"
                          " `closedown` and `logout`.", color="red")
                 exit(1)
