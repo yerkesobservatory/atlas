@@ -20,7 +20,7 @@ def login():
         # # verify password
         if user is not None and user.verify_password(form.password.data):
             login_user(user, False)
-            return redirect(request.args.get('next') or url_for('main.submit'))
+            return redirect(request.args.get('next') or url_for('main.queue'))
 
         # invalid password
         flash('Invalid e-mail or password')

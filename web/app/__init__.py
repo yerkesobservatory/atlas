@@ -24,7 +24,7 @@ def create_app(config_name):
     application = Flask(__name__, template_folder='templates/')
     application.config.from_object(config[config_name])
     config[config_name].init_app(application)
-    
+
     # initialize flask extensions
     boostrap.init_app(application)
     mail.init_app(application)

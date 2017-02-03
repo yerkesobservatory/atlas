@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+
+        <title>Stone Edge Observatory</title>
+
+        <!-- Import GSS Framework -->
+        <script src="https://s3-us-west-2.amazonaws.com/cdn.thegrid.io/gss/v2.0.0/v2.0.0/gss.min.js"></script>
+
+        <!-- Import CSS -->
+        <link href="{{ url_for('static',filename='styles/queue.css') }}" rel="stylesheet">
+
+        <!-- Create GSS Window -->
+        <script type="text/javascript">
+            window.engine = new GSS(document);
+        </script>
+
+        <!-- Include GSS stylesheet -->
+        <style type="text/gss" src="{{ url_for('static',filename='styles/queue.gss') }}"></style>
+
+    </head>
+
+    <body>
+
+        <!-- Queue Form -->
+        <form method="POST">
+            {{ form.csrf_token }}
+            {{ form.target.label }} {{ form.target(id="target") }}
+            {{ form.exptime.label }} {{ form.exptime(id="exptime") }}
+            {{ form.expcount.label }} {{ form.expcount(id="expcount") }}
+            {{ form.binning.label }} {{ form.binning(id="binning") }}
+            {{ form.filter_u.label }} {{ form.filter_u(id="filter_u") }}
+            {{ form.filter_g.label }} {{ form.filter_g(id="filter_g") }}
+            {{ form.filter_r.label }} {{ form.filter_r(id="filter_r") }}
+            {{ form.filter_i.label }} {{ form.filter_i(id="filter_i") }}
+            {{ form.filter_z.label }} {{ form.filter_z(id="filter_z") }}
+            {{ form.submit() }}
+            </form>
+
+    </body>
+
+</html>

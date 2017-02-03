@@ -1,25 +1,22 @@
 from flask import render_template, session, redirect, url_for
+from flask_login import login_user, login_required, logout_user
 from . import main
-from .forms import LoginForm
+from .forms import QueueForm
 from .. import db
 from ..models import User
 
 @main.route('/', methods=['GET'])
 def index():
 
-    # create new login form
-    # form = LoginForm()
-    
-    # form has been successfully validated
-    # if form.validate_on_submit():
-    #     return redirect(url_for('.index'))
+    return redirect(url_for('auth.login'))
 
-    # return page
-    # return render_template('index.html',
-    #                        form=form,  name=session.get('name'),
-    #                        known=session.get('known', False))
+@main.route('/queue', methods=['GET', 'POST'])
+@login_required
+def queue():
 
-    return render_template('main/index.html')
-                           
-                        
-        
+    form = QueueForm()
+    if form.validate_on_submit():
+        print("Valid queue submission!")
+
+    return render_template('main/queue.html', form=form)
+
