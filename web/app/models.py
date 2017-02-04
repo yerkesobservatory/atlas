@@ -2,6 +2,8 @@ from flask_sqlalchemy import SQLAlchemy
 from . import db, login_manager
 from flask_login import UserMixin
 import werkzeug.security as security
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from flask import current_app
 
 class User(UserMixin, db.Model):
     """ This class represents a user for login/logout, and session management.
@@ -13,6 +15,7 @@ class User(UserMixin, db.Model):
         password: hashed-password of user
         affiliation:  organization user is affiliated with
         minor: a bool indicating whether user is a minor
+        confirmed: whether account has been confirmed
     """
     __tablename__ = 'users'
     id = db.Column(db.Integer,  primary_key=True)
@@ -23,6 +26,7 @@ class User(UserMixin, db.Model):
     affiliation = db.Column(db.String(128), index=True, unique=False)
     minor = db.Column(db.Boolean, index=True, unique=False, default=False)
     admin = db.Column(db.Boolean, index=True, unique=False, default=False)
+    confirmed = db.Column(db.Boolean, index=True, default=False)
 
     @property
     def password(self):
@@ -46,6 +50,35 @@ class User(UserMixin, db.Model):
         """ Callback to return user given user_id. Required for flask_login.
         """
         return User.query.get(int(user_id))
+
+    def generate_confirmation_token(self, expiration=3600):
+        """ Generate a confirmation token to send to a user's email
+        to validate that their email is correct.
+        """
+        # generate JSON web token
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        return s.dumps({'confirm': self.id})
+
+    def confirm(self, token):
+        """ Confirm a received token matches the one received.
+        """
+        s = Serializer(current_app.config['SECRET_KEY'])
+        # try and load the token data
+        try:
+            data = s.loads(token)
+        except:
+            return False
+
+        # check that token matches user id
+        if data.get('confirm') != self.id:
+            return False
+
+        # confirm user and add them to the db
+        self.confirmed = True
+        db.session.add(self)
+
+        return True
+
 
     def __repr__(self):
         """ Pretty-printing of user objects. """

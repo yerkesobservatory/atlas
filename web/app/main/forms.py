@@ -4,7 +4,7 @@ from wtforms import DecimalField, BooleanField, IntegerField
 from wtforms.validators import DataRequired, Email
 
 class QueueForm(FlaskForm):
-    """ Represents the standard queue submission form. 
+    """ Represents the standard queue submission form.
     """
     target = StringField('Target', validators=[DataRequired()])
     exptime = DecimalField('Exposure Time', validators=[DataRequired()])

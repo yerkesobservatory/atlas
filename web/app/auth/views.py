@@ -1,7 +1,7 @@
 from flask import render_template, redirect, request, url_for, flash
 from flask_login import login_user, login_required, logout_user
 from ..models import User
-from .forms import LoginForm
+from .forms import LoginForm, RegistrationForm, PasswordResetForm
 from . import auth
 
 @auth.route('/login', methods=['GET', 'POST'])
@@ -26,6 +26,108 @@ def login():
         flash('Invalid e-mail or password')
 
     return render_template('auth/login.html', form=form)
+
+
+@auth.route('/register',  methods=['GET', 'POST'])
+def register():
+    """ Presents registration form for users to fill out; if it is
+    filled out correctly, adds the user to the database and sends a
+    confirmation email to them.
+    """
+    # create registration form
+    form = RegistrationForm()
+
+    if form.validate_on_submit():
+
+        # check if user exists
+        if User.query.filter_by(email=form.email.data).first():
+            return redirect(request.args.get('next') or url_for('auth.login'))
+
+        # if not, create a new user
+        user = User(firstname=form.firstname.data,
+                    lastname=form.lastname.data,
+                    email=form.email.data,
+                    password=form.password.data,
+                    affiliation=form.affiliation.data,
+                    minor=form.minor.data)
+
+        # add the user to the database
+        db.session.add(user)
+        db.session.commit()
+
+        # generate confirmation token and send
+        token = user.generate_confirmation_token()
+        send_email(user.email, 'Confirm your Account',
+                   'auth/email/confirm',  user=user, token=token)
+        flash('A confirmation email has been sent to you by email')
+        return redirect(url_for('auth.login'))
+
+    return render_template('auth/register.html', form=form)
+
+@auth.route('/confirm/<token>')
+@login_required
+def confirm(token):
+    """ This processes the link sent in the email once the user has clicked
+    on it. This checks if the token is valid, and if so, redirects to the queue.
+    """
+
+    # check if user has already been confirmed
+    if current_user.confirmed:
+        return redirect(url_for('auth.login'))
+
+    # check if valid token
+    if current_user.confirm(token):
+        flash('Thank you for confirming your account!')
+    else:
+        # token is invalid
+        flash('The confirmation link is invalid or has expired')
+        return redirect(url_for('auth.confirm'))
+
+    return redirect(url_for('main.queue'))
+
+
+@auth.route('/confirm')
+@login_required
+def resend_confirmation():
+    """ This resends the confirmation email to a user with a new token.
+    """
+    # generate new token
+    token = current_user.generate_confirmation_token()
+
+    # send the email
+    send_email(user.email, 'Confirm your Account',
+               'auth/email/confirm',  user=user, token=token)
+
+    flash('A new confirmation email has been sent to you by email')
+
+    return redirect(url_for('auth.login'))
+
+@auth.route('/reset', methods=['GET', 'POST'])
+def password_reset_request():
+
+    # check if user is already logged in
+    if not current_user.is_anonymous:
+        return redirect(url_for('main.index'))
+
+    form = PasswordRequestForm()
+
+    # if form is valid
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=email.form.data).first()
+
+        # if user exists
+        if user:
+            token = user.generate_reset_token()
+            send_email(user.email, 'Reset your Password',
+                       'auth/email/reset_passsword', user=user,
+                       token=token, next=request.args.get('next'))
+
+            flash('An email with instructions to reset your password '
+                  'has been sent to you')
+
+            return redirect(url_for('auth.login'))
+
+    return render_template('auth/reset_password.html', form=form)
 
 @auth.route('/logout')
 @login_required
