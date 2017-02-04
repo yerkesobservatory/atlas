@@ -9,6 +9,9 @@ venv/
 #*
 logs/*
 .DS_Store
+.*env
+*.env
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
