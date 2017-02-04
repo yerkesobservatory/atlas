@@ -2,13 +2,10 @@
 # to add Sessions to the queue for tonight's imaging session
 import paho.mqtt.client as mqtt
 import typing
-import signal
 import sys
 import json
-import yaml
 import os
 import maya
-from os.path import dirname, realpath
 
 class QueueServer(object):
     """ This class represents a server that listens for queueing requests from

@@ -3,12 +3,8 @@
 import time
 import paho.mqtt.client as mqtt
 import typing
-import signal
 import sys
 import json
-import yaml
-import os
-from os.path import dirname, realpath
 
 class LogServer(object):
     """ This class represents a server that subscribes to messages from every

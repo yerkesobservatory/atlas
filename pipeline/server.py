@@ -1,6 +1,5 @@
 import time
 import typing
-import signal
 import sys
 import json
 import paho.mqtt.client as mqtt
