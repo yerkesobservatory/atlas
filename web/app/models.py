@@ -51,6 +51,32 @@ class User(UserMixin, db.Model):
         """
         return User.query.get(int(user_id))
 
+
+    def generate_reset_token(self, expiration=3600):
+        """ Generate a password reset token to send to a user's email.
+        """
+        # generate JSON web token
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        return s.dumps({'id': self.id, 'email': self.email})
+
+    def reset_password(self, token, new_password):
+        """ Takes a token received by the web app and if it is valid,
+        changes the user's password to the new password.
+        """
+        # try to load the token using the serializer
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return False
+
+        if data.get('id') == self.id and data.get('email') == self.email:
+            self.password = new_password
+            db.session.add(self)
+            return True
+
+        return False
+
     def generate_confirmation_token(self, expiration=3600):
         """ Generate a confirmation token to send to a user's email
         to validate that their email is correct.
