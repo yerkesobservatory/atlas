@@ -1,39 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
 
-        <title>Login to Stone Edge Observatory</title>
+{% block title %}Login - Stone Edge Observatory{% endblock %}
 
-        <!-- Import GSS Framework -->
-        <script src="https://s3-us-west-2.amazonaws.com/cdn.thegrid.io/gss/v2.0.0/v2.0.0/gss.min.js"></script>
-
-        <!-- Import CSS -->
-        <link href="{{ url_for('static',filename='styles/login.css') }}" rel="stylesheet"> 
-
-        <!-- Create GSS Window -->
-        <script type="text/javascript">
-            window.engine = new GSS(document);
-        </script>
-
-        <!-- Include GSS stylesheet -->
-        <style type="text/gss" src="{{ url_for('static',filename='styles/login.gss') }}"></style>
-
-    </head>
-
-    <body>
-
-        <!-- Logo -->
-        <img id="logo" src="{{ url_for('static',filename='images/logo.png') }}"/>
-
-        <!-- Login Form -->
-        <form method="POST">
-            {{ form.csrf_token }}
-            {{ form.email.label }} {{ form.email(id="username") }}
-            {{ form.password.label }} {{ form.password(id="password") }}
-            {{ form.submit() }}
-            </form>
-
-    </body>
-
-</html>
+{% block page_content %}
+<div class="page-header">
+    <h1>Login</h1>
+</div>
+<div class="col-md-4">
+    {{ wtf.quick_form(form) }}
+    <br>
+    <p>Forgot your password? <a href="{{ url_for('auth.password_reset_request') }}">Click here to reset it</a>.</p>
+    <p>New user? <a href="{{ url_for('auth.register') }}">Click here to register</a>.</p>
+</div>
+{% endblock %}
