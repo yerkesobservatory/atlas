@@ -22,8 +22,7 @@ def scheduler(target_list):
     """
     
     max_altitude_time = {'target':[], 'altitude':[], 'time':[], 'wait':[]}   
-    
-    
+     
     seo = EarthLocation(lat=38.2886*u.deg, lon=-122.50400*u.deg, height=60*u.m)    
     
     obs_time = Time.now()
