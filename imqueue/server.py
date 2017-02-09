@@ -6,6 +6,8 @@ import sys
 import json
 import os
 import maya
+import threading
+import executor
 
 class QueueServer(object):
     """ This class represents a server that listens for queueing requests from
@@ -13,7 +15,7 @@ class QueueServer(object):
     adds the request to the queue.
 
     It can also be used to enable/disable the queue, as well as to enable the queue
-    for future observing dates. 
+    for future observing dates.
     """
 
     def __init__(self, config: dict):
@@ -23,6 +25,9 @@ class QueueServer(object):
         """
 
         self.log('Creating new queue server...', 'green')
+
+        # the time (in Sonoma) to start observing
+        self.start_time = "17:00"
 
         # whether we are enabled
         if config['queue']['default'] == 'on':
@@ -58,27 +63,42 @@ class QueueServer(object):
                 if splitname[2] == 'imaging':
                     dates.append(maya.parse(splitname[1]))
 
-        # sort by date
-        dates.sort()
 
-        # pick earliest date
-        self.qdate = dates[0].datetime(to_timezone="UTC").strftime('%Y-%m-%d')
-
-        # file name for JSON queue store
+        # file parameters
         self.qdir = config['queue']['dir']
         self.qname = config['queue']['name']+'_'
         self.rootdir = config['rootdir']
-        qfile = self.rootdir+"/"+self.qdir+"/"
-        qfile += self.qname+self.qdate+"_imaging_queue.json"
-        self.qfile = qfile
 
-        # try and open queue - file should already exist
-        try:
-            self.queue = open(self.qfile, 'a')
-            self.log('Storing queue in %s' % self.qfile)
-            self.queue.close()
-        except:
-            self.log('Unable to open queue!', color='red')
+        # there are no queue files
+        if len(dates) == 0:
+            self.qfilename = None
+            self.queue = []
+        else: # open the latest queue file
+            # sort by date
+            dates.sort()
+
+            # pick earliest date
+            self.qdate = dates[0].datetime(to_timezone="UTC").strftime('%Y-%m-%d')
+
+            qfilename = self.rootdir+"/"+self.qdir+"/"
+            qfilename += self.qname+self.qdate+"_imaging_queue.json"
+            self.qfilename = qfilename
+
+            # try and open queue - file should already exist
+            try:
+                self.queue = open(self.qfilename, 'a')
+                self.log('Storing queue in %s' % self.qfilename)
+                self.queue.close()
+            except:
+                self.log('Unable to open queue!', color='red')
+
+        # calculate time to start executing, and time now
+        exec_time = maya.when(self.qdate+" "+self.start_time, timezone="PST")
+        now = maya.now()
+        delta_time = (exec_time.datetime() - now.datetime()).total_seconds
+
+        # create timer to start executor in delta_time
+        timer = threading.Timer(delta_time, self.start_executor)
 
 
     def __del__(self):
@@ -117,7 +137,7 @@ class QueueServer(object):
         into the queue file.
         """
         self.log('Adding new request from {} to queue.'.format(msg['user']))
-        self.queue = open(self.qfile, 'a')
+        self.queue = open(self.qfilename, 'a')
         self.queue.write(json.dumps(msg)+'\n')
         self.queue.close()
 
@@ -127,13 +147,13 @@ class QueueServer(object):
         """ This takes a raw message from process_message and writes the JSON data
         into the queue file.
         """
-        qfile = self.rootdir+"/"+self.qdir+"/"
+        qfilename = self.rootdir+"/"+self.qdir+"/"
         qdate = msg['date'].datetime(to_timezone="UTC").strftime('%Y-%m-%d')
-        qfile += self.qname+qdate+"_imaging_queue.json"
+        qfilename += self.qname+qdate+"_imaging_queue.json"
 
         # try and open file
         try:
-            self.queue = open(qfile, 'w')
+            self.queue = open(qfilename, 'w')
             self.queue.close()
         except:
             self.log('Unable to open new queue for {}!'.format(date), color='red')
@@ -179,3 +199,11 @@ class QueueServer(object):
         self.client.on_message = self.process_message
         self.client.subscribe('/seo/queue')
         self.client.loop_forever()
+
+    def start_executor(self):
+        """ This starts a new executor to execute one session
+        file. Must be started asynchronously as it takes hours
+        to execute.
+        """
+        new_exec = executor.Executor(self.qfilename)
+        new_exec.execute_queue()

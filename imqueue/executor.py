@@ -1,25 +1,23 @@
 ## This file implements the execution of telescope queues; at the scheduled time,
 ## it loads in the queue file for tonight's imaging, converts them to Session objects,
 ## and executes them
-import time
-import paho.mqtt.client as mqtt
-import typing
-import telescope
-import signal
 import sys
+import time
+import typing
 import json
-import yaml
-from os.path import dirname, realpath
+import paho.mqtt.client as mqtt
+import telescope
+import schedule
 
 class Executor(object):
-    """ This class is responsible for executing and scheduling a 
+    """ This class is responsible for executing and scheduling a
     list of imaging sessions stored in the queue constructed by
     the queue server.
     """
 
-    def __init__(self, filename: str, dryrun: bool = False):
+    def __init__(self, filename: str, config: dict, dryrun: bool=False):
         """ This creates a new executor to execute a single nights
-        list of sessions stored in the JSON file specified by filename. 
+        list of sessions stored in the JSON file specified by filename.
         """
 
         # filename to be read
@@ -28,21 +26,37 @@ class Executor(object):
         # load queue from disk
         self.sessions = []
         self.load_queue(self.filename)
-        self.__log("Executor has successfully loaded queue")
+        self.log("Executor has successfully loaded queue")
 
         # instantiate telescope object for control
-        self.telescope = telescope.Telescope(dryrun=True)
-
-        # create a handler for SIGINT
-        signal.signal(signal.SIGINT, self.handle_exit)
+        self.telescope = telescope.Telescope(dryrun=dryrun)
 
         # take numbias*exposure_count biases
         self.numbias = 3
 
-        
+        # directory to store images on telescope controller
+        self.remote_dir = config['queue']['remote_dir']
+
+        # directory to store images locally
+        self.local_dir = config['queue']['local_dir']
+
+        # create mqtt client
+        self.client = mqtt.Client()
+
+        # connect to message broker
+        try:
+            self.client.connect(config['server']['host'], config['mosquitto']['port'], 60)
+            self.log('Successfully connected to '+config['general']['name'], color='green')
+        except:
+            self.log('Unable to connect to '+config['general']['name']+'. Please try again later. '
+                     'If the problem persists, please contact '+config['general']['email'], 'red')
+            print(sys.exc_info())
+            exit(-1)
+
+
     def load_queue(self, filename: str) -> list:
         """ This loads a JSON queue file into a list of Python session
-        objects that can then be executed. 
+        objects that can then be executed.
         """
 
         try:
@@ -50,25 +64,76 @@ class Executor(object):
                 for line in queue:
                     self.sessions.append(json.loads(line))
         except:
-            self.__log('Unable to open queue file. Please check that exists.',
-                       'red')
+            self.log('Unable to open queue file. Please check that it exists. Exitting',
+                     'red')
+            # TODO: Email system admin
             exit(-1)
 
-            
-    def execute_queue(self) -> bool:
-        """ Executes the list of session objects for this queue. 
+    def wait_until_good(self) -> bool:
+        """ Wait until the weather is good for observing.
+        Waits 10 minutes between each trial. Cancels execution
+        if weather is bad for 4 hours.
         """
+        elapsed_time = 0 # total elapsed wait time
+
+        # get weather from telescope
+        weather = self.telescope.weather_ok()
+        while weather is False:
+
+            time.sleep(10*60)  # seconds to sleep
+            elapsed_time += 600
+
+            # shut down after 2 hours of continuous waiting
+            if elapsed_time >= 14400:
+                self.log("Bad weather for 4 hours. Shutting down the queue...", color="magenta")
+                exit(1)
+
+        return True
+
+
+    def execute_queue(self) -> bool:
+        """ Executes the list of session objects for this queue.
+        """
+
+        # wait until weather is good
+        self.wait_until_good()
 
         # open telescope
         self.telescope.open_dome()
-        
-        count = 1
-        for session in self.sessions:
+
+        # iterate over session list
+        while len(self.sessions) != 0:
+
+            # default location
+            location = ""
+
+            # schedule remaining sessions
+            session = schedule.schedule(self.sessions)
+
+            # check whether we need to wait before executing
+            wait = session.get('wait')
+            if wait is not None:
+                time.sleep(wait)
+
             # check whether every session executed correctly
-            self.__log("Executing session {} for {}".format(count, session['user']), color="blue")
-            if not self.execute(session):
-                return False
-            count += 1
+            self.log("Executing session for {}".format(session['user']), color="blue")
+            try:
+                # execute session
+                location = self.execute(session)
+
+                # send remote path to pipeline for async processing
+                msg = {'type':'process', 'location':location}
+                self.client.publish('/seo/pipeline', json.dumps(msg))
+
+                # remove the session from the remaining sessions
+                self.sessions.remove(session)
+
+            except:
+                self.log("Error while executiong session for {}".format(session['user']),
+                         color="red")
+                print(sys.exc_info())
+                self.telescope.close_down()
+                exit(1)
 
         # close down
         self.telescope.close_down()
@@ -76,17 +141,21 @@ class Executor(object):
         return True
 
 
-    def execute(self, session: dict) -> bool:
-        """ Execute a single imaging session. 
+    def execute(self, session: dict) -> str:
+        """ Execute a single imaging session. If successful, returns
+        directory where files are stored on telescope control server.
         """
 
         # calculate base file name
-        date = time.strftime('%Y_%m_%d', time.gmtime())
-        basename = date+'_'+session['user']
-        
+        date = self.remote_dir+"/"+time.strftime('%Y_%m_%d', time.gmtime())
+        basename = date+'_'+session['user']+'_'+session['target']
+
+        # create directory
+        self.telescope.mkdir(basename)
+
         try:
             # point telescope at target
-            self.__log("Slewing to {}".format(session['target']))
+            self.log("Slewing to {}".format(session['target']))
             self.telescope.goto_target(session['target'])
 
             # extract variables
@@ -100,9 +169,9 @@ class Executor(object):
                 self.take_exposures(basename, exposure_time, exposure_count, binning, filt)
 
             # reset filter back to clear
-            self.__log("Switching to clear filter")
+            self.log("Switching to clear filter")
             self.telescope.change_filter('clear')
-        
+
             # take exposure_count darks
             self.take_darks(basename, exposure_time, exposure_count, binning)
 
@@ -110,70 +179,62 @@ class Executor(object):
             self.take_biases(basename, exposure_time, exposure_count, binning, self.numbias)
 
         except:
-            self.__log('The executor has encountered an error. Please manually'
-                       'close down the telescope.', 'red')
+            self.log('The executor has encountered an error. Please manually'
+                     'close down the telescope.', 'red')
+            return None
 
 
-    def take_exposures(self, basename: str, time: int, count: int, binning: int, filt: str):
-        """ Take count exposures, each of length time, with binning, using the filter
-        filt, and save it in the file built from basename. 
+
+
+    def take_exposures(self, basename: str, exp_time: int, count: int, binning: int, filt: str):
+        """ Take count exposures, each of length exp_time, with binning, using the filter
+        filt, and save it in the file built from basename.
         """
         # change to that filter
-        self.__log("Switching to {} filter".format(filt))
+        self.log("Switching to {} filter".format(filt))
         self.telescope.change_filter(filt)
-         
+
         # take exposure_count exposures
         for i in range(0, count):
-                
+
             # create image name
-            filename = basename+'_'+filt+'_'+str(time)+'s'
+            filename = basename+'_'+filt+'_'+str(exp_time)+'s'
             filename += '_bin'+str(binning)+'_'+str(i)
-            self.__log("Taking exposure {}/{} with name: {}".format(i+1, count, filename))
+            self.log("Taking exposure {}/{} with name: {}".format(i+1, count, filename))
 
             # take exposure
-            self.telescope.take_exposure(filename, time, binning)
+            self.telescope.take_exposure(filename, exp_time, binning)
 
-        
-    def take_darks(self, basename: str, time: int, count: int, binning: int):
+
+    def take_darks(self, basename: str, exp_time: int, count: int, binning: int):
         """ Take a full set of dark frames for a given session. Takes exposure_count
         dark frames.
         """
-        for nd in range(0, count):
+        for numdark in range(0, count):
             # create file name
-            filename = basename+'_dark_'+str(time)+'s'
-            filename += '_bin'+str(binning)+'_'+str(nd)
-            self.__log("Taking dark {}/{} with name: {}".format(nd+1, count, filename))
+            filename = basename+'_dark_'+str(exp_time)+'s'
+            filename += '_bin'+str(binning)+'_'+str(numdark)
+            self.log("Taking dark {}/{} with name: {}".format(numdark+1, count, filename))
 
-            self.telescope.take_dark(filename, time, binning)
+            self.telescope.take_dark(filename, exp_time, binning)
 
-            
-    def take_biases(self,  basename: str, time: int, count: int, binning: int, numbias: int):
-        """ Take the full set of biases for a given session. 
+
+    def take_biases(self, basename: str, exp_time: int, count: int, binning: int, numbias: int):
+        """ Take the full set of biases for a given session.
         This takes exposure_count*numbias biases
         """
 
         # create file name for biases
-        biasname = basename+'_'+str(time)
+        biasname = basename+'_'+str(exp_time)
         biasname += '_bin'+str(binning)
-        self.__log("Taking {} biases with names: {}".format(count*numbias, biasname))
+        self.log("Taking {} biases with names: {}".format(count*numbias, biasname))
 
         # take 3*exposure_count biases
         for nb in range(0, count*numbias):
             self.telescope.take_bias(biasname+'_'+str(nb), binning)
 
-    
-    def handle_exit(self, signal, frame):
-        """ SIGINT handler to check for Ctrl+C for quitting the executor. 
-        """
-        self.log('Are you sure you would like to quit [y/n]?', 'cyan')
-        choice = input().lower()
-        if choice == "y":
-            self.__log('Quitting executor and closing down...', 'cyan')
-            self.telescope.close_down()
-            sys.exit(0)
-
-            
-    def __log(self, msg: str, color: str = 'white') -> bool:
+    @staticmethod
+    def log(msg: str, color: str='white') -> bool:
         """ Prints a log message to STDOUT. Returns True if successful, False
         otherwise.
         """
@@ -185,7 +246,7 @@ class Executor(object):
         return True
 
 
-if __name__ == "__main__":
-    exec = Executor("/Volumes/andromeda/seo/seo/logs/seo_2017-01-27_imaging_queue.json", dryrun=True)
-    exec.execute_queue()
-    
+# if __name__ == "__main__":
+#     exec = Executor("/Volumes/andromeda/seo/seo/logs/seo_2017-01-27_imaging_queue.json",
+#     dryrun=True)
+#     exec.execute_queue()
