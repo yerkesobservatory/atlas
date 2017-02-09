@@ -1,12 +1,13 @@
 # This file implements a Server that listens for requests from Submit programs
 # to add Sessions to the queue for tonight's imaging session
-import paho.mqtt.client as mqtt
-import typing
 import sys
-import json
 import os
-import maya
 import threading
+import multiprocessing
+import typing
+import json
+import paho.mqtt.client as mqtt
+import maya
 import executor
 
 class QueueServer(object):
@@ -25,99 +26,53 @@ class QueueServer(object):
         """
 
         self.log('Creating new queue server...', 'green')
+        self.config = config
 
-        # the time (in Sonoma) to start observing
-        self.start_time = "17:00"
+        # the time (in UTC) to start observing
+        self.start_time = self.config.get('queue').get('start_time') or "02:00"
 
-        # whether we are enabled
-        if config['queue']['default'] == 'on':
-            self.enabled = True
-        else:
-            self.enabled = False
+        # whether we are enabled by default
+        self.enabled = (self.config.get('queue').get('default') == 'on')
+
+        # connect to MQTT broker
+        self.client = self.connect()
+
+        # find queue file and its date
+        self.queue_dir = self.config.get('queue').get('dir') or '.'
+        self.queue_file, self.queue_date = self.find_queue()
+
+        # start the countdown timer for execution
+        self.start_timer()
+
+        # start!
+        self.start()
+
+
+    def connect(self) -> bool:
+        """ Connect to the MQTT broker and return the MQTT client
+        object.
+        """
 
         # mqtt client to handle connection
-        self.client = mqtt.Client()
+        client = mqtt.Client()
+
+        # server information
+        host = self.config.get('server').get('host') or 'localhost'
+        port = self.config.get('mosquitto').get('port') or 1883
+        name = self.config.get('general').get('name') or 'Atlas'
+        email = self.config.get('general').get('email') or 'your system administrator'
 
         # connect to message broker
         try:
-            self.client.connect(config['server']['host'], config['mosquitto']['port'], 60)
-            self.log('Successfully connected to '+config['general']['name'], color='green')
+            client.connect(host, port, 60)
+            self.log('Successfully connected to '+name, color='green')
         except:
-            self.log('Unable to connect to '+config['general']['name']+'. Please try again later. '
-                     'If the problem persists, please contact '+config['general']['email'], 'red')
+            self.log('Unable to connect to '+name+'. Please try again later. '
+                     'If the problem persists, please contact '+email, 'red')
             print(sys.exc_info())
             exit(-1)
 
-        # get list of all files in queue dir
-        qdir = config['queue']['dir']
-        files = []
-        for (_, _, filenames) in os.walk(qdir):
-            files.extend(filenames)
-            break
-
-        # extract only valid queue dates
-        dates = []
-        for f in files:
-            splitname = f.split('_')
-            if len(splitname) >= 3:
-                if splitname[2] == 'imaging':
-                    dates.append(maya.parse(splitname[1]))
-
-
-        # file parameters
-        self.qdir = config['queue']['dir']
-        self.qname = config['queue']['name']+'_'
-        self.rootdir = config['rootdir']
-
-        # there are no queue files
-        if len(dates) == 0:
-            self.qfilename = None
-            self.queue = []
-        else: # open the latest queue file
-            # sort by date
-            dates.sort()
-
-            # pick earliest date
-            self.qdate = dates[0].datetime(to_timezone="UTC").strftime('%Y-%m-%d')
-
-            qfilename = self.rootdir+"/"+self.qdir+"/"
-            qfilename += self.qname+self.qdate+"_imaging_queue.json"
-            self.qfilename = qfilename
-
-            # try and open queue - file should already exist
-            try:
-                self.queue = open(self.qfilename, 'a')
-                self.log('Storing queue in %s' % self.qfilename)
-                self.queue.close()
-            except:
-                self.log('Unable to open queue!', color='red')
-
-        # calculate time to start executing, and time now
-        exec_time = maya.when(self.qdate+" "+self.start_time, timezone="PST")
-        now = maya.now()
-        delta_time = (exec_time.datetime() - now.datetime()).total_seconds
-
-        # create timer to start executor in delta_time
-        timer = threading.Timer(delta_time, self.start_executor)
-
-
-    def __del__(self):
-        """ Called when the server is garbage collected - at this point,
-        this function does nothing.
-        """
-        pass
-
-
-    def log(self, msg: str, color: str = 'white') -> bool:
-        """ Prints a log message to STDOUT. Returns True if successful, False
-        otherwise.
-        """
-        colors = {'red':'31', 'green':'32', 'blue':'34', 'cyan':'36',
-                  'white':'37', 'yellow':'33', 'magenta':'34'}
-        logtime = maya.now().datetime(to_timezone="UTC").strftime('%Y-%m-%d %H:%M:%S')
-        log = '\033[1;'+colors[color]+'m'+logtime+' SERVER: '+msg+'\033[0m'
-        print(log)
-        return True
+        return client
 
 
     def enable(self) -> bool:
@@ -136,27 +91,22 @@ class QueueServer(object):
         """ This takes a raw message from process_message and writes the JSON data
         into the queue file.
         """
-        self.log('Adding new request from {} to queue.'.format(msg['user']))
-        self.queue = open(self.qfilename, 'a')
-        self.queue.write(json.dumps(msg)+'\n')
-        self.queue.close()
+        self.log('Adding new request from {} to queue.'.format(msg.get('user')))
+        with open(self.queue_file, 'a') as f:
+            f.write(json.dumps(msg)+'\n')
 
         return True
 
-    def create_queue(self, msg: str) -> bool:
+    def create_queue(self, msg: dict) -> bool:
         """ This takes a raw message from process_message and writes the JSON data
         into the queue file.
         """
-        qfilename = self.rootdir+"/"+self.qdir+"/"
-        qdate = msg['date'].datetime(to_timezone="UTC").strftime('%Y-%m-%d')
-        qfilename += self.qname+qdate+"_imaging_queue.json"
-
-        # try and open file
-        try:
-            self.queue = open(qfilename, 'w')
-            self.queue.close()
-        except:
-            self.log('Unable to open new queue for {}!'.format(date), color='red')
+        name = self.config.get('general').get('shortname')
+        date = msg.get('date') or None
+        if date is not None:
+            filename = '_'.join([name, date, 'imaging_queue.json'])
+            with open(self.queue_dir+'/'+filename, 'w+') as f:
+                f.write('# IMAGING QUEUE FOR {} CREATED ON {}'.format(date, maya.now()))
 
         return True
 
@@ -165,12 +115,14 @@ class QueueServer(object):
         """ This takes a raw message from process_message and updates
         the internal server state
         """
-        if msg['action'] == 'enable':
+        if msg.get('action') == 'enable':
             self.log('Enabling queueing server...', color='cyan')
             self.enabled = True
-        elif msg['action'] == 'disable':
+
+        elif msg.get('action') == 'disable':
             self.log('Disabling queueing server...', color='cyan')
             self.enabled = False
+
         else:
             self.log('Received invalid queue state message...', color='magenta')
 
@@ -179,31 +131,107 @@ class QueueServer(object):
         """ This function is called whenever a message is received.
         """
         msg = json.loads(msg.payload.decode())
+
         ## we have received a new request from the queue
-        if msg['type'] == 'request':
+        msg_type = msg.get('type')
+        if msg_type == 'request':
             self.save_request(msg)
+
         ## create new queue for future date
-        if msg['type'] == 'create':
+        elif msg_type == 'create':
             self.create_queue(msg)
+
         ## change state of the server
-        elif msg['type'] == 'state':
+        elif msg_type == 'state':
             self.update_state(msg)
+
         else:
-            self.log('Received unknown queue message...', color+'magenta')
+            self.log('Received unknown queue message...', color='magenta')
 
 
-    def run(self):
+    def start(self):
         """ Starts the servers listening for new requests; server blocks
         on the specified port until it receives a request
         """
         self.client.on_message = self.process_message
-        self.client.subscribe('/seo/queue')
+        topic = '/'+self.config.get('general').get('name')+'/queue'
+        self.client.subscribe(topic)
         self.client.loop_forever()
+
 
     def start_executor(self):
         """ This starts a new executor to execute one session
         file. Must be started asynchronously as it takes hours
         to execute.
         """
-        new_exec = executor.Executor(self.qfilename)
-        new_exec.execute_queue()
+        if self.enabled is True:
+            queue_exec = executor.Executor(self.queue_file)
+            exec_proc = multiprocessing.Process(target=queue_exec.execute_queue())
+            exec_proc.start()
+            self.log('Started executor with pid={}'.format(exec_proc.pid), 'green')
+
+        # import the new queue
+        self.queue_file, self.queue_date = self.find_queue()
+
+        # start a new timer for the next queue
+        self.start_timer()
+
+
+    def start_timer(self):
+        """ This starts a countdown timer for the execution of the queue;
+        when this timer triggers, the exeutor is started.
+        """
+        # calculate time at which we start the executor
+        exec_time = maya.when(self.queue_date+" "+self.start_time)
+        delta_time = (exec_time.datetime() - maya.now().datetime()).total_seconds
+
+        # create timer to start executor in delta_time
+        self.timer = threading.Timer(delta_time, self.start_executor)
+
+
+    def find_queue(self) -> str:
+        """ Searches queue_dir for all valid queue files,
+        and returns the queue file that is chronologically next
+        by date.
+        """
+
+        # set earliest date to far in future
+        queue_date = maya.when('2100')
+        queue_file = ""
+
+        # search through all files in queue directory
+        for (_, _, files) in os.walk(self.queue_dir):
+
+            # look at all the files
+            for f in files:
+                split_name = f.split('_')
+
+                # if file is a queue
+                if len(split_name) >= 4 and split_name[3] == 'queue':
+
+                    # check its date
+                    date = maya.parse(split_name[1]+self.start_time)
+
+                    # if it's earlier than earliest
+                    if date < queue_date and date > maya.now():
+                        queue_date = date
+                        queue_file = f
+
+            # we need to execute after first iteration
+            # so we don't keep walking the file system recursively
+            break
+
+        return queue_file, queue_date
+
+
+    @staticmethod
+    def log(msg: str, color: str='white') -> bool:
+        """ Prints a log message to STDOUT. Returns True if successful, False
+        otherwise.
+        """
+        colors = {'red':'31', 'green':'32', 'blue':'34', 'cyan':'36',
+                  'white':'37', 'yellow':'33', 'magenta':'34'}
+        logtime = maya.now().datetime(to_timezone="UTC").strftime('%Y-%m-%d %H:%M:%S')
+        log = '\033[1;'+colors[color]+'m'+logtime+' SERVER: '+msg+'\033[0m'
+        print(log)
+        return True
