@@ -1,16 +1,152 @@
-{% extends "base.html" %}
-{% import "bootstrap/wtf.html" as wtf %}
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Stone Edge Observatory</title>
 
-{% block title %}Login - Stone Edge Observatory{% endblock %}
+<!--Regular stylesheet-->
+<link rel="stylesheet" href="{{ url_for('static', filename='styles/styles.css') }}">
 
-{% block page_content %}
-<div class="page-header">
-    <h1>Login</h1>
-</div>
-<div class="col-md-4">
-    {{ wtf.quick_form(form) }}
-    <br>
-    <p>Forgot your password? <a href="{{ url_for('auth.password_reset_request') }}">Click here to reset it</a>.</p>
-    <p>New user? <a href="{{ url_for('auth.register') }}">Click here to register</a>.</p>
-</div>
-{% endblock %}
+<!--CSS Bootstrap-->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+</head>
+
+<body>
+
+<div id="container-fluid">
+<div class="stars"></div>
+<div class="twinkling"></div>
+
+<img id="logo" src="{{ url_for('static', filename='images/logo.png') }}" width="250" height="250" alt="seo_logo" class="center-block img-responsive"/>
+	
+	<div id="signin" class="form-group col-md-4 col-md-offset-4" >
+    	<form role="form" action="/login" method="post" class="login-form">
+        	<div style="display: none">
+        		<input id="csrf_token" name="csrf_token" type="hidden" value="1383635238.9##d8f7f433e854cc682ade261cd9bb7113a147ee29" />
+        	</div>
+		
+			<div class="input-group col-md-offset-0 col-md-12">
+    			<input type="email" class="form-control" id="InputEmail" placeholder="Username">
+   				<span class="glyphicon glyphicon-user form-control-feedback"></span>    		
+   			</div>
+    		
+    		<br>
+    		
+   			<div class="input-group col-md-offset-0 col-md-12">
+    			<input type="password" class="form-control" id="InputPassword" placeholder="Password">
+	  			<span class="glyphicon glyphicon-lock form-control-feedback"></span</span>	        
+	  		</div>
+			
+			<br>
+			
+			<button type="submit" class="btn btn-block"><b>SIGN IN</b></button>
+			
+			<br>
+			
+			<a data-toggle="modal" href="#myModal2" id="forgotPassword" class="pull-right">Forgot Password?</a> 
+			
+			<br>
+			
+			<a data-toggle="modal" href="#newUserModal" id="newUser" class="pull-right">New User?</a>
+			
+		</form>		
+	</div>
+	
+
+<!-- Modal Forgot Password-->
+	<div class="modal fade" id="myModal2" tabindex="-1" role="dialog" aria-labelledby="modal-register-label" aria-hidden="true">
+    	<div class="modal-dialog">
+        	<div class="modal-content">
+        		<div class="modal-header">
+       				<button type="button" class="close" data-dismiss="modal">
+        				<span aria-hidden="true">&times;</span><span class="sr-only">Close</span>
+       				 </button>
+       				 <h3 class="modal-title" id="modal-register-label">Reset Password</h3>
+        		</div>
+        			
+       			<div class="modal-body">
+        			<p>Enter your email address and we'll send you a reset link.</p>
+	            	<form role="form" action="/forgotPassword" method="post" class="registration-form">
+	                	<div class="form-group">
+	                    	<label class="sr-only" for="form-email-address">Email Address</label>
+                        	<input type="text" name="form-email-address" placeholder="Email Address" class="form-email-address form-control" id="form-email-address">
+	                    </div>
+	                    
+	                    <button type="submit" class="btn btn-default">Send Reset Link</button>
+	                    
+	                </form>
+	        	</div>		
+        	</div>
+        </div>
+	</div>
+        
+<!-- Modal New User-->
+
+	<div class="modal fade" id="newUserModal" tabindex="-1" role="dialog" aria-labelledby="modal-register-label" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+        			<button type="button" class="close" data-dismiss="modal">
+        			<span aria-hidden="true">&times;</span><span class="sr-only">Close</span>
+        			</button>
+       				<h3 class="modal-title" id="modal-register-label">Sign up</h3>
+        		</div>
+        			
+        		<div class="modal-body">
+	            	<form role="form" action="/newUser" method="post" class="registration-form">
+                    	<div class="form-group">
+                    		<label class="sr-only" for="form-email-address">Email Address</label>
+	                        <input type="text" name="form-email-address" placeholder="Email Address" class="form-email-address form-control" id="form-email-address">
+	                    </div>
+	                        
+	                    <div class="form-group">
+                    		<label class="sr-only" for="form-first-name">First Name</label>
+                        	<input type="text" name="form-first-name" placeholder="First Name" class="form-first-name form-control" id="form-first-name">
+	                    </div>
+	                        
+	                    <div class="form-group">
+                    		<label class="sr-only" for="form-last-name">Last Name</label>
+                        	<input type="text" name="form-last-name" placeholder="Last Name" class="form-last-name form-control" id="form-last-name">
+	                    </div>
+	                        
+	                    <div class="form-group">
+	                    	<label class="sr-only" for="form-affiliation">Affiliation</label>
+	                        <input type="text" name="form-affiliation" placeholder="Affiliation" class="form-affiliation form-control" id="form-affiliation">
+	                    </div>
+	                        
+	                    <div class="form-group">
+                    		<label class="sr-only" for="form-password">Create a Password</label>
+                        	<input type="text" name="form-password" placeholder="Password" class="form-password form-control" id="form-password">
+	                    </div>
+	                        
+	                    <div class="form-group">
+	                    	<label class="sr-only" for="form-phone-number">Phone Number</label>
+                        	<input type="text" name="form-phone-number" placeholder="Phone Number" class="form-phone-number form-control" id="form-phone-number">
+	                    </div>
+	                        
+	                    <div class="form-group">
+                        	<div class="checkbox">
+  								<label>
+  									<input type="checkbox" name="form-minor" placeholder="Minor" class="form-minor" id="form-minor">Under 18?
+  								</label>
+							</div>
+						</div>
+                        			
+	                    <button type="submit" class="btn btn-default">Create New Account</button>
+					</form>
+				</div>
+			</div>
+  		</div>
+	</div>
+
+
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    
+
+</body>
+
+</html>
