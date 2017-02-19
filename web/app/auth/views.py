@@ -1,8 +1,10 @@
-from flask import render_template, redirect, request, url_for, flash
+from flask import render_template, redirect, request, url_for, flash, current_app
 from flask_login import login_user, login_required, logout_user, current_user
 from ..models import User
 from .forms import LoginForm, RegistrationForm, PasswordResetForm, PasswordRequestForm
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from . import auth
+from .. import db
 from ..email import send_email
 
 @auth.route('/login', methods=['GET', 'POST'])
@@ -24,12 +26,17 @@ def login():
             return redirect(request.args.get('next') or url_for('main.queue'))
 
         # invalid password
-        flash('Invalid e-mail or password')
-
+        flash(u'Invalid e-mail or password', 'login')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(u"{}: {}".format(getattr(form, field).label.text, error), 'login')
+                print(u"{}: {}".format(getattr(form, field).label.text, error))
+       
     return render_template('auth/login.html', form=form)
 
 
-@auth.route('/register',  methods=['GET', 'POST'])
+@auth.route('register',  methods=['POST'])
 def register():
     """ Presents registration form for users to fill out; if it is
     filled out correctly, adds the user to the database and sends a
@@ -43,38 +50,45 @@ def register():
         # create serializer to decode token
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
-            data = s.loads(token)
+            data = s.loads(form.token.data)
         except:
-            return False
-
+            data = {}
+        
         # check that email and lastname matches
-        if data.get('email') != form.email.data or data.get('lastname') != form.lastname.data:
-            return False
+        if data.get('email') != form.email.data:
+            print(u"Invalid registration token")
+            flash(u"Invalid registration token", 'register')
+        else:
+            # check if user exists
+            if User.query.filter_by(email=form.email.data).first():
+                flash(u"User already exists", 'register')
+                print(u"User already exists")
+                return redirect(request.args.get('next') or url_for('auth.login'))
 
-        # check if user exists
-        if User.query.filter_by(email=form.email.data).first():
-            return redirect(request.args.get('next') or url_for('auth.login'))
+            # if not, create a new user
+            user = User(firstname=form.firstname.data,
+                            lastname=form.lastname.data,
+                            email=form.email.data,
+                            password=form.password.data,
+                            affiliation=form.affiliation.data,
+                            minor=form.minor.data)
 
-        # if not, create a new user
-        user = User(firstname=form.firstname.data,
-                    lastname=form.lastname.data,
-                    email=form.email.data,
-                    password=form.password.data,
-                    affiliation=form.affiliation.data,
-                    minor=form.minor.data)
+            # add the user to the database
+            db.session.add(user)
+            db.session.commit()
 
-        # add the user to the database
-        db.session.add(user)
-        db.session.commit()
+            # generate confirmation token and send
+            token = user.generate_confirmation_token()
+            send_email(user.email, 'Confirm your Account',
+                    'auth/email/confirm',  user=user, token=token)
+            flash('A confirmation email has been sent to you by email', 'success')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(u"{}: {}".format(getattr(form, field).label.text, error), 'register')
+                print(u"Error in the {} field: {}".format(getattr(form, field).label.text, error), 'register')
 
-        # generate confirmation token and send
-        token = user.generate_confirmation_token()
-        send_email(user.email, 'Confirm your Account',
-                   'auth/email/confirm',  user=user, token=token)
-        flash('A confirmation email has been sent to you by email')
-        return redirect(url_for('auth.login'))
-
-    return render_template('auth/register.html', form=form)
+    return redirect(url_for('auth.login'))
 
 
 @auth.route('/confirm/<token>')
@@ -116,7 +130,7 @@ def resend_confirmation():
     return redirect(url_for('auth.login'))
 
 
-@auth.route('/reset', methods=['GET', 'POST'])
+@auth.route('reset', methods=['POST'])
 def password_reset_request():
 
     form = PasswordRequestForm()
@@ -133,12 +147,10 @@ def password_reset_request():
                        'auth/email/reset_passsword', user=user,
                        token=token, next=request.args.get('next'))
 
-            flash('An email with instructions to reset your password '
-                  'has been sent to you')
+            flash(u'An email with instructions to reset your password '
+                  'has been sent to you', 'success')
 
-            return redirect(url_for('auth.login'))
-
-    return render_template('auth/reset_password.html', form=form)
+    return redirect(url_for('auth.login'))
 
 
 @auth.route('/reset/<token>', methods=['GET', 'POST'])

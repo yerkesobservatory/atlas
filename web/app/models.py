@@ -24,6 +24,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(64), index=True, unique=True)
     password_hash = db.Column(db.String(128), index=False, unique=False)
     affiliation = db.Column(db.String(128), index=True, unique=False)
+    phone = db.Column(db.String(12), index=False, unique=False)
     minor = db.Column(db.Boolean, index=True, unique=False, default=False)
     admin = db.Column(db.Boolean, index=True, unique=False, default=False)
     confirmed = db.Column(db.Boolean, index=True, default=False)

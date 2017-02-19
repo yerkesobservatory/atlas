@@ -21,8 +21,9 @@ class RegistrationForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email(), Length(3, 64)])
     password = PasswordField('Password', validators=[DataRequired(), Length(12, 128)])
     affiliation = StringField('Affiliation', validators=[DataRequired(), Length(3, 64)])
-    minor = BooleanField('Minor', validators=[DataRequired()])
-    submit = SubmitField('Submit')
+    phone = StringField('Phone Number', validators=[DataRequired(), Length(8, 16)])
+    minor = BooleanField('Minor', validators=[])
+    submit = SubmitField('Register')
 
 
 class PasswordRequestForm(FlaskForm):
