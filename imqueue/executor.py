@@ -7,7 +7,7 @@ import typing
 import json
 import paho.mqtt.client as mqtt
 import telescope
-import schedule
+from . import schedule
 
 class Executor(object):
     """ This class is responsible for executing and scheduling a
@@ -29,16 +29,16 @@ class Executor(object):
         self.log("Executor has successfully loaded queue")
 
         # instantiate telescope object for control
-        self.telescope = telescope.Telescope(dryrun=dryrun)
+        self.telescope = telescope.telescope.Telescope(dryrun=dryrun)
 
         # take numbias*exposure_count biases
         self.numbias = 3
 
         # directory to store images on telescope controller
-        self.remote_dir = config['queue']['remote_dir']
+        self.remote_dir = config['queue']['remote_img_dir']
 
         # directory to store images locally
-        self.local_dir = config['queue']['local_dir']
+        self.local_dir = config['queue']['local_img_dir']
 
         # create mqtt client
         self.client = mqtt.Client()
@@ -67,6 +67,7 @@ class Executor(object):
             self.log('Unable to open queue file. Please check that it exists. Exitting',
                      'red')
             # TODO: Email system admin
+            print(sys.exc_info())
             exit(-1)
 
     def wait_until_good(self) -> bool:
@@ -91,7 +92,7 @@ class Executor(object):
         return True
 
 
-    def execute_queue(self) -> bool:
+    def run(self) -> bool:
         """ Executes the list of session objects for this queue.
         """
 
@@ -245,8 +246,3 @@ class Executor(object):
         print(log)
         return True
 
-
-# if __name__ == "__main__":
-#     exec = Executor("/Volumes/andromeda/seo/seo/logs/seo_2017-01-27_imaging_queue.json",
-#     dryrun=True)
-#     exec.execute_queue()

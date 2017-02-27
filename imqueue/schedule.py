@@ -5,7 +5,7 @@ import astropy.units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun
 
-def scheduler(target_list):
+def schedule(target_list: [str]):
     """
     This function receives a list of target names and outputs a primary
     observable target

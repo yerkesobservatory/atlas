@@ -8,7 +8,7 @@ import typing
 import json
 import paho.mqtt.client as mqtt
 import maya
-import executor
+from . import executor
 
 class QueueServer(object):
     """ This class represents a server that listens for queueing requests from
