@@ -2,6 +2,7 @@
 import argparse
 import paho.mqtt.client as mqtt
 import os
+import signal
 import sys
 from os.path import dirname, realpath
 import json
@@ -69,6 +70,8 @@ try:
 
         # loop waiting until messages are received
         client.loop_forever()
+except KeyboardInterrupt:
+    print('\033[1;36mClosing down...\033[0m')
 except:
     print('\033[1;31mUnable to listen to messages from server. '
           'Please contact '+config['general']['email']+'\033[0m')
