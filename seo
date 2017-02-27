@@ -5,6 +5,7 @@ import argparse
 import signal
 from os.path import dirname, realpath
 import multiprocessing
+import subprocess
 import time
 
 import yaml
@@ -38,20 +39,23 @@ except:
 parser = argparse.ArgumentParser(prog='atlas',
                                  description='Manage '+config['general']['name'])
 parser.add_argument('--start-all', '-a', action='store_true',
-                    default='True', help='Start all components')
+                    default=False, help='Start all components')
 parser.add_argument('--start-pipeline', '-p', action='store_true',
-                    default='True', help='Start the pipeline server')
+                    default=False, help='Start the pipeline server')
 parser.add_argument('--start-queue', '-q', action='store_true',
-                    default='True', help='Start the queue server')
-parser.add_argument('--start-mqtt', '-m', action='store_true',
-                    default='True', help='Start the MQTT messaging broker')
+                    default=False, help='Start the queue server')
+parser.add_argument('--start-broker', '-b', action='store_true',
+                    default=False, help='Start the MQTT messaging broker')
+parser.add_argument('--start-db', action='store_true',
+                    default=False, help='Start the PostgresSQL database server')
 parser.add_argument('--start-telescope', '-t', action='store_true',
-                    default='True', help='Start the telescope control server')
+                    default=False, help='Start the telescope control server')
 parser.add_argument('--start-logserver', '-l', action='store_true',
-                    default='True', help='Start the logging server')
+                    default=False, help='Start the logging server')
 parser.add_argument('--start-web', '-w', action='store_true',
-                    default='True', help='Start the web application')
-parser.add_argument('--start-executor', '-e', help='Start the executor with a given file')
+                    default=False, help='Start the web application')
+parser.add_argument('--start-executor', '-e', default=None,
+                        help='Start the executor with a given file')
 parser.add_argument('--dryrun', '-d', action='store_true', default=False, 
                         help='If enabled, the executed commands are printed but not executed')
 parser.add_argument('--version', action='version', version='%(prog)s 0.0.1')
@@ -122,7 +126,7 @@ if ARGS.start_queue is True:
         print(sys.exc_info())
 
 ############################ EXECUTOR ######################
-if ARGS.start_executor is not False:
+if ARGS.start_executor is not None:
     try:
         # create pipeline server
         execprog = imqueue.executor.Executor(ARGS.start_executor, config, dryrun=ARGS.dryrun)
@@ -163,8 +167,30 @@ if ARGS.start_logserver is True:
         log("Unable to start log server", "red")
         print(sys.exc_info())
 
-        
 
+############################ BROKER ######################
+if ARGS.start_broker is True:
+    try:
+        # create pipeline server
+        port = config.get('mosquitto').get('port')
+        broker_cmd = ['mosquitto', '-d', '-p', str(port)]
+        broker_proc = subprocess.Popen(broker_cmd)
+        log("Started broker on port {} with pid={}".format(port,  broker_proc.pid), "green")
+    except:
+        log("Unable to start broker", "red")
+        print(sys.exc_info())
+
+
+############################ DB ######################
+if ARGS.start_db is True:
+    try:
+        # create pipeline server
+        db_cmd = ['postgres', '-D', '/usr/local/var/postgres']
+        db_proc = subprocess.Popen(db_cmd)
+        log("Started database with pid={}".format(db_proc.pid), "green")
+    except:
+        log("Unable to start database", "red")
+        print(sys.exc_info())
 
 
 # RE-REGISTER SIGNINT for parent process
