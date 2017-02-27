@@ -11,27 +11,27 @@ class Telescope(object):
     """ This class is the sole point of contact between the system and the telescope
     control server. This class is responsible for converting high-level requests
     (open_dome()) into a shell command that it remotely executes on the control
-    server using paramiko. 
+    server using paramiko.
     """
 
     def __init__(self, dryrun=False):
-        """ This function is responsible for establishing the 
-        connection with aster. 
+        """ This function is responsible for establishing the
+        connection with aster.
         """
         self.dryrun = dryrun
         if self.dryrun is not True:
             # create an SSH client
             self.ssh = paramiko.SSHClient()
 
-            # allow connection to unknown hosts - TODO FIX
-            self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            # load host keys for verified connection
+            self.ssh.load_system_host_keys()
 
             # connect!
             try:
                 self.ssh.connect('mail.stoneedgevineyard.com', username='rprechelt')
             except AuthenticationException: # unable to authenticate
                 self.log('Unable to authenticate connection to aster', color='red')
-                # TODO: Email Remy
+                # TODO: Email admin
             except: # something else went wrong
                 self.log('sirius has encountered an unknown error in connecting to aster',
                          color='red')
@@ -39,7 +39,7 @@ class Telescope(object):
     def __del__(self):
         """ This function is called just prior to the object being garbage
         collected - this only happens when something has gone wrong, so we
-        shutdown the telescope, and then disconnect from aster. 
+        shutdown the telescope, and then disconnect from aster.
         """
         # closedown the telescope
         if self.dryrun is False:
@@ -48,8 +48,8 @@ class Telescope(object):
             self.ssh.close()
 
     def open_dome(self) -> bool:
-        """ Checks that the weather is acceptable, and then opens the dome, 
-        if it is not already open, and  also enables tracking. 
+        """ Checks that the weather is acceptable, and then opens the dome,
+        if it is not already open, and  also enables tracking.
         """
         # check if dome is already open
         if self.dome_open() == True:
@@ -57,7 +57,7 @@ class Telescope(object):
 
         # check that weather is OK to open
         if self.weather_ok() == True:
-            result = self.run_command("openup nocloud " 
+            result = self.run_command("openup nocloud "
                                         "&& track on")
             if result == True: # everything was good
                 return True
@@ -67,7 +67,7 @@ class Telescope(object):
         else:
             return False
 
-    
+
     def close_down(self) -> bool:
         """ Closes the current session, closes the dome, and logs out. Returns
         True if successful in closing down, False otherwise.
@@ -80,7 +80,7 @@ class Telescope(object):
         """
         return self.run_command("closedown")
 
-    
+
     def get_cloud(self) -> float:
         """ Returns the current cloud cover as a float.
         """
@@ -88,7 +88,7 @@ class Telescope(object):
         cloud = re.search(r"(?<=cloud=).*?(?= )", status).group(0)
         return float(cloud)
 
-    
+
     def get_dew(self) -> float:
         """ Returns the current dew value as a float.
         """
@@ -96,7 +96,7 @@ class Telescope(object):
         dew = re.search(r"(?<=dew=).*?(?= )", status).group(0)
         return float(dew)
 
-    
+
     def get_rain(self) -> bool:
         """ Returns the current rain value as a bool.
         """
@@ -104,25 +104,25 @@ class Telescope(object):
         rain = re.search(r"(?<=rain=).*?(?= )", status).group(0)
         return int(rain)
 
-    
+
     def get_sun_alt(self) -> float:
-        """ Returns the sun's current altitude as a float. 
+        """ Returns the sun's current altitude as a float.
         """
         status = self.run_command("sun")
         alt = re.search(r"(?<=alt=).*?(?= )", status).group(0)
         return float(alt)
 
-    
+
     def get_moon_alt(self) -> float:
-        """ Returns the moon's current altitude as a float. 
+        """ Returns the moon's current altitude as a float.
         """
         status = self.run_command("moon")
         alt = re.search(r"(?<=alt=).*?(?= )", status).group(0)
         return float(alt)
 
-    
+
     def get_weather(self) -> dict:
-        """ Returns a dictionary containing all the available weather info. 
+        """ Returns a dictionary containing all the available weather info.
         """
         weather = {}
         weather['rain'] = self.get_rain()
@@ -131,17 +131,18 @@ class Telescope(object):
         weather['sun'] = self.get_sun_alt()
         weather['moon'] = self.get_moon_alt()
         return weather
-        
-    
+
+
     def weather_ok(self) -> bool:
-        """ Checks whether the sun has set, there is no rain (rain=0) and that 
-        it is less than 40% cloudy. Returns true if the weather is OK to open up, 
-        false otherwise. 
+        """ Checks whether the sun has set, there is no rain (rain=0) and that
+        it is less than 40% cloudy. Returns true if the weather is OK to open up,
+        false otherwise.
         """
 
         if self.dryrun is False:
             # check sun has set
-            if self.get_sun_alt() >= -1.0:
+            if self.get_sun_alt() >= -15.0:
+                self.close_dome()
                 return False
 
             # check that it isn't raining
@@ -157,9 +158,9 @@ class Telescope(object):
         # weather is good!
         return True
 
-    
+
     def dome_open(self) -> str:
-        """ Checks whether the slit is open or closed. Returns True if open, 
+        """ Checks whether the slit is open or closed. Returns True if open,
         False if closed.
         """
         if self.dryrun is False:
@@ -176,7 +177,7 @@ class Telescope(object):
 
         return False
 
-    
+
     def goto_target(self, target: str) -> bool:
         """ Points the telescope at the target in question. Returns True if
         successfully (object was visible), and returns False if unable to set
@@ -187,9 +188,9 @@ class Telescope(object):
             cmd = "catalog "+target+" | dopoint"
             result = self.run_command(cmd)
             return result
-            
+
         return False
-                    
+
     def target_visible(self, target: str) -> bool:
         """ Checks whether a target is visible, and whether it is > 40 degrees
         in altitude. Returns True if visible and >40, False otherwise
@@ -202,20 +203,20 @@ class Telescope(object):
                 return True
         else:
             return True
-        
+
         return False
 
 
     def current_filter(self) -> str:
         """ Returns the name of the currently enabled filter, or
-        clear otherwise. 
+        clear otherwise.
         """
         return self.run_command("pfilter")
 
-    
+
     def change_filter(self, name: str) -> str:
-        """ Changes filter to the new specified filter. Options are: 
-        u, g, r, i, z, clear, h-alpha. Returns True if successful, 
+        """ Changes filter to the new specified filter. Options are:
+        u, g, r, i, z, clear, h-alpha. Returns True if successful,
         False otherwise
         """
         if name == "h-alpha":
@@ -225,11 +226,11 @@ class Telescope(object):
         else:
             return self.run_command("pfilter "+name+"-band")
 
-    
+
     def take_exposure(self, filename: str, time: int, binning: int) -> bool:
-        """ Takes an exposure of length time saves it in the FITS 
+        """ Takes an exposure of length time saves it in the FITS
         file with the specified filename. Returns True if imaging
-        was successful, False otherwise. 
+        was successful, False otherwise.
         """
         cmd = "image time="+str(time)+" bin="+str(binning)
         cmd += " outfile="+filename+".fits"
@@ -237,22 +238,22 @@ class Telescope(object):
         self.log("Saved exposure frame to "+filename, color="cyan")
         return status
 
-    
+
     def take_bias(self, filename: str, binning: int) -> bool:
         """ Takes a bias frame and saves it in the FITS file with the specified
-        filename. Returns True if imaging was successful, False otherwise. 
+        filename. Returns True if imaging was successful, False otherwise.
         """
         cmd = "image time=0.5 bin="+str(binning)+" "
         cmd += "outfile="+filename+"_bias.fits"
         status = self.run_command(cmd)
         self.log("Saved bias frame to "+filename, color="cyan")
         return status
-        
-    
+
+
     def take_dark(self, filename: str, time: int, binning: int) -> bool:
         """ Takes an dark exposure of length self.exposure_time saves it in the
         FITS file with the specified filename. Returns True if imaging
-        was successful, False otherwise. 
+        was successful, False otherwise.
         """
         cmd = "image time="+str(time)+" bin="+str(binning)+" dark "
         cmd += "outfile="+filename+"_dark.fits"
@@ -260,20 +261,19 @@ class Telescope(object):
         self.log("Saved dark frame to "+filename, color="cyan")
         return status
 
-    
+
     def enable_tracking(self) -> bool:
         return self.run_command("tx track on")
-    
+
     def focus(self) -> bool:
         # focusing routine?
         pass
 
-    
     def enable_flats(self) -> bool:
         # run tin?
         pass
 
-    
+
     def log(self, msg: str, color: str = "white") -> bool:
         """ Prints a log message to STDOUT. Returns True if successful, False
         otherwise.
@@ -285,9 +285,9 @@ class Telescope(object):
         print(log)
         return True
 
-    
+
     def run_command(self, command: str) -> str:
-        """ Executes a shell command either locally, or remotely via ssh. 
+        """ Executes a shell command either locally, or remotely via ssh.
         Returns the byte string representing the captured STDOUT
         """
         ## THIS NEEDS TO APPEND A WHITESPACE TO EVERY STRING
@@ -303,4 +303,26 @@ class Telescope(object):
                 self.log("Please manually close the dome by running"
                          " `closedown` and `logout`.", color="red")
                 exit(1)
+
+    def copy_files(self, remote: str, local: str) -> bool:
+        """ Copy the file located at path "remote" on the telescope
+        server to path "local" on the queue server.
+        """
+
+        # start sftp
+        sftp = self.ssh.open_sftp()
+
+        # transfer file from remote to local
+        try:
+            sftp.get(remote, local)
+        except:
+            self.log("Unable to transfer file from telescope controller.", color="red")
+            print(sys.exc_info())
+            return False
+
+        # close sftp
+        sftp.close()
+
+        return True
+
 

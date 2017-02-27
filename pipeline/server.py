@@ -3,7 +3,7 @@ import typing
 import sys
 import json
 import paho.mqtt.client as mqtt
-
+import luigi
 
 class PipelineServer(object):
     """ This class represents a server that subscribes to messages from every
@@ -20,7 +20,16 @@ class PipelineServer(object):
         self.log('Creating new pipeline...', 'green')
 
         # mqtt client to handle connection
-        self.client = mqtt.Client()
+        self.client = self.connect()
+
+        # start the pipeline server
+        self.start()
+
+
+    def connect(self):
+        """ Create and return a connection to the MQTT broker.
+        """
+        client = mqtt.Client()
 
         # connect to message broker
         try:
@@ -32,12 +41,7 @@ class PipelineServer(object):
             print(sys.exc_info())
             exit(-1)
 
-
-    def __del__(self):
-        """ Called when the server is garbage collected - at this point,
-        this function does nothing.
-        """
-        pass
+        return client
 
 
     @staticmethod
@@ -57,10 +61,10 @@ class PipelineServer(object):
         """ This function is called whenever a message is received.
         """
         ## THIS MUST ADD TASK TO LUIGI
-        print(msg.payload)
+        
 
 
-    def run(self):
+    def start(self):
         """ Starts the servers listening for new requests; server blocks
         on the specified port until it receives a request
         """
