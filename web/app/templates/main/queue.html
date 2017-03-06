@@ -42,52 +42,59 @@
             	<div class="input-group col-xs-12" style="margin-bottom: 17px">
                 	<span class="input-group-addon" id="sizing-addon4" style="width: 30%; background-color: #0F425C; color: #fff;">Target</span>
                     <label class="sr-only" for="form-target">Target</label>
-                    <input type="text" name="form-target" placeholder="" class="form-target form-control" id="form-target">
+                    <input type="text" name="form-target" placeholder="" class="form-target form-control" id="form-target" required>
 	            </div>
 	                        
 	            <div class="input-group col-xs-12" style="margin-bottom: 17px">
 	                <span class="input-group-addon" id="sizing-addon3 " style="width: 30%; background-color: #0F425C; color: #fff;">Exposure Times</span>
                     <label class="sr-only" for="form-exp">Exposure Time</label>
-                    <input type="text" name="form-exp" placeholder="" class="form-exp form-control" id="form-exp">
+                    <input type="text" name="form-exp" placeholder="" class="form-exp form-control" id="form-exp" required>
 	            </div>
 	                        
 	            <div class="input-group col-xs-12" style="margin-bottom: 17px">
 	                <span class="input-group-addon" id="sizing-addon3" style="width: 30%; background-color: #0F425C; color: #fff;">Number of Exposures</span>
                     <label class="sr-only" for="form-exp-count">Exposure Count</label>
-                    <input type="text" name="form-exp-count" placeholder="" class="form-exo-count form-control" id="form-exp-count">
+                    <input type="text" name="form-exp-count" placeholder="" class="form-exo-count form-control" id="form-exp-count" required>
 	            </div>
 	                        
 	            <div class="input-group col-xs-12" style="margin-bottom: 17px">
 	                <span class="input-group-addon" id="sizing-addon3" style="width: 30%; background-color: #0F425C; color: #fff;">Binning</span>
 	                <label class="sr-only" for="form-binning">Binning</label>
-	                <input type="text" name="form-binning" placeholder="" class="form-binning form-control" id="form-binning">
+	                <input type="text" name="form-binning" placeholder="" class="form-binning form-control" id="form-binning" required>
 	            </div>
 	                        		
-	            <div class="input-group col-xs-12">
-	                <div class="checkbox-inline col-xs-2">
-  						<label><input type="checkbox" value="">u-prime</label>
-					</div>
-
- 					<div class="checkbox-inline col-xs-2">
-  						<label><input type="checkbox" value="">g-prime</label>
-					</div>
-									
-					<div class="checkbox-inline col-xs-2">
-  						<label><input type="checkbox" value="">r-prime</label>
-					</div>
-										
-					<div class="checkbox-inline col-xs-2">
-  						<label><input type="checkbox" value="">i-prime</label>
-					</div>
-										
-					<div class="checkbox-inline col-xs-2">
-  						<label><input type="checkbox" value="">z-prime</label>
-					</div>
-										
-					<div class="checkbox-inline">
-  						<label><input type="checkbox" value="">h-alpha</label>
-					</div>
+	            <div class="input-group col-xs-12 col-xs-offset-1">
+			<div class="row">
+	                	<div class="checkbox-inline col-xs-1">
+  					<label><input type="checkbox" value="">u'</label>
 				</div>
+
+ 				<div class="checkbox-inline col-xs-1">
+  					<label><input type="checkbox" value="">g'</label>
+				</div>
+									
+				<div class="checkbox-inline col-xs-1">
+  					<label><input type="checkbox" value="">r'</label>
+				</div>
+										
+				<div class="checkbox-inline col-xs-1">
+  					<label><input type="checkbox" value="">i'</label>
+				</div>
+										
+				<div class="checkbox-inline col-xs-1">
+  					<label><input type="checkbox" value="">z'</label>
+				</div>
+										
+				<div class="checkbox-inline col-xs-2">
+  					<label><input type="checkbox" value="">h-alpha</label>
+				</div>
+				
+				<div class="checkbox-inline col-xs-2">
+					<label><input type="checkbox" value="">clear</label>
+				</div>
+			</div>
+		</div>
+	
 	                        		
 				<button type="submit" class="btn btn-default" style="background: #0F425C">Submit</button>
 			</form>
