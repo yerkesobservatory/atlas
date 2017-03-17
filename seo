@@ -7,7 +7,7 @@ from os.path import dirname, realpath
 import multiprocessing
 import subprocess
 import time
-
+n
 import yaml
 import telescope.server
 import pipeline.server
@@ -91,7 +91,7 @@ def handle_exit(self, *_):
 
         exit(0)
 
-# force children to ignore SIGING
+# force children to ignore SIGINT
 signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 # list of processes that have been created
