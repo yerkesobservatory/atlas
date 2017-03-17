@@ -32,7 +32,7 @@ class QueueServer(object):
         self.start_time = self.config.get('queue').get('start_time') or "02:00"
 
         # whether we are enabled by default
-        self.enabled = (self.config.get('queue').get('default') == 'on')
+        self.enabled = (self.config.get('queue').get('default') == True)
 
         # connect to MQTT broker
         self.client = self.connect()
@@ -41,8 +41,9 @@ class QueueServer(object):
         self.queue_dir = self.config.get('queue').get('dir') or '.'
         self.queue_file, self.queue_date = self.find_queue()
 
-        # start the countdown timer for execution
-        self.start_timer()
+        if self.queue_file is not None:
+            # start the countdown timer for execution
+            self.start_timer()
 
         # start!
         self.start()
@@ -58,7 +59,7 @@ class QueueServer(object):
 
         # server information
         host = self.config.get('server').get('host') or 'localhost'
-        port = self.config.get('mosquitto').get('port') or 1883
+        port = self.config.get('server').get('mosquitto').get('port') or 1883
         name = self.config.get('general').get('name') or 'Atlas'
         email = self.config.get('general').get('email') or 'your system administrator'
 
@@ -75,6 +76,67 @@ class QueueServer(object):
         return client
 
 
+    def find_queue(self) -> str:
+        """ Searches queue_dir for all valid queue files,
+        and returns the queue file that is chronologically next
+        by date.
+
+        TODO: this logic needs to be made more rigorous, uncertain
+        about boundary conditions when the queue is started the same
+        day as observation, and other odd situations (up for grabs!)
+        """
+
+        # set earliest date to far in future
+        queue_date = maya.when('2100')
+        queue_file = None
+
+        # search through all files in queue directory
+        for (_, _, files) in os.walk(self.queue_dir):
+
+            # look at all the files
+            for f in files:
+                split_name = f.split('_')
+
+                # if file is a queue
+                if len(split_name) >= 4 and split_name[3] == 'queue':
+
+                    # check its date
+                    date = maya.parse(split_name[1]+self.start_time)
+
+                    # if it's earlier than earliest
+                    if date < queue_date and date > maya.now():
+                        queue_date = date
+                        queue_file = f
+
+            # we need to execute after first iteration
+            # so we don't keep walking the file system recursively
+            break
+
+        return queue_file, queue_date
+
+    
+    def start_timer(self):
+        """ This starts a countdown timer for the execution of the queue;
+        when this timer triggers, the exeutor is started.
+        """
+        # calculate time at which we start the executor
+        exec_time = maya.when(self.queue_date+" "+self.start_time)
+        delta_time = (exec_time.datetime() - maya.now().datetime()).total_seconds
+
+        # create timer to start executor in delta_time
+        self.timer = threading.Timer(delta_time, self.start_executor)
+
+
+    def start(self):
+        """ Starts the servers listening for new requests; server blocks
+        on the specified port until it receives a request
+        """
+        self.client.on_message = self.process_message
+        topic = '/'+self.config.get('general').get('name')+'/queue'
+        self.client.subscribe(topic)
+        self.client.loop_forever()
+
+        
     def enable(self) -> bool:
         """ Enable the queue server to start taking imaging requests
         """
@@ -97,6 +159,7 @@ class QueueServer(object):
 
         return True
 
+    
     def create_queue(self, msg: dict) -> bool:
         """ This takes a raw message from process_message and writes the JSON data
         into the queue file.
@@ -108,6 +171,11 @@ class QueueServer(object):
             with open(self.queue_dir+'/'+filename, 'w+') as f:
                 f.write('# IMAGING QUEUE FOR {} CREATED ON {}'.format(date, maya.now()))
 
+            # if this is our first queue
+            if self.queue_file is None:
+                self.queue_file, self.queue_date = self.find_queue()
+                self.start_timer()
+
         return True
 
 
@@ -117,11 +185,11 @@ class QueueServer(object):
         """
         if msg.get('action') == 'enable':
             self.log('Enabling queueing server...', color='cyan')
-            self.enabled = True
+            self.enable()
 
         elif msg.get('action') == 'disable':
             self.log('Disabling queueing server...', color='cyan')
-            self.enabled = False
+            self.disable()
 
         else:
             self.log('Received invalid queue state message...', color='magenta')
@@ -149,16 +217,6 @@ class QueueServer(object):
             self.log('Received unknown queue message...', color='magenta')
 
 
-    def start(self):
-        """ Starts the servers listening for new requests; server blocks
-        on the specified port until it receives a request
-        """
-        self.client.on_message = self.process_message
-        topic = '/'+self.config.get('general').get('name')+'/queue'
-        self.client.subscribe(topic)
-        self.client.loop_forever()
-
-
     def start_executor(self):
         """ This starts a new executor to execute one session
         file. Must be started asynchronously as it takes hours
@@ -166,62 +224,16 @@ class QueueServer(object):
         """
         if self.enabled is True:
             queue_exec = executor.Executor(self.queue_file)
-            exec_proc = multiprocessing.Process(target=queue_exec.execute_queue())
+            exec_proc = multiprocessing.Process(target=queue_exec.start())
             exec_proc.start()
             self.log('Started executor with pid={}'.format(exec_proc.pid), 'green')
+
 
         # import the new queue
         self.queue_file, self.queue_date = self.find_queue()
 
         # start a new timer for the next queue
         self.start_timer()
-
-
-    def start_timer(self):
-        """ This starts a countdown timer for the execution of the queue;
-        when this timer triggers, the exeutor is started.
-        """
-        # calculate time at which we start the executor
-        exec_time = maya.when(self.queue_date+" "+self.start_time)
-        delta_time = (exec_time.datetime() - maya.now().datetime()).total_seconds
-
-        # create timer to start executor in delta_time
-        self.timer = threading.Timer(delta_time, self.start_executor)
-
-
-    def find_queue(self) -> str:
-        """ Searches queue_dir for all valid queue files,
-        and returns the queue file that is chronologically next
-        by date.
-        """
-
-        # set earliest date to far in future
-        queue_date = maya.when('2100')
-        queue_file = ""
-
-        # search through all files in queue directory
-        for (_, _, files) in os.walk(self.queue_dir):
-
-            # look at all the files
-            for f in files:
-                split_name = f.split('_')
-
-                # if file is a queue
-                if len(split_name) >= 4 and split_name[3] == 'queue':
-
-                    # check its date
-                    date = maya.parse(split_name[1]+self.start_time)
-
-                    # if it's earlier than earliest
-                    if date < queue_date and date > maya.now():
-                        queue_date = date
-                        queue_file = f
-
-            # we need to execute after first iteration
-            # so we don't keep walking the file system recursively
-            break
-
-        return queue_file, queue_date
 
 
     @staticmethod

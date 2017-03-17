@@ -32,28 +32,18 @@ class Executor(object):
         self.telescope = telescope.telescope.Telescope(dryrun=dryrun)
 
         # take numbias*exposure_count biases
-        self.numbias = 3
+        self.numbias = config.get('queue').get('numbias') or 5
 
         # directory to store images on telescope controller
-        self.remote_dir = config['queue']['remote_img_dir']
+        self.remote_dir = config.get('queue').get('remote_dir') or '/tmp'
 
-        # directory to store images locally
-        self.local_dir = config['queue']['local_img_dir']
+        # directory to store images locally during pipeline
+        self.local_dir = config.get('queue').get('dir')
 
-        # create mqtt client
-        self.client = mqtt.Client()
-
-        # connect to message broker
-        try:
-            self.client.connect(config['server']['host'], config['mosquitto']['port'], 60)
-            self.log('Successfully connected to '+config['general']['name'], color='green')
-        except:
-            self.log('Unable to connect to '+config['general']['name']+'. Please try again later. '
-                     'If the problem persists, please contact '+config['general']['email'], 'red')
-            print(sys.exc_info())
-            exit(-1)
-
-
+        # connect to MQTT broker
+        self.client = self.connect()
+        
+    
     def load_queue(self, filename: str) -> list:
         """ This loads a JSON queue file into a list of Python session
         objects that can then be executed.
@@ -66,10 +56,38 @@ class Executor(object):
         except:
             self.log('Unable to open queue file. Please check that it exists. Exitting',
                      'red')
-            # TODO: Email system admin
+            # TODO: Email system admin if there is an error
             print(sys.exc_info())
             exit(-1)
 
+            
+    def connect(self) -> bool:
+        """ Connect to the MQTT broker and return the MQTT client
+        object.
+        """
+
+        # mqtt client to handle connection
+        client = mqtt.Client()
+
+        # server information
+        host = self.config.get('server').get('host') or 'localhost'
+        port = self.config.get('server').get('mosquitto').get('port') or 1883
+        name = self.config.get('general').get('name') or 'Atlas'
+        email = self.config.get('general').get('email') or 'your system administrator'
+
+        # connect to message broker
+        try:
+            client.connect(host, port, 60)
+            self.log('Successfully connected to '+name, color='green')
+        except:
+            self.log('Unable to connect to '+name+'. Please try again later. '
+                     'If the problem persists, please contact '+email, 'red')
+            print(sys.exc_info())
+            exit(-1)
+
+        return client
+    
+    
     def wait_until_good(self) -> bool:
         """ Wait until the weather is good for observing.
         Waits 10 minutes between each trial. Cancels execution
@@ -81,18 +99,22 @@ class Executor(object):
         weather = self.telescope.weather_ok()
         while weather is False:
 
-            time.sleep(10*60)  # seconds to sleep
-            elapsed_time += 600
+            # sleep for 10 minutes
+            time.sleep(10*60) # time to sleep in seconds
+            elapsed_time += (10*60)
 
-            # shut down after 2 hours of continuous waiting
+            # shut down after 4 hours of continuous waiting
             if elapsed_time >= 14400:
                 self.log("Bad weather for 4 hours. Shutting down the queue...", color="magenta")
                 exit(1)
 
+            # update weather
+            weather = self.telescope.weather_ok()
+
         return True
 
 
-    def run(self) -> bool:
+    def start(self) -> bool:
         """ Executes the list of session objects for this queue.
         """
 
@@ -117,7 +139,7 @@ class Executor(object):
                 time.sleep(wait)
 
             # check whether every session executed correctly
-            self.log("Executing session for {}".format(session['user']), color="blue")
+            self.log("Executing session for {}".format(session.get('user') or 'none', color="blue")
             try:
                 # execute session
                 location = self.execute(session)
@@ -230,10 +252,11 @@ class Executor(object):
         biasname += '_bin'+str(binning)
         self.log("Taking {} biases with names: {}".format(count*numbias, biasname))
 
-        # take 3*exposure_count biases
+        # take numbias*exposure_count biases
         for nb in range(0, count*numbias):
             self.telescope.take_bias(biasname+'_'+str(nb), binning)
 
+                     
     @staticmethod
     def log(msg: str, color: str='white') -> bool:
         """ Prints a log message to STDOUT. Returns True if successful, False
