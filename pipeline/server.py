@@ -26,24 +26,33 @@ class PipelineServer(object):
         self.start()
 
 
-    def connect(self):
-        """ Create and return a connection to the MQTT broker.
+    def connect(self) -> bool:
+        """ Connect to the MQTT broker and return the MQTT client
+        object.
         """
+
+        # mqtt client to handle connection
         client = mqtt.Client()
+
+        # server information
+        host = self.config.get('server').get('host') or 'localhost'
+        port = self.config.get('server').get('mosquitto').get('port') or 1883
+        name = self.config.get('general').get('name') or 'Atlas'
+        email = self.config.get('general').get('email') or 'your system administrator'
 
         # connect to message broker
         try:
-            self.client.connect(config['server']['host'], config['mosquitto']['port'], 60)
-            self.log('Successfully connected to '+config['general']['name'], color='green')
+            client.connect(host, port, 60)
+            self.log('Successfully connected to '+name, color='green')
         except:
-            self.log('Unable to connect to '+config['general']['name']+'. Please try again later.'
-                     'If the problem persists, please contact '+config['general']['email'], 'red')
+            self.log('Unable to connect to '+name+'. Please try again later. '
+                     'If the problem persists, please contact '+email, 'red')
             print(sys.exc_info())
             exit(-1)
 
         return client
 
-
+    
     @staticmethod
     def log(msg: str, color: str='white') -> bool:
         """ Prints a log message to STDOUT. Returns True if successful, False
