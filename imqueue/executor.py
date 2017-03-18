@@ -7,6 +7,7 @@ import typing
 import json
 import paho.mqtt.client as mqtt
 import telescope
+from telescope import telescope
 from . import schedule
 
 class Executor(object):
@@ -22,6 +23,7 @@ class Executor(object):
 
         # filename to be read
         self.filename = filename
+        self.config = config
 
         # load queue from disk
         self.sessions = []
@@ -29,7 +31,7 @@ class Executor(object):
         self.log("Executor has successfully loaded queue")
 
         # instantiate telescope object for control
-        self.telescope = telescope.telescope.Telescope(dryrun=dryrun)
+        self.telescope = telescope.Telescope(dryrun=dryrun)
 
         # take numbias*exposure_count biases
         self.numbias = config.get('queue').get('numbias') or 5
@@ -57,7 +59,7 @@ class Executor(object):
             self.log('Unable to open queue file. Please check that it exists. Exitting',
                      'red')
             # TODO: Email system admin if there is an error
-            print(sys.exc_info())
+            self.log(str(sys.exc_info()), color='red')
             exit(-1)
 
             
@@ -82,7 +84,7 @@ class Executor(object):
         except:
             self.log('Unable to connect to '+name+'. Please try again later. '
                      'If the problem persists, please contact '+email, 'red')
-            print(sys.exc_info())
+            self.log(str(sys.exc_info()), color='red')
             exit(-1)
 
         return client
@@ -117,6 +119,7 @@ class Executor(object):
     def start(self) -> bool:
         """ Executes the list of session objects for this queue.
         """
+        print("starting")
 
         # wait until weather is good
         self.wait_until_good()
@@ -131,7 +134,8 @@ class Executor(object):
             location = ""
 
             # schedule remaining sessions
-            session = schedule.schedule(self.sessions)
+            # session = schedule.schedule(self.sessions)
+            session = self.sessions[0]
 
             # check whether we need to wait before executing
             wait = session.get('wait')
@@ -139,7 +143,7 @@ class Executor(object):
                 time.sleep(wait)
 
             # check whether every session executed correctly
-            self.log("Executing session for {}".format(session.get('user') or 'none', color="blue")
+            self.log("Executing session for {}".format(session.get('user') or 'none'), color="blue")
             try:
                 # execute session
                 location = self.execute(session)
@@ -154,11 +158,12 @@ class Executor(object):
             except:
                 self.log("Error while executiong session for {}".format(session['user']),
                          color="red")
-                print(sys.exc_info())
-                self.telescope.close_down()
+                self.log(str(sys.exc_info()), color='red')
+                # self.telescope.close_down()
                 exit(1)
-
+                
         # close down
+        self.log('Finished executing the queue! Closing down...', color='green')
         self.telescope.close_down()
 
         return True
@@ -174,7 +179,7 @@ class Executor(object):
         basename = date+'_'+session['user']+'_'+session['target']
 
         # create directory
-        self.telescope.mkdir(basename)
+        # self.telescope.make_dir(basename)
 
         try:
             # point telescope at target
@@ -187,12 +192,13 @@ class Executor(object):
             binning = session['binning']
 
             # for each filter
-            for filt in session['filters']:
+            filters = session.get('filters') or ['clear']
+            for filt in filters:
                 self.telescope.enable_tracking()
                 self.take_exposures(basename, exposure_time, exposure_count, binning, filt)
 
             # reset filter back to clear
-            self.log("Switching to clear filter")
+            self.log("Switching back to clear filter")
             self.telescope.change_filter('clear')
 
             # take exposure_count darks
@@ -201,9 +207,11 @@ class Executor(object):
             # take numbias*exposure_count biases
             self.take_biases(basename, exposure_time, exposure_count, binning, self.numbias)
 
+
         except:
             self.log('The executor has encountered an error. Please manually'
                      'close down the telescope.', 'red')
+            self.log(str(sys.exc_info()), color='red')
             return None
 
 

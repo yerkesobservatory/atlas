@@ -26,26 +26,25 @@ class Telescope(object):
             # load host keys for verified connection
             self.ssh.load_system_host_keys()
 
+            # insert keys - this needs to be removed ASAP
+            self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
             # connect!
             try:
                 self.ssh.connect('mail.stoneedgevineyard.com', username='rprechelt')
-            except AuthenticationException: # unable to authenticate
+                self.log('Successfully connected to the telescope control server', color='green')
+            except paramiko.AuthenticationException: # unable to authenticate
                 self.log('Unable to authenticate connection to aster', color='red')
+                exit(1)
                 # TODO: Email admin
             except: # something else went wrong
                 self.log('sirius has encountered an unknown error in connecting to aster',
                          color='red')
+                exit(1)
 
-    def __del__(self):
-        """ This function is called just prior to the object being garbage
-        collected - this only happens when something has gone wrong, so we
-        shutdown the telescope, and then disconnect from aster.
-        """
-        # closedown the telescope
-        if self.dryrun is False:
-            self.ssh.exec_command("closedown")
-            # disconnect
-            self.ssh.close()
+            # save ssh transport
+            self.transport = self.ssh.get_transport()
+
 
     def open_dome(self) -> bool:
         """ Checks that the weather is acceptable, and then opens the dome,
@@ -109,7 +108,7 @@ class Telescope(object):
         """ Returns the sun's current altitude as a float.
         """
         status = self.run_command("sun")
-        alt = re.search(r"(?<=alt=).*?(?= )", status).group(0)
+        alt = re.search(r"(?<=alt=).*$", status).group(0)
         return float(alt)
 
 
@@ -140,18 +139,19 @@ class Telescope(object):
         """
 
         if self.dryrun is False:
+
             # check sun has set
             if self.get_sun_alt() >= -15.0:
                 self.close_dome()
                 return False
 
             # check that it isn't raining
-            if get_rain != 0:
+            if self.get_rain() != 0:
                 self.close_dome()
                 return False
 
             # check cloud cover is below 40%
-            if get_cloud >= 0.40:
+            if self.get_cloud() >= 0.40:
                 self.close_dome()
                 return False
 
@@ -191,6 +191,16 @@ class Telescope(object):
 
         return False
 
+    def make_dir(self, name: str) -> bool:
+        """ Creates a directory in the current directory with a given name. Returns
+        True if successful. 
+        """
+        if self.dryrun is False:
+            self.run_command("mkdir "+name)
+            
+        return True
+    
+
     def target_visible(self, target: str) -> bool:
         """ Checks whether a target is visible, and whether it is > 40 degrees
         in altitude. Returns True if visible and >40, False otherwise
@@ -214,7 +224,7 @@ class Telescope(object):
         return self.run_command("pfilter")
 
 
-    def change_filter(self, name: str) -> str:
+    def change_filter(self, name: str) -> bool:
         """ Changes filter to the new specified filter. Options are:
         u, g, r, i, z, clear, h-alpha. Returns True if successful,
         False otherwise
@@ -225,6 +235,9 @@ class Telescope(object):
             return self.run_command("pfilter clear")
         else:
             return self.run_command("pfilter "+name+"-band")
+
+        print("HEY! I'M DONE WITH CHANGE_FILTER!")
+        return True
 
 
     def take_exposure(self, filename: str, time: int, binning: int) -> bool:
@@ -296,8 +309,13 @@ class Telescope(object):
         if not self.dryrun:
             try:
                 stdin, stdout, stderr = self.ssh.exec_command(command)
-                return True, sys.stdout.readlines()[0]+' '
+                result = stdout.readlines()
+                if len(result) > 0:
+                    result = result[0]
+                print(result)
+                return result
             except:
+                self.log(str(sys.exc_info()), color='red')
                 self.log("Failed while executing {}".format(command), color="red")
                 self.log("{}".format(sys.stderr.readlines()), color="red")
                 self.log("Please manually close the dome by running"
@@ -317,7 +335,7 @@ class Telescope(object):
             sftp.get(remote, local)
         except:
             self.log("Unable to transfer file from telescope controller.", color="red")
-            print(sys.exc_info())
+            self.log(str(sys.exc_info()), color='red')
             return False
 
         # close sftp
