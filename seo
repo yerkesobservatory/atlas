@@ -7,8 +7,8 @@ from os.path import dirname, realpath
 import multiprocessing
 import subprocess
 import time
-n
 import yaml
+
 import telescope.server
 import pipeline.server
 import logserver.server
@@ -130,7 +130,7 @@ if ARGS.start_executor is not None:
     try:
         # create pipeline server
         execprog = imqueue.executor.Executor(ARGS.start_executor, config, dryrun=ARGS.dryrun)
-        execprog_proc = multiprocessing.Process(target=execprog.run)
+        execprog_proc = multiprocessing.Process(target=execprog.start)
         processes.append(execprog_proc)
         execprog_proc.start()
         log("Started executor for {} with pid={}".format(ARGS.start_executor, execprog_proc.pid),
