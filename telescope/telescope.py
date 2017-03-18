@@ -184,7 +184,7 @@ class Telescope(object):
         telescope (failure, object not visible).
         """
         if self.target_visible(target) == True:
-            # Check if we're using coordinates or target names
+            # TODO: Check if we're using coordinates or target names
             cmd = "catalog "+target+" | dopoint"
             result = self.run_command(cmd)
             return result
@@ -236,7 +236,6 @@ class Telescope(object):
         else:
             return self.run_command("pfilter "+name+"-band")
 
-        print("HEY! I'M DONE WITH CHANGE_FILTER!")
         return True
 
 

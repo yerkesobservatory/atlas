@@ -5,6 +5,7 @@ import sys
 import time
 import typing
 import json
+
 import paho.mqtt.client as mqtt
 import telescope
 from telescope import telescope
@@ -175,16 +176,20 @@ class Executor(object):
         """
 
         # calculate base file name
-        date = self.remote_dir+"/"+time.strftime('%Y_%m_%d', time.gmtime())
-        basename = date+'_'+session['user']+'_'+session['target']
+        date = time.strftime('%Y_%m_%d', time.gmtime())
+        dirname = self.remote_dir+'/'+'_'.join([date, session.get('user'), session.get('target')])
 
         # create directory
         # self.telescope.make_dir(basename)
 
+        basename = dirname+'/'+'_'.join([date, session.get('user'), session.get('target')])
+
         try:
             # point telescope at target
             self.log("Slewing to {}".format(session['target']))
-            self.telescope.goto_target(session['target'])
+            if self.telescope.goto_target(session['target']) is False:
+                self.log("Object is not currently visible. Skipping...", color='magenta')
+                return ""
 
             # extract variables
             exposure_time = session['exposure_time']
@@ -207,14 +212,14 @@ class Executor(object):
             # take numbias*exposure_count biases
             self.take_biases(basename, exposure_time, exposure_count, binning, self.numbias)
 
+            # return the directory containing the files
+            return dirname
 
         except:
             self.log('The executor has encountered an error. Please manually'
                      'close down the telescope.', 'red')
             self.log(str(sys.exc_info()), color='red')
             return None
-
-
 
 
     def take_exposures(self, basename: str, exp_time: int, count: int, binning: int, filt: str):
