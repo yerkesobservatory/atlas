@@ -50,6 +50,11 @@ msg['filters'] = args.filters
 msg['binning'] = args.binning
 msg['user'] = os.environ['USER']
 
+f = open("queue.json", "w")
+f.write(json.dumps(msg))
+f.close()
+
+
 ######################### CONNECT TO STONE EDGE SERVER #########################
 
 # mqtt client to handle connection
@@ -57,11 +62,11 @@ client = mqtt.Client()
 
 # connect to stone edge observatory
 try:
-    client.connect(config['server']['host'], config['mosquitto']['port'], 60)
-    # log('Successfully connected to '+config['general']['name'], color='green')
+    client.connect(config.get('server').get('host'), config.get('server').get('mosquitto').get('port'), 60)
+    print('\033[1;32mSuccessfully connected to '+config.get('general').get('name')+'\033[0m')
 except:
-    # log('Unable to connect to '+config['general']['name']+'. Please try again later. '
-    #            'If the problem persists, please contact '+config['general']['email'], 'red')
+    print('\033[1;31mUnable to connect to '+config.get('general').get('name')+'. Please try again later. '
+               'If the problem persists, please contact '+config.get('general').get('email')+'\033[0m')
     print(sys.exc_info())
     exit(-1)
 
@@ -71,7 +76,7 @@ try:
     print("\033[1;32mRequest successfully submitted!\033[0m")
 except:
     print('\033[1;31mUnable to publish message to server. '
-          'Please contact '+config['general']['email']+'\033[0m')
+          'Please contact '+config.get('general').get('email')+'\033[0m')
     print(sys.exc_info())
     exit(-1)
     

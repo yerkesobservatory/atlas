@@ -11,7 +11,7 @@ import yaml
 #################### CREATE COMMAND LINE ARGUMENT PARSER #######################
 parser = argparse.ArgumentParser(description='Listen to MQTT topics from the server')
 parser.add_argument('--topics', '-t', help="A list of topics to subscribe to",
-                    type=str, nargs='+' )
+                    type=str, nargs='+', required=True)
 
 ######################### PARSE COMMAND LINE ARGUMENTS #########################
 args = parser.parse_args()
@@ -54,11 +54,11 @@ client.on_message = on_message
 
 # connect to stone edge observatory
 try:
-    client.connect(config['server']['host'], config['mosquitto']['port'], 60)
-    print('Successfully connected to '+config['general']['name'])
+    client.connect(config.get('server').get('host'), config.get('server').get('mosquitto').get('port'), 60)
+    print('Successfully connected to '+config.get('general').get('name'))
 except:
-    print('Unable to connect to '+config['general']['name']+'. Please try again later. '
-               'If the problem persists, please contact '+config['general']['email'])
+    print('Unable to connect to '+config.get('general').get('name')+'. Please try again later. '
+               'If the problem persists, please contact '+config.get('general').get('email'))
     print(sys.exc_info())
     exit(-1)
 
@@ -74,7 +74,7 @@ except KeyboardInterrupt:
     print('\033[1;36mClosing down...\033[0m')
 except:
     print('\033[1;31mUnable to listen to messages from server. '
-          'Please contact '+config['general']['email']+'\033[0m')
+          'Please contact '+config.get('general').get('email')+'\033[0m')
     print(sys.exc_info())
     exit(-1)
     
