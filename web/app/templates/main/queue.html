@@ -38,59 +38,60 @@
     <div class="col-sm-3"></div>
 	<div class="well col-sm-6">
 		<div class="form-group">
-			<form role="form" action="/queueSubmit" method="post" class="queue-form">
+		  <form role="form" name="queueForm" method="post" class="queue-form">
+		    	  {{ form.hidden_tag() }}
             	<div class="input-group col-xs-12" style="margin-bottom: 17px">
                 	<span class="input-group-addon" id="sizing-addon4" style="width: 30%; background-color: #0F425C; color: #fff;">Target</span>
                     <label class="sr-only" for="form-target">Target</label>
-                    <input type="text" name="form-target" placeholder="" class="form-target form-control" id="form-target" required>
+                    <input type="text" name="target" placeholder="" class="form-target form-control" id="form-target" required>
 	            </div>
 	                        
 	            <div class="input-group col-xs-12" style="margin-bottom: 17px">
 	                <span class="input-group-addon" id="sizing-addon3 " style="width: 30%; background-color: #0F425C; color: #fff;">Exposure Times</span>
                     <label class="sr-only" for="form-exp">Exposure Time</label>
-                    <input type="text" name="form-exp" placeholder="" class="form-exp form-control" id="form-exp" required>
+                    <input type="text" name="exptime" placeholder="" class="form-exp form-control" id="form-exp" required>
 	            </div>
 	                        
 	            <div class="input-group col-xs-12" style="margin-bottom: 17px">
 	                <span class="input-group-addon" id="sizing-addon3" style="width: 30%; background-color: #0F425C; color: #fff;">Number of Exposures</span>
                     <label class="sr-only" for="form-exp-count">Exposure Count</label>
-                    <input type="text" name="form-exp-count" placeholder="" class="form-exo-count form-control" id="form-exp-count" required>
+                    <input type="text" name="expcount" placeholder="" class="form-exo-count form-control" id="form-exp-count" required>
 	            </div>
 	                        
 	            <div class="input-group col-xs-12" style="margin-bottom: 17px">
 	                <span class="input-group-addon" id="sizing-addon3" style="width: 30%; background-color: #0F425C; color: #fff;">Binning</span>
 	                <label class="sr-only" for="form-binning">Binning</label>
-	                <input type="text" name="form-binning" placeholder="" class="form-binning form-control" id="form-binning" required>
+	                <input type="text" name="binning" placeholder="" class="form-binning form-control" id="form-binning" required>
 	            </div>
 	                        		
 	            <div class="input-group col-xs-12 col-xs-offset-1">
 			<div class="row">
 	                	<div class="checkbox-inline col-xs-1">
-  					<label><input type="checkbox" value="">u'</label>
+  					<label><input type="checkbox" name="filter_u" value="true">u'</label>
 				</div>
 
  				<div class="checkbox-inline col-xs-1">
-  					<label><input type="checkbox" value="">g'</label>
+  					<label><input type="checkbox" name="filter_g" value="true">g'</label>
 				</div>
 									
 				<div class="checkbox-inline col-xs-1">
-  					<label><input type="checkbox" value="">r'</label>
+  					<label><input type="checkbox" name="filter_r" value="true">r'</label>
 				</div>
 										
 				<div class="checkbox-inline col-xs-1">
-  					<label><input type="checkbox" value="">i'</label>
+  					<label><input type="checkbox" name="filter_i" value="true">i'</label>
 				</div>
 										
 				<div class="checkbox-inline col-xs-1">
-  					<label><input type="checkbox" value="">z'</label>
+  					<label><input type="checkbox" name="filter_z" value="true">z'</label>
 				</div>
 										
 				<div class="checkbox-inline col-xs-2">
-  					<label><input type="checkbox" value="">h-alpha</label>
+  					<label><input type="checkbox" name="filter_ha" value="true">h-alpha</label>
 				</div>
 				
 				<div class="checkbox-inline col-xs-2">
-					<label><input type="checkbox" value="">clear</label>
+					<label><input type="checkbox" name="filter_clear" value="true" checked>clear</label>
 				</div>
 			</div>
 		</div>

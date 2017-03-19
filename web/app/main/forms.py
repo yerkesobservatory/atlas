@@ -7,9 +7,11 @@ class QueueForm(FlaskForm):
     """ Represents the standard queue submission form.
     """
     target = StringField('Target', validators=[DataRequired()])
-    exptime = DecimalField('Exposure Time', validators=[DataRequired()])
+    exptime = IntegerField('Exposure Time', validators=[DataRequired()])
     expcount = IntegerField('Exposure Count', validators=[DataRequired()])
     binning = IntegerField('Binning', validators=[DataRequired()])
+    filter_clear = BooleanField('clear')
+    filter_ha = BooleanField('ha')
     filter_u = BooleanField('u')
     filter_g = BooleanField('g')
     filter_r = BooleanField('r')
