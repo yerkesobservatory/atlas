@@ -1,4 +1,6 @@
 # PROJECT SPECIFIC
+astrometry/install
+astrometry/build
 elm-stuff
 config.py
 app/__pycache__/
