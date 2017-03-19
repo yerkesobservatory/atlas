@@ -6,9 +6,12 @@ import threading
 import multiprocessing
 import typing
 import json
+import time
+
 import paho.mqtt.client as mqtt
 import maya
-from . import executor
+from imqueue import executor
+
 
 class QueueServer(object):
     """ This class represents a server that listens for queueing requests from
@@ -25,11 +28,15 @@ class QueueServer(object):
         be called for the server to be initialized.
         """
 
-        self.log('Creating new queue server...', 'green')
+        # save config
         self.config = config
 
+        # initialize logging
+        self.init_log()
+        self.log('Creating new queue server...', 'green')
+
         # the time (in UTC) to start observing
-        self.start_time = self.config.get('queue').get('start_time') or "02:00"
+        self.start_time = (self.config.get('queue').get('start_time') or "02:00")
 
         # whether we are enabled by default
         self.enabled = (self.config.get('queue').get('default') == True)
@@ -41,9 +48,12 @@ class QueueServer(object):
         self.queue_dir = self.config.get('queue').get('dir') or '.'
         self.queue_file, self.queue_date = self.find_queue()
 
+        # start the countdown timer for execution
         if self.queue_file is not None:
-            # start the countdown timer for execution
+            self.log('Initializing queue server with queue on {}'.format(self.queue_date), color='green')
             self.start_timer()
+        else:
+            self.log('Initializing queue server without any queue', color='green')
 
         # start!
         self.start()
@@ -95,16 +105,17 @@ class QueueServer(object):
 
             # look at all the files
             for f in files:
+                
                 split_name = f.split('_')
 
                 # if file is a queue
-                if len(split_name) >= 4 and split_name[3] == 'queue':
+                if len(split_name) >= 4 and split_name[3] == 'queue.json':
 
                     # check its date
-                    date = maya.parse(split_name[1]+self.start_time)
+                    date = maya.parse(split_name[0]+' '+self.start_time+' UTC')
 
                     # if it's earlier than earliest
-                    if date < queue_date and date > maya.now():
+                    if date < queue_date and date > maya.when('now', timezone='UTC'):
                         queue_date = date
                         queue_file = f
 
@@ -120,11 +131,13 @@ class QueueServer(object):
         when this timer triggers, the exeutor is started.
         """
         # calculate time at which we start the executor
-        exec_time = maya.when(self.queue_date+" "+self.start_time)
-        delta_time = (exec_time.datetime() - maya.now().datetime()).total_seconds
+        exec_time = maya.parse(self.queue_date.iso8601()[0:10]+' '+self.start_time+' UTC')
+        delta_time = (exec_time.datetime() - maya.now().datetime()).total_seconds()
+        print('T: {}'.format(delta_time))
 
         # create timer to start executor in delta_time
         self.timer = threading.Timer(delta_time, self.start_executor)
+        self.timer.start()
 
 
     def start(self):
@@ -132,7 +145,7 @@ class QueueServer(object):
         on the specified port until it receives a request
         """
         self.client.on_message = self.process_message
-        topic = '/'+self.config.get('general').get('name')+'/queue'
+        topic = '/'+self.config.get('general').get('shortname')+'/queue'
         self.client.subscribe(topic)
         self.client.loop_forever()
 
@@ -223,7 +236,8 @@ class QueueServer(object):
         to execute.
         """
         if self.enabled is True:
-            queue_exec = executor.Executor(self.queue_file)
+            queue = self.queue_dir+'/'+self.queue_file
+            queue_exec = executor.Executor(queue, self.config)
             exec_proc = multiprocessing.Process(target=queue_exec.start())
             exec_proc.start()
             self.log('Started executor with pid={}'.format(exec_proc.pid), 'green')
@@ -235,15 +249,26 @@ class QueueServer(object):
         # start a new timer for the next queue
         self.start_timer()
 
+        
+    def init_log(self) -> bool:
+        """ Initialize the object logging system - currently only opens
+        the logging file
+        """
+        name = self.config.get('general').get('shortname') or 'atlas'
+        self.log_file = open('/var/log/'+name+'/imqueue_server.log', 'a')
 
-    @staticmethod
-    def log(msg: str, color: str='white') -> bool:
+        return True
+
+    
+    def log(self, msg: str, color: str='white') -> bool:
         """ Prints a log message to STDOUT. Returns True if successful, False
         otherwise.
         """
         colors = {'red':'31', 'green':'32', 'blue':'34', 'cyan':'36',
                   'white':'37', 'yellow':'33', 'magenta':'34'}
-        logtime = maya.now().datetime(to_timezone="UTC").strftime('%Y-%m-%d %H:%M:%S')
-        log = '\033[1;'+colors[color]+'m'+logtime+' SERVER: '+msg+'\033[0m'
-        print(log)
+        logtime = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        log = logtime+' QUEUE SERVER: '+msg
+        color_log = '\033[1;'+colors[color]+'m'+log+'\033[0m'
+        self.log_file.write(log+'\n')
+        print(color_log)
         return True

@@ -9,7 +9,7 @@ import json
 import paho.mqtt.client as mqtt
 import telescope
 from telescope import telescope
-from . import schedule
+from imqueue import schedule
 
 class Executor(object):
     """ This class is responsible for executing and scheduling a
@@ -25,6 +25,9 @@ class Executor(object):
         # filename to be read
         self.filename = filename
         self.config = config
+
+        # initialize logging
+        self.init_log()
 
         # load queue from disk
         self.sessions = []
@@ -45,8 +48,8 @@ class Executor(object):
 
         # connect to MQTT broker
         self.client = self.connect()
+
         
-    
     def load_queue(self, filename: str) -> list:
         """ This loads a JSON queue file into a list of Python session
         objects that can then be executed.
@@ -58,7 +61,7 @@ class Executor(object):
                     self.sessions.append(json.loads(line))
         except:
             self.log('Unable to open queue file. Please check that it exists. Exitting',
-                     'red')
+                     color='red')
             # TODO: Email system admin if there is an error
             self.log(str(sys.exc_info()), color='red')
             exit(-1)
@@ -89,6 +92,14 @@ class Executor(object):
             exit(-1)
 
         return client
+
+    def finish(self) -> bool:
+        """ Close the executor in event of success of failure; closes the telescope, 
+        closes ssh connection, closes log file
+        """
+        self.telescope.close_down()
+        self.telescope.disconnect()
+        self.log_file.close()
     
     
     def wait_until_good(self) -> bool:
@@ -160,12 +171,12 @@ class Executor(object):
                 self.log("Error while executiong session for {}".format(session['user']),
                          color="red")
                 self.log(str(sys.exc_info()), color='red')
-                # self.telescope.close_down()
+                self.finish()
                 exit(1)
                 
         # close down
         self.log('Finished executing the queue! Closing down...', color='green')
-        self.telescope.close_down()
+        self.finish()
 
         return True
 
@@ -219,10 +230,12 @@ class Executor(object):
             self.log('The executor has encountered an error. Please manually'
                      'close down the telescope.', 'red')
             self.log(str(sys.exc_info()), color='red')
+            self.finish()
             return None
 
 
-    def take_exposures(self, basename: str, exp_time: int, count: int, binning: int, filt: str):
+    def take_exposures(self, basename: str, exp_time: int,
+                       count: int, binning: int, filt: str) -> bool:
         """ Take count exposures, each of length exp_time, with binning, using the filter
         filt, and save it in the file built from basename.
         """
@@ -241,8 +254,10 @@ class Executor(object):
             # take exposure
             self.telescope.take_exposure(filename, exp_time, binning)
 
+            return True
 
-    def take_darks(self, basename: str, exp_time: int, count: int, binning: int):
+
+    def take_darks(self, basename: str, exp_time: int, count: int, binning: int) -> bool:
         """ Take a full set of dark frames for a given session. Takes exposure_count
         dark frames.
         """
@@ -254,8 +269,11 @@ class Executor(object):
 
             self.telescope.take_dark(filename, exp_time, binning)
 
+        return True
 
-    def take_biases(self, basename: str, exp_time: int, count: int, binning: int, numbias: int):
+
+    def take_biases(self, basename: str, exp_time: int,
+                    count: int, binning: int, numbias: int) -> bool:
         """ Take the full set of biases for a given session.
         This takes exposure_count*numbias biases
         """
@@ -269,16 +287,28 @@ class Executor(object):
         for nb in range(0, count*numbias):
             self.telescope.take_bias(biasname+'_'+str(nb), binning)
 
-                     
-    @staticmethod
-    def log(msg: str, color: str='white') -> bool:
+        return True
+
+    
+    def init_log(self) -> bool:
+        """ Initialize the object logging system - currently only opens
+        the logging file. 
+        """
+        name = self.config.get('general').get('shortname') or 'atlas'
+        self.log_file = open('/var/log/'+name+'/executor.log', 'a')
+
+        return True
+
+        
+    def log(self, msg: str, color: str='white') -> bool:
         """ Prints a log message to STDOUT. Returns True if successful, False
         otherwise.
         """
         colors = {'red':'31', 'green':'32', 'blue':'34', 'cyan':'36',
                   'white':'37', 'yellow':'33', 'magenta':'34'}
         logtime = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        log = '\033[1;'+colors[color]+'m'+logtime+' EXECUTOR: '+msg+'\033[0m'
-        print(log)
+        log = logtime+' EXECUTOR: '+msg
+        color_log = '\033[1;'+colors[color]+'m'+log+'\033[0m'
+        self.log_file.write(log+'\n')
+        print(color_log)
         return True
-

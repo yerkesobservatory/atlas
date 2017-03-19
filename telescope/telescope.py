@@ -46,6 +46,12 @@ class Telescope(object):
             self.transport = self.ssh.get_transport()
 
 
+    def disconnect(self) -> bool:
+        """ Disconnect the SSH connection to the telescope. 
+        """
+        self.ssh.close()
+
+        
     def open_dome(self) -> bool:
         """ Checks that the weather is acceptable, and then opens the dome,
         if it is not already open, and  also enables tracking.
