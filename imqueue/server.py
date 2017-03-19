@@ -133,7 +133,6 @@ class QueueServer(object):
         # calculate time at which we start the executor
         exec_time = maya.parse(self.queue_date.iso8601()[0:10]+' '+self.start_time+' UTC')
         delta_time = (exec_time.datetime() - maya.now().datetime()).total_seconds()
-        print('T: {}'.format(delta_time))
 
         # create timer to start executor in delta_time
         self.timer = threading.Timer(delta_time, self.start_executor)

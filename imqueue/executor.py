@@ -63,7 +63,7 @@ class Executor(object):
             self.log('Unable to open queue file. Please check that it exists. Exitting',
                      color='red')
             # TODO: Email system admin if there is an error
-            self.log(str(sys.exc_info()), color='red')
+            self.log("load_queue: "+str(sys.exc_info()), color='red')
             exit(-1)
 
             
@@ -88,10 +88,11 @@ class Executor(object):
         except:
             self.log('Unable to connect to '+name+'. Please try again later. '
                      'If the problem persists, please contact '+email, 'red')
-            self.log(str(sys.exc_info()), color='red')
+            self.log("connect: "+str(sys.exc_info()), color='red')
             exit(-1)
 
         return client
+    
 
     def finish(self) -> bool:
         """ Close the executor in event of success of failure; closes the telescope, 
@@ -131,7 +132,6 @@ class Executor(object):
     def start(self) -> bool:
         """ Executes the list of session objects for this queue.
         """
-        print("starting")
 
         # wait until weather is good
         self.wait_until_good()
@@ -170,7 +170,7 @@ class Executor(object):
             except:
                 self.log("Error while executiong session for {}".format(session['user']),
                          color="red")
-                self.log(str(sys.exc_info()), color='red')
+                self.log("start: "+str(sys.exc_info()), color='red')
                 self.finish()
                 exit(1)
                 
@@ -191,7 +191,7 @@ class Executor(object):
         dirname = self.remote_dir+'/'+'_'.join([date, session.get('user'), session.get('target')])
 
         # create directory
-        # self.telescope.make_dir(basename)
+        self.telescope.make_dir(dirname)
 
         basename = dirname+'/'+'_'.join([date, session.get('user'), session.get('target')])
 
@@ -229,7 +229,7 @@ class Executor(object):
         except:
             self.log('The executor has encountered an error. Please manually'
                      'close down the telescope.', 'red')
-            self.log(str(sys.exc_info()), color='red')
+            self.log("execute: "+str(sys.exc_info()), color='red')
             self.finish()
             return None
 
@@ -254,7 +254,7 @@ class Executor(object):
             # take exposure
             self.telescope.take_exposure(filename, exp_time, binning)
 
-            return True
+        return True
 
 
     def take_darks(self, basename: str, exp_time: int, count: int, binning: int) -> bool:

@@ -63,7 +63,7 @@ class Telescope(object):
         # check that weather is OK to open
         if self.weather_ok() == True:
             result = self.run_command("openup nocloud "
-                                        "&& track on")
+                                        "&& tx track on")
             if result == True: # everything was good
                 return True
             else: # one of the commands failed
@@ -202,8 +202,11 @@ class Telescope(object):
         True if successful. 
         """
         if self.dryrun is False:
-            self.run_command("mkdir "+name)
-            
+            try:
+                self.run_command("mkdir "+name)
+            except:
+                pass
+                
         return True
     
 
