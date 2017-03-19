@@ -189,7 +189,8 @@ Desktop View
 
  Form 
 
- input[type="text"], 
+ input[type="text"],
+ input[id="form-password"],
  textarea, 
  textarea.form-control {
      height: 50px;
@@ -216,6 +217,7 @@ Desktop View
  }
 
  input[type="text"]:focus, 
+ input[id="form-password"]:focus,
  textarea:focus, 
  textarea.form-control:focus {
      outline: 0;
@@ -224,9 +226,9 @@ Desktop View
      -moz-box-shadow: none; -webkit-box-shadow: none; box-shadow: none;
  }
 
- input[type="text"]:-moz-placeholder, textarea:-moz-placeholder, textarea.form-control:-moz-placeholder { color: #fff; }
- input[type="text"]:-ms-input-placeholder, textarea:-ms-input-placeholder, textarea.form-control:-ms-input-placeholder { color: #fff; }
- input[type="text"]::-webkit-input-placeholder, textarea::-webkit-input-placeholder, textarea.form-control::-webkit-input-placeholder { color: #fff; }
+ input[type="text"]:-moz-placeholder, input[id="form-password"]:-moz-placeholder, textarea:-moz-placeholder, textarea.form-control:-moz-placeholder { color: #fff; }
+ input[type="text"]:-ms-input-placeholder, input[id="form-password"]:-ms-input-placeholder, textarea:-ms-input-placeholder, textarea.form-control:-ms-input-placeholder { color: #fff; }
+ input[type="text"]::-webkit-input-placeholder, input[id="form-password"]::-webkit-input-placeholder, textarea::-webkit-input-placeholder, textarea.form-control::-webkit-input-placeholder { color: #fff; }
 
 
 
