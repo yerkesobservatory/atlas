@@ -203,7 +203,7 @@ class Telescope(object):
         """
         if self.dryrun is False:
             try:
-                self.run_command("mkdir "+name)
+                self.run_command("mkdir -p "+name)
             except:
                 pass
                 
