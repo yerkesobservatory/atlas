@@ -4,6 +4,7 @@ import sys
 import os
 import threading
 import multiprocessing
+import subprocess
 import typing
 import json
 import time
@@ -109,7 +110,7 @@ class QueueServer(object):
                 split_name = f.split('_')
 
                 # if file is a queue
-                if len(split_name) >= 4 and split_name[3] == 'queue.json':
+                if len(split_name) == 4 and split_name[3] == 'queue.json':
 
                     # check its date
                     date = maya.parse(split_name[0]+' '+self.start_time+' UTC')
@@ -242,8 +243,13 @@ class QueueServer(object):
             self.log('Started executor with pid={}'.format(exec_proc.pid), 'green')
 
 
+        # append _completed to queue file
+        dest = queue.replace('json', '_completed.json')
+        subprocess.call(['mv', queue, dest])
+        
         # import the new queue
         self.queue_file, self.queue_date = self.find_queue()
+        print(self.queue_file, self.queue_date)
 
         # start a new timer for the next queue
         self.start_timer()
