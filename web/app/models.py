@@ -1,3 +1,4 @@
+import datetime
 from flask_sqlalchemy import SQLAlchemy
 from . import db, login_manager
 from flask_login import UserMixin
@@ -27,7 +28,11 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(12), index=False, unique=False)
     minor = db.Column(db.Boolean, index=True, unique=False, default=False)
     admin = db.Column(db.Boolean, index=True, unique=False, default=False)
+    today = datetime.date.today()
+    default_expiry = datetime.date(today.year+1, today.month, today.day)
+    expire = db.Column(db.Date, unique=False, default=default_expiry)
     confirmed = db.Column(db.Boolean, index=True, default=False)
+    
 
     @property
     def password(self):

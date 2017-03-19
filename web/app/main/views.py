@@ -14,7 +14,7 @@ def index():
     return redirect(url_for('auth.login'))
 
 @main.route('/queue', methods=['GET', 'POST'])
-# @login_required
+@login_required
 def queue():
 
     form = QueueForm()
