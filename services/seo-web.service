@@ -1,0 +1,26 @@
+# Systemd daemon to manage the web app
+[Unit]
+Description=Serve the SEO web app
+
+# start this service after the network has started
+After=network.target
+
+[Service]
+# we let our user own the files
+User=rprechelt
+
+# we put it in the nginx group
+Group=nginx
+
+# the directory containing the project
+WorkingDirectory=/data/seo/web
+
+# the environment to execute the project in
+Environment="PATH=/data/seo/.env/bin"
+
+# how to start the service
+ExecStart=/data/seo/.env/bin/gunicorn --workers 3 --bind unix:seo.sock -m 007 wsgi
+
+[Install]
+# we want this service to start when the multiuser system is running
+WantedBy=multi-user.target
