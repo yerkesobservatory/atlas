@@ -15,7 +15,6 @@ def send_email(dest, subject, template, **kwargs):
     """ Asynchronously sends email to dest, with subject,
     using template.html and template.txt.
     """
-    return True
     app = current_app._get_current_object()
     msg = Message(app.config['MAIL_SUBJECT_PREFIX'] + ' ' + subject,
                   sender=app.config['MAIL_SENDER'], recipients=[dest])

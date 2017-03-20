@@ -71,17 +71,18 @@ def register():
                             email=form.email.data,
                             password=form.password.data,
                             affiliation=form.affiliation.data,
-                            minor=form.minor.data)
+                            minor=form.minor.data,
+                            confirmed=True)
 
             # add the user to the database
             db.session.add(user)
             db.session.commit()
 
             # generate confirmation token and send
-            token = user.generate_confirmation_token()
-            send_email(user.email, 'Confirm your Account',
-                    'auth/email/confirm',  user=user, token=token)
-            flash('A confirmation email has been sent to you by email', 'success')
+            # token = user.generate_confirmation_token()
+            # send_email(user.email, 'Confirm your Account',
+            #         'auth/email/confirm',  user=user, token=token)
+            # flash('A confirmation email has been sent to you by email', 'success')
     else:
         for field, errors in form.errors.items():
             for error in errors:
@@ -143,12 +144,18 @@ def password_reset_request():
         # if user exists
         if user:
             token = user.generate_reset_token()
+            print("SENDING EMAIL")
             send_email(user.email, 'Reset your Password',
-                       'auth/email/reset_passsword', user=user,
+                       'auth/email/reset_password', user=user,
                        token=token, next=request.args.get('next'))
 
             flash(u'An email with instructions to reset your password '
                   'has been sent to you', 'success')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(u"{}: {}".format(getattr(form, field).label.text, error), 'register')
+                print(u"Error in the {} field: {}".format(getattr(form, field).label.text, error), 'register')
 
     return redirect(url_for('auth.login'))
 

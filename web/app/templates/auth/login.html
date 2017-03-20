@@ -71,6 +71,7 @@
        			<div class="modal-body">
         			<p>Enter your email address and we'll send you a reset link.</p>
 	            		<form name="reset" action="{{ url_for('auth.password_reset_request') }}" role="form" method="post" class="registration-form">
+				  {{ form.hidden_tag() }}
 
 	                	<div class="form-group">
 	                    	<label class="sr-only" for="form-email-address">Email Address</label>
