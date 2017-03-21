@@ -19,7 +19,7 @@ WorkingDirectory=/live/seo
 Environment="PATH=/live/seo/.env/bin"
 
 # how to start the service
-ExecStart=/live/seo/.env/bin/gunicorn --workers 3 --bind 127.0.0.1:8000 -m 007 manage:app
+ExecStart=/live/seo/.env/bin/python /live/seo/seo --start-queue
 
 [Install]
 # we want this service to start when the multiuser system is running

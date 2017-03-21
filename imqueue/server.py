@@ -260,7 +260,10 @@ class QueueServer(object):
         the logging file
         """
         name = self.config.get('general').get('shortname') or 'atlas'
-        self.log_file = open('/var/log/'+name+'/imqueue_server.log', 'a')
+        try:
+            self.log_file = open('/var/log/'+name+'/imqueue_server.log', 'a')
+        except:
+            self.log('Unable to open log file', color='red')
 
         return True
 
