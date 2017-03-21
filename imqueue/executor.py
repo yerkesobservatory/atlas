@@ -49,6 +49,9 @@ class Executor(object):
         # connect to MQTT broker
         self.client = self.connect()
 
+        # start!
+        self.start()
+
         
     def load_queue(self, filename: str) -> list:
         """ This loads a JSON queue file into a list of Python session

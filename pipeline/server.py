@@ -18,6 +18,7 @@ class PipelineServer(object):
         """
 
         self.log('Creating new pipeline...', 'green')
+        self.config = config
 
         # mqtt client to handle connection
         self.client = self.connect()

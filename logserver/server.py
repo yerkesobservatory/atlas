@@ -27,8 +27,8 @@ class LogServer(object):
         self.client = self.connect()
 
         # file name for JSON log
-        qdir = config['logging']['dir']
-        qname = config['logging']['name']+'_'
+        qdir = config.get('server').get('logdir')
+        qname = config.get'logging']['name']+'_'
         rootdir = config['rootdir']
         currdate = time.strftime('%Y-%m-%d', time.gmtime())
         self.filename = rootdir+"/"+qdir+"/"+qname+currdate+"_all_messages.json"
@@ -36,6 +36,9 @@ class LogServer(object):
         if self.file is None:
             self.log('Unable to open log file!', color='red')
         self.log('Storing logs in %s' % self.filename)
+
+        # start!
+        self.start()
 
         
     def connect(self) -> bool:
@@ -85,7 +88,7 @@ class LogServer(object):
         self.log(msg.topic+": "+msg.payload.decode())
 
 
-    def run(self):
+    def start(self):
         """ Starts the servers listening for new requests; server blocks
         on the specified port until it receives a request
         """
