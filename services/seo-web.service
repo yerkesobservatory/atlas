@@ -1,6 +1,6 @@
 # Systemd daemon to manage the web app
 [Unit]
-Description=Serve the SEO web app
+Description=SEO Web App
 
 # start this service after the network has started
 After=network.target
@@ -13,13 +13,13 @@ User=rprechelt
 Group=nginx
 
 # the directory containing the project
-WorkingDirectory=/data/seo/web
+WorkingDirectory=/live/seo/web
 
 # the environment to execute the project in
-Environment="PATH=/data/seo/.env/bin"
+Environment="PATH=/live/seo/.env/bin"
 
 # how to start the service
-ExecStart=/data/seo/.env/bin/gunicorn --workers 3 --bind unix:seo.sock -m 007 wsgi
+ExecStart=/live/seo/.env/bin/gunicorn --workers 3 --bind 127.0.0.1:8000 -m 007 manage:app
 
 [Install]
 # we want this service to start when the multiuser system is running
