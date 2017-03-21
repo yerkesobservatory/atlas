@@ -113,8 +113,11 @@ class QueueServer(object):
                 if len(split_name) == 4 and split_name[3] == 'queue.json':
 
                     # check its date
-                    date = maya.parse(split_name[0]+' '+self.start_time+' UTC')
-
+                    try:
+                        date = maya.parse(split_name[0]+' '+self.start_time+' UTC')
+                    except:
+                        continue
+                    
                     # if it's earlier than earliest
                     if date < queue_date and date > maya.when('now', timezone='UTC'):
                         queue_date = date
@@ -124,7 +127,10 @@ class QueueServer(object):
             # so we don't keep walking the file system recursively
             break
 
-        return queue_file, queue_date
+        if queue_date != maya.when('2100'):
+            return queue_file, queue_date
+        else:
+            return None, None
 
     
     def start_timer(self):
@@ -135,9 +141,12 @@ class QueueServer(object):
         exec_time = maya.parse(self.queue_date.iso8601()[0:10]+' '+self.start_time+' UTC')
         delta_time = (exec_time.datetime() - maya.now().datetime()).total_seconds()
 
-        # create timer to start executor in delta_time
-        self.timer = threading.Timer(delta_time, self.start_executor)
-        self.timer.start()
+        if delta_time < (60*60*24*30*12):
+            # create timer to start executor in delta_time
+            self.timer = threading.Timer(delta_time, self.start_executor)
+            self.timer.start()
+        else:
+            self.log('Queue date is too far in the past or future', color='red')
 
 
     def start(self):
@@ -180,9 +189,10 @@ class QueueServer(object):
         name = self.config.get('general').get('shortname')
         date = msg.get('date') or None
         if date is not None:
-            filename = '_'.join([name, date, 'imaging_queue.json'])
-            with open(self.queue_dir+'/'+filename, 'w+') as f:
+            filename = '_'.join([date.replace('/', '-'), name, 'imaging_queue.json'])
+            with open(self.queue_dir+'/'+filename, 'w') as f:
                 f.write('# IMAGING QUEUE FOR {} CREATED ON {}'.format(date, maya.now()))
+                self.log('Creating image queue for {} on {}'.format(date, maya.now()), color='green')
 
             # if this is our first queue
             if self.queue_file is None:
