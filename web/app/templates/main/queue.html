@@ -21,8 +21,10 @@
 	  		</a>
 	  	</div>
   	<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-    	<ul class="nav navbar-nav navbar-right">
-        	<li><a href="#">Logout</a></li>
+    	  <ul class="nav navbar-nav navbar-right">
+	    {% if current_user.is_authenticated %}
+            <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+	    {% endif %}
       	</ul>
     </div><!-- /.navbar-collapse -->
   
