@@ -4,14 +4,12 @@ import sys
 import argparse
 import signal
 from os.path import dirname, realpath
-import multiprocessing
-import subprocess
 import time
+import subprocess
 import yaml
 
-import telescope.server
 import pipeline.server
-import logserver.server
+# import logserver.server
 import imqueue.server
 import imqueue.executor
 
@@ -36,29 +34,22 @@ except:
 
 
 ########################## COMMAND LINE PARSER ########################
-parser = argparse.ArgumentParser(prog='atlas',
+parser = argparse.ArgumentParser(prog='seo',
                                  description='Manage '+config['general']['name'])
-parser.add_argument('--start-all', '-a', action='store_true',
-                    default=False, help='Start all components')
-parser.add_argument('--start-pipeline', '-p', action='store_true',
+arg_group = parser.add_mutually_exclusive_group()
+arg_group.add_argument('--start-pipeline', '-p', action='store_true',
                     default=False, help='Start the pipeline server')
-parser.add_argument('--start-queue', '-q', action='store_true',
+arg_group.add_argument('--start-queue', '-q', action='store_true',
                     default=False, help='Start the queue server')
-parser.add_argument('--start-broker', '-b', action='store_true',
-                    default=False, help='Start the MQTT messaging broker')
-parser.add_argument('--start-db', action='store_true',
-                    default=False, help='Start the PostgresSQL database server')
-parser.add_argument('--start-telescope', '-t', action='store_true',
-                    default=False, help='Start the telescope control server')
-parser.add_argument('--start-logserver', '-l', action='store_true',
+arg_group.add_argument('--start-logserver', '-l', action='store_true',
                     default=False, help='Start the logging server')
-parser.add_argument('--start-web', '-w', action='store_true',
+arg_group.add_argument('--start-web', '-w', action='store_true',
                     default=False, help='Start the web application')
-parser.add_argument('--start-executor', '-e', default=None,
+arg_group.add_argument('--start-executor', '-e', default=None,
                         help='Start the executor with a given file')
-parser.add_argument('--dryrun', '-d', action='store_true', default=False, 
-                        help='If enabled, the executed commands are printed but not executed')
-parser.add_argument('--version', action='version', version='%(prog)s 0.0.1')
+arg_group.add_argument('--version', action='version', version='%(prog)s 0.0.1')
+parser.add_argument('--dry-run', '-d', action='store_true',
+                    default=False, help='Print the executor commands but do not run them')
 
 ####################### PARSE COMMAND LINE ARGS ####################
 ARGS = parser.parse_args()
@@ -76,51 +67,11 @@ def log(msg: str, color: str='white') -> bool:
     print(log)
     return True
 
-# create a handler for SIGINT
-def handle_exit(self, *_):
-    """ SIGINT handler to check for Ctrl+C for quitting the server.
-    """
-    log('Are you sure you would like to quit [y/n]?', 'cyan')
-    choice = input().lower()
-    if choice == 'y':
-        log('Closing down...', 'cyan')
-
-        # terminate all started processes
-        for process in processes:
-            process.terminate()
-
-        exit(0)
-
-# force children to ignore SIGINT
-signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-# list of processes that have been created
-processes = []
-
-
-############################ TELESCOPE SERVER ######################
-if ARGS.start_telescope is True:
-    try:
-        # create telescope server
-        telescope = telescope.server.TelescopeServer(config)
-        telescope_proc = multiprocessing.Process(target=telescope.run)
-        processes.append(telescope_proc)
-        telescope_proc.start()
-        log("Started telescope server with pid={}".format(telescope_proc.pid), "green")
-    except:
-        log("Unable to start telescope server", "red")
-        print(sys.exc_info())
-
-
 ############################ QUEUE SERVER ######################
 if ARGS.start_queue is True:
     try:
         # create queue server
         imqueue = imqueue.server.QueueServer(config)
-        imqueue_proc = multiprocessing.Process(target=imqueue.run)
-        processes.append(imqueue_proc)
-        imqueue_proc.start()
-        log("Started queue server with pid={}".format(imqueue_proc.pid), "green")
     except:
         log("Unable to start queue server", "red")
         print(sys.exc_info())
@@ -129,12 +80,7 @@ if ARGS.start_queue is True:
 if ARGS.start_executor is not None:
     try:
         # create pipeline server
-        execprog = imqueue.executor.Executor(ARGS.start_executor, config, dryrun=ARGS.dryrun)
-        execprog_proc = multiprocessing.Process(target=execprog.start)
-        processes.append(execprog_proc)
-        execprog_proc.start()
-        log("Started executor for {} with pid={}".format(ARGS.start_executor, execprog_proc.pid),
-                "green")
+        executr = imqueue.executor.Executor(ARGS.start_executor, config, dryrun=ARGS.dry_run)
     except:
         log("Unable to start executor", "red")
         print(sys.exc_info())
@@ -145,53 +91,15 @@ if ARGS.start_pipeline is True:
     try:
         # create pipeline server
         pipeline = pipeline.server.PipelineServer(config)
-        pipeline_proc = multiprocessing.Process(target=pipeline.run)
-        processes.append(pipeline_proc)
-        pipeline_proc.start()
-        log("Started pipeline server with pid={}".format(pipeline_proc.pid), "green")
     except:
         log("Unable to start pipeline server", "red")
         print(sys.exc_info())
 
-
 ############################ LOGGING SERVER ######################
-if ARGS.start_logserver is True:
-    try:
-        # create pipeline server
-        logserver = logserver.server.LogServer(config)
-        logserver_proc = multiprocessing.Process(target=logserver.run)
-        processes.append(logserver_proc)
-        logserver_proc.start()
-        log("Started log server with pid={}".format(logserver_proc.pid), "green")
-    except:
-        log("Unable to start log server", "red")
-        print(sys.exc_info())
-
-
-############################ BROKER ######################
-if ARGS.start_broker is True:
-    try:
-        # create pipeline server
-        port = config.get('mosquitto').get('port')
-        broker_cmd = ['mosquitto', '-d', '-p', str(port)]
-        broker_proc = subprocess.Popen(broker_cmd)
-        log("Started broker on port {} with pid={}".format(port,  broker_proc.pid), "green")
-    except:
-        log("Unable to start broker", "red")
-        print(sys.exc_info())
-
-
-############################ DB ######################
-if ARGS.start_db is True:
-    try:
-        # create pipeline server
-        db_cmd = ['postgres', '-D', '/usr/local/var/postgres']
-        db_proc = subprocess.Popen(db_cmd)
-        log("Started database with pid={}".format(db_proc.pid), "green")
-    except:
-        log("Unable to start database", "red")
-        print(sys.exc_info())
-
-
-# RE-REGISTER SIGNINT for parent process
-signal.signal(signal.SIGINT, handle_exit)
+# if ARGS.start_logserver is True:
+#     try:
+#         # create pipeline server
+#         logserver = logserver.server.LogServer(config)
+#     except:
+#         log("Unable to start log server", "red")
+#         print(sys.exc_info())
