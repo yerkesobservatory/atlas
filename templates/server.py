@@ -27,7 +27,7 @@ class MyServer(mqtt.MQTTServer):
         return []
 
     
-    def process_message(self, msg: {str}) -> bool:
+    def process_message(self, msg: {str}):
         """ This function is given a JSON dictionary message from the broker
         and must decide how to process the message given the servers purpose. This
         is automatically called whenever a message is received
@@ -35,4 +35,15 @@ class MyServer(mqtt.MQTTServer):
 
         # USER MUST COMPLETE
 
-        return True
+        return
+
+
+    def close(self):
+        """ This function is called when the server receives a shutdown
+        signal (Ctrl+C) or SIGINT signal from the OS. Use this to close
+        down open files or connections. 
+        """
+        
+        # USER [OPTIONAL]
+        
+        return 

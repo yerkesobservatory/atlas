@@ -1,6 +1,6 @@
 import sys
 import os
-import threading
+import atexit
 import typing
 import json
 import time
@@ -30,6 +30,9 @@ class MQTTServer(object):
         # connect to MQTT broker
         self.client = self._connect()
 
+        # register atexit handler
+        atexit.register(self._handle_exit)
+
 
     def topics(self) -> [str]:
         """ This function must return a list of topics that you wish the server
@@ -40,6 +43,7 @@ class MQTTServer(object):
 
         return []
 
+    
     def process_message(self, msg: {str}) -> bool:
         """ This function is given a JSON dictionary message from the broker
         and must decide how to process the message given the application. 
@@ -49,7 +53,16 @@ class MQTTServer(object):
 
         return True
 
+    
+    def close(self):
+        """ This function is called when the server receives a shutdown
+        signal (Ctrl+C) or SIGINT signal from the OS. Use this to close
+        down open files or connections. 
+        """
 
+        return 
+
+    
     def _connect(self) -> bool:
         """ Connect to the MQTT broker and return the MQTT client
         object.
@@ -121,6 +134,22 @@ class MQTTServer(object):
 
         return True
 
+    
+    def _handle_exit(self, *_):
+        """ Registered with atexit to call
+        the user completed function self.close()
+        """
+        self.log('Closing down...', 'cyan')
+
+        # call user close function
+        self.close()
+
+        # close log file
+        self.log_file.close()
+
+        # close MQTT connection
+        self.client.disconnect()
+            
     
     def log(self, msg: str, color: str='white') -> bool:
         """ Prints a log message to STDOUT. Returns True if successful, False
