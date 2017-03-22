@@ -28,7 +28,7 @@ class MQTTServer(object):
         self.log('Creating new '+name+'...', 'green')
 
         # connect to MQTT broker
-        self.client = self.connect()
+        self.client = self._connect()
 
 
     def topics(self) -> [str]:
@@ -91,16 +91,17 @@ class MQTTServer(object):
         """ This function is called whenever a message is received.
         """
         msg = json.loads(msg.payload.decode())
-        self.process_message(self, msg)
+        self.process_message(msg)
         
             
-    def _init_log(self, name) -> bool:
+    def _init_log(self) -> bool:
         """ Initialize the object logging system - currently only opens
         the logging file
         """
-        logname = name.replace(" ", "_").lower()
+        logname = self._name.replace(" ", "_").lower()
+        logdir = self.config['queue']['dir']
         try:
-            self.log_file = open('/var/log/'+config['general']['shortname']+'/'+logname, 'a')
+            self.log_file = open(logdir+'/'+logname, 'a+')
         except:
             self.log('Unable to open log file', color='red')
 
@@ -115,7 +116,7 @@ class MQTTServer(object):
                   'white':'37', 'yellow':'33', 'magenta':'34'}
         logtime = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         logname = self._name.upper()
-        log = logtime+logname+': '+msg
+        log = logtime+' '+logname+': '+msg
         color_log = '\033[1;'+colors[color]+'m'+log+'\033[0m'
         
         self.log_file.write(log+'\n')
