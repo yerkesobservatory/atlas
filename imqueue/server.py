@@ -175,11 +175,16 @@ class QueueServer(object):
         """ This takes a raw message from process_message and writes the JSON data
         into the queue file.
         """
-        self.log('Adding new request from {} to queue.'.format(msg.get('user')))
-        with open(self.queue_file, 'a') as f:
-            f.write(json.dumps(msg)+'\n')
+        if self.queue_file is None or self.queue_date is None:
+            self.log('Received a request but queue is disabled. Discarding...', color='magenta')
+            return False
+        else:
+            self.log('Adding new request from {} to queue.'.format(msg.get('user')))
+            with open(self.queue_dir+'/'+self.queue_file, 'a+') as f:
+                f.write(json.dumps(msg)+'\n')
+                self.log(json.dumps(msg))
 
-        return True
+            return True
 
     
     def create_queue(self, msg: dict) -> bool:
@@ -191,7 +196,7 @@ class QueueServer(object):
         if date is not None:
             filename = '_'.join([date.replace('/', '-'), name, 'imaging_queue.json'])
             with open(self.queue_dir+'/'+filename, 'w') as f:
-                f.write('# IMAGING QUEUE FOR {} CREATED ON {}'.format(date, maya.now()))
+                f.write('# IMAGING QUEUE FOR {} CREATED ON {}\n'.format(date, maya.now()))
                 self.log('Creating image queue for {} on {}'.format(date, maya.now()), color='green')
 
             # if this is our first queue
@@ -269,9 +274,9 @@ class QueueServer(object):
         """ Initialize the object logging system - currently only opens
         the logging file
         """
-        name = self.config.get('general').get('shortname') or 'atlas'
+        logdir = self.config.get('server').get('logdir') or '.'
         try:
-            self.log_file = open('/var/log/'+name+'/imqueue_server.log', 'a')
+            self.log_file = open(logdir+'/queue_server.log', 'a+')
         except:
             self.log('Unable to open log file', color='red')
 
@@ -288,5 +293,6 @@ class QueueServer(object):
         log = logtime+' QUEUE SERVER: '+msg
         color_log = '\033[1;'+colors[color]+'m'+log+'\033[0m'
         self.log_file.write(log+'\n')
+        self.log_file.flush()
         print(color_log)
         return True
