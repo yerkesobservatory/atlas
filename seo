@@ -9,7 +9,7 @@ import subprocess
 import yaml
 
 import pipeline.server
-# import logserver.server
+import notify.server
 import imqueue.server
 import imqueue.executor
 
@@ -45,6 +45,8 @@ arg_group.add_argument('--start-logserver', '-l', action='store_true',
                     default=False, help='Start the logging server')
 arg_group.add_argument('--start-web', '-w', action='store_true',
                     default=False, help='Start the web application')
+arg_group.add_argument('--start-notify', '-n', action='store_true',
+                    default=False, help='Start the notification server')
 arg_group.add_argument('--start-executor', '-e', default=None,
                         help='Start the executor with a given file')
 arg_group.add_argument('--version', action='version', version='%(prog)s 0.0.1')
@@ -54,52 +56,12 @@ parser.add_argument('--dry-run', '-d', action='store_true',
 ####################### PARSE COMMAND LINE ARGS ####################
 ARGS = parser.parse_args()
 
-# create logging function for easy colorized printing
-def log(msg: str, color: str='white') -> bool:
-    """ Prints a log message to STDOUT. Returns True if successful, False
-    otherwise.
-    """
-    colors = {'red':'31', 'green':'32', 'blue':'34', 'cyan':'36',
-              'white':'37', 'yellow':'33', 'magenta':'34'}
-    logtime = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-    name = ' '+config['general']['shortname']+': '
-    log = '\033[1;'+colors[color]+'m'+logtime+name+msg+'\033[0m'
-    print(log)
-    return True
-
-############################ QUEUE SERVER ######################
+###################### START THE APPROPRIATE SERVICES #####################
 if ARGS.start_queue is True:
-    try:
-        # create queue server
-        imqueue = imqueue.server.QueueServer(config)
-    except:
-        log("Unable to start queue server", "red")
-        print(sys.exc_info())
-
-############################ EXECUTOR ######################
+    imqueue = imqueue.server.QueueServer(config)
 if ARGS.start_executor is not None:
-    try:
-        # create pipeline server
-        executr = imqueue.executor.Executor(ARGS.start_executor, config, dryrun=ARGS.dry_run)
-    except:
-        log("Unable to start executor", "red")
-        print(sys.exc_info())
-
-        
-############################ PIPELINE SERVER ######################
+    executr = imqueue.executor.Executor(ARGS.start_executor, config, dryrun=ARGS.dry_run)
 if ARGS.start_pipeline is True:
-    try:
-        # create pipeline server
-        pipeline = pipeline.server.PipelineServer(config)
-    except:
-        log("Unable to start pipeline server", "red")
-        print(sys.exc_info())
-
-############################ LOGGING SERVER ######################
-# if ARGS.start_logserver is True:
-#     try:
-#         # create pipeline server
-#         logserver = logserver.server.LogServer(config)
-#     except:
-#         log("Unable to start log server", "red")
-#         print(sys.exc_info())
+    pipeline = pipeline.server.PipelineServer(config)
+if ARGS.start_notify is True:
+    notify = notify.server.NotificationServer(config)
