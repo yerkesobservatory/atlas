@@ -55,7 +55,7 @@ def register():
             data = {}
         
         # check that email and lastname matches
-        if data.get('email') != form.email.data:
+        if data.get('email').rstrip() != form.email.data.rstrip():
             print(u"Invalid registration token - received {}, expected {}".format(data.get('email'), form.email.data))
             flash(u"Invalid registration token", 'register')
         else:
