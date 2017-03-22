@@ -330,25 +330,5 @@ class Telescope(object):
                          " `closedown` and `logout`.", color="red")
                 exit(1)
 
-    def copy_files(self, remote: str, local: str) -> bool:
-        """ Copy the file located at path "remote" on the telescope
-        server to path "local" on the queue server.
-        """
-
-        # start sftp
-        sftp = self.ssh.open_sftp()
-
-        # transfer file from remote to local
-        try:
-            sftp.get(remote, local)
-        except:
-            self.log("Unable to transfer file from telescope controller.", color="red")
-            self.log(str(sys.exc_info()), color='red')
-            return False
-
-        # close sftp
-        sftp.close()
-
-        return True
 
 
