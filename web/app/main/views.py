@@ -52,7 +52,7 @@ def build_msg(form):
     msg['exposure_time'] = form.exptime.data
     msg['exposure_count'] = form.expcount.data
     msg['binning'] = form.binning.data
-    msg['user'] = 'current_user' # current_user.email
+    msg['user'] = (current_user.email).split('@')[0]
     msg['note'] = form.note.data
     msg['filters'] = []
 
