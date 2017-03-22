@@ -58,9 +58,9 @@ else
     # restart seo services
     echo "About to restart seo.services..."
     read -n 1
-    systemctl restart seo-broker
-    systemctl restart seo-queue
-    systemctl restart seo-web
+    for service in `ls /live/seo/services/*.service`; do
+	systemctl restart $service
+    done
 
     # restart nginx
     echo "About to restart nginx..."
