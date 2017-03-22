@@ -9,6 +9,7 @@ import subprocess
 import yaml
 
 import pipeline.server
+import logserver.server
 import notify.server
 import imqueue.server
 import imqueue.executor
@@ -65,3 +66,5 @@ if ARGS.start_pipeline is True:
     pipeline = pipeline.server.PipelineServer(config)
 if ARGS.start_notify is True:
     notify = notify.server.NotificationServer(config)
+if ARGS.start_logserver is True:
+    log = logserver.server.LogServer(config)
