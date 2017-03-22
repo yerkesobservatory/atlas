@@ -61,7 +61,10 @@ class Executor(object):
         try:
             with open(self.filename) as queue:
                 for line in queue:
-                    self.sessions.append(json.loads(line))
+                    if line[0] == '#' or len(line) <= 1:
+                        continue
+                    else:
+                        self.sessions.append(json.loads(line))
         except:
             self.log('Unable to open queue file. Please check that it exists. Exitting',
                      color='red')
