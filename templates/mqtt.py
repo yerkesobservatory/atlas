@@ -113,9 +113,9 @@ class MQTTServer(object):
         the logging file
         """
         logname = self._name.replace(" ", "_").lower()
-        logdir = self.config['queue']['dir']
+        logdir = self.config['server']['logdir']
         try:
-            self.log_file = open(logdir+'/'+logname, 'a+')
+            self.log_file = open(logdir+'/'+logname+'.log', 'a+')
         except:
             self.log('Unable to open log file', color='red')
 
