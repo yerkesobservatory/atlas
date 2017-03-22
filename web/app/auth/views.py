@@ -56,7 +56,7 @@ def register():
         
         # check that email and lastname matches
         if data.get('email') != form.email.data:
-            print(u"Invalid registration token")
+            print(u"Invalid registration token - received {}, expected {}".format(data.get('email'), form.email.data))
             flash(u"Invalid registration token", 'register')
         else:
             # check if user exists
@@ -77,6 +77,8 @@ def register():
             # add the user to the database
             db.session.add(user)
             db.session.commit()
+
+            print(u"User {} successfully registered".format(user.email))
 
             # generate confirmation token and send
             # token = user.generate_confirmation_token()
