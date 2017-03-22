@@ -313,5 +313,6 @@ class Executor(object):
         log = logtime+' EXECUTOR: '+msg
         color_log = '\033[1;'+colors[color]+'m'+log+'\033[0m'
         self.log_file.write(log+'\n')
+        self.log_file.flush()
         print(color_log)
         return True
