@@ -92,6 +92,20 @@ class MQTTServer(object):
         """
         msg = json.loads(msg.payload.decode())
         self.process_message(msg)
+
+
+    def notify(self, content, to:str = None) -> bool:
+        """ Send an email to the 'to' destination, with content 'content'
+        """
+        msg = {}
+        msg['action'] = 'email'
+        if to is None:
+            msg['to'] = self.config['general']['email']
+        else:
+            msg['to'] = to
+        msg['subject'] = self.config['mail']['subject']
+        msg['content'] = content
+        self.client.publish('/seo/notify', json.dumps(msg))
         
             
     def _init_log(self) -> bool:

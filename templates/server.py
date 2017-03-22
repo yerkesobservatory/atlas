@@ -1,4 +1,4 @@
-from template import mqtt
+from templates import mqtt
 
 class MyServer(mqtt.MQTTServer):
     """ USER MUST DESCRIBE FUNCTIONALITY OF THIS CLASS IN THIS DOCSTRING
