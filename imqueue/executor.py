@@ -1,33 +1,25 @@
 ## This file implements the execution of telescope queues; at the scheduled time,
-## it loads in the queue file for tonight's imaging, converts them to Session objects,
-## and executes them
-import sys
-import time
-import typing
-import json
+## it loads in the queue file for tonight's imaging and executes each request
 
-import paho.mqtt.client as mqtt
+from templates import mqtt
 import telescope
 from telescope import telescope
 from imqueue import schedule
 
-class Executor(object):
+
+class Executor(mqtt.MQTTServer):
     """ This class is responsible for executing and scheduling a
     list of imaging sessions stored in the queue constructed by
     the queue server.
     """
 
-    def __init__(self, filename: str, config: dict, dryrun: bool=False):
+    def __init__(self, filename: str, config: {str}, dryrun: bool=False):
         """ This creates a new executor to execute a single nights
         list of sessions stored in the JSON file specified by filename.
         """
 
-        # filename to be read
-        self.filename = filename
-        self.config = config
-
-        # initialize logging
-        self.init_log()
+        # MUST INIT SUPERCLASS FIRST
+        super().__init__(config, "Executor")
 
         # load queue from disk
         self.sessions = []
@@ -46,13 +38,10 @@ class Executor(object):
         # directory to store images locally during pipeline
         self.local_dir = config.get('queue').get('dir')
 
-        # connect to MQTT broker
-        self.client = self.connect()
-
-        # start!
+        # MUST END WITH start() - THIS BLOCKS
         self.start()
 
-        
+
     def load_queue(self, filename: str) -> list:
         """ This loads a JSON queue file into a list of Python session
         objects that can then be executed.
@@ -73,42 +62,6 @@ class Executor(object):
             exit(-1)
 
             
-    def connect(self) -> bool:
-        """ Connect to the MQTT broker and return the MQTT client
-        object.
-        """
-
-        # mqtt client to handle connection
-        client = mqtt.Client()
-
-        # server information
-        host = self.config.get('server').get('host') or 'localhost'
-        port = self.config.get('server').get('mosquitto').get('port') or 1883
-        name = self.config.get('general').get('name') or 'Atlas'
-        email = self.config.get('general').get('email') or 'your system administrator'
-
-        # connect to message broker
-        try:
-            client.connect(host, port, 60)
-            self.log('Successfully connected to '+name, color='green')
-        except:
-            self.log('Unable to connect to '+name+'. Please try again later. '
-                     'If the problem persists, please contact '+email, 'red')
-            self.log("connect: "+str(sys.exc_info()), color='red')
-            exit(-1)
-
-        return client
-    
-
-    def finish(self) -> bool:
-        """ Close the executor in event of success of failure; closes the telescope, 
-        closes ssh connection, closes log file
-        """
-        self.telescope.close_down()
-        self.telescope.disconnect()
-        self.log_file.close()
-    
-    
     def wait_until_good(self) -> bool:
         """ Wait until the weather is good for observing.
         Waits 10 minutes between each trial. Cancels execution
@@ -134,7 +87,7 @@ class Executor(object):
 
         return True
 
-
+    
     def start(self) -> bool:
         """ Executes the list of session objects for this queue.
         """
@@ -154,7 +107,6 @@ class Executor(object):
             # schedule remaining sessions
             session, wait = schedule.schedule(self.sessions)
             self.log("Scheduler has selected {}".format(session))
-            # session = self.sessions[0]
 
             # check whether we need to wait before executing
             if wait != -1:
@@ -300,26 +252,19 @@ class Executor(object):
         return True
 
     
-    def init_log(self) -> bool:
-        """ Initialize the object logging system - currently only opens
-        the logging file. 
+    def finish(self) -> bool:
+        """ Close the executor in event of success of failure; closes the telescope, 
+        closes ssh connection, closes log file
         """
-        name = self.config.get('general').get('shortname') or 'atlas'
-        # self.log_file = open('/var/log/'+name+'/executor.log', 'a')
-
-        return True
+        self.telescope.close_down()
+        self.telescope.disconnect()
 
         
-    def log(self, msg: str, color: str='white') -> bool:
-        """ Prints a log message to STDOUT. Returns True if successful, False
-        otherwise.
+    def close(self):
+        """ This function is called when the server receives a shutdown
+        signal (Ctrl+C) or SIGINT signal from the OS. Use this to close
+        down open files or connections. 
         """
-        colors = {'red':'31', 'green':'32', 'blue':'34', 'cyan':'36',
-                  'white':'37', 'yellow':'33', 'magenta':'34'}
-        logtime = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        log = logtime+' EXECUTOR: '+msg
-        color_log = '\033[1;'+colors[color]+'m'+log+'\033[0m'
-        # self.log_file.write(log+'\n')
-        # self.log_file.flush()
-        print(color_log)
-        return True
+        self.finish()
+        
+        return 
