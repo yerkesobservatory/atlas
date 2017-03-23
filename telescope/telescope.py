@@ -77,7 +77,8 @@ class Telescope(object):
         """ Closes the current session, closes the dome, and logs out. Returns
         True if successful in closing down, False otherwise.
         """
-        return self.run_command("closedown && logout")
+        return self.run_command("closedown")
+    
 
     def close_dome(self) -> bool:
         """ Closes the dome, but leaves the session connected. Returns
