@@ -2,6 +2,7 @@
 # should be run except through the Telescope interface provided below
 
 import typing
+import socket
 import re
 import paramiko
 import time
@@ -20,31 +21,38 @@ class Telescope(object):
         """
         self.dryrun = dryrun
         if self.dryrun is not True:
-            # create an SSH client
-            self.ssh = paramiko.SSHClient()
-
-            # load host keys for verified connection
-            self.ssh.load_system_host_keys()
-
-            # insert keys - this needs to be removed ASAP
-            self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-            # connect!
-            try:
-                self.ssh.connect('mail.stoneedgevineyard.com', username='rprechelt')
-                self.log('Successfully connected to the telescope control server', color='green')
-            except paramiko.AuthenticationException: # unable to authenticate
-                self.log('Unable to authenticate connection to aster', color='red')
-                exit(1)
-                # TODO: Email admin
-            except: # something else went wrong
-                self.log('sirius has encountered an unknown error in connecting to aster',
-                         color='red')
-                exit(1)
+            # create an SSH client and connect
+            self.ssh = self.connect()
 
             # save ssh transport
             self.transport = self.ssh.get_transport()
 
+
+    def connect(self):
+        """ Create a SSH connection to the telescope, 
+        """
+        ssh = paramiko.SSHClient()
+        
+        # load host keys for verified connection
+        ssh.load_system_host_keys()
+
+        # insert keys - this needs to be removed ASAP
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        # connect!
+        try:
+            ssh.connect('mail.stoneedgevineyard.com', username='rprechelt')
+            self.log('Successfully connected to the telescope control server', color='green')
+        except paramiko.AuthenticationException: # unable to authenticate
+            self.log('Unable to authenticate connection to aster', color='red')
+            exit(1)
+            # TODO: Email admin
+        except: # something else went wrong
+            self.log('sirius has encountered an unknown error in connecting to aster',
+                     color='red')
+            exit(1)
+
+        return ssh
 
     def disconnect(self) -> bool:
         """ Disconnect the SSH connection to the telescope. 
@@ -312,12 +320,19 @@ class Telescope(object):
         """ Executes a shell command either locally, or remotely via ssh.
         Returns the byte string representing the captured STDOUT
         """
-        ## THIS NEEDS TO APPEND A WHITESPACE TO EVERY STRING
-        ## THIS NEEDS TO RETURN THE OUTPUT STRING AS SECOND RETURN ARGUMENT
         self.log("Executing: {}".format(command), color="magenta")
         if not self.dryrun:
+
+            # make sure the connection hasn't timed out due to sleep
+            # if it has, reconnect
             try:
-                stdin, stdout, stderr = self.ssh.exec_command(command)
+                self.ssh.exec_command('who')
+            except socket.error as e:
+                self.ssh = self.connect()
+
+            # try and execute command
+            try:
+                stdin, stdout, stderr = self.ssh.exec_command(command, timeout=10*60)
                 result = stdout.readlines()
                 if len(result) > 0:
                     result = result[0]
