@@ -152,12 +152,15 @@ class Executor(object):
             location = ""
 
             # schedule remaining sessions
-            # session = schedule.schedule(self.sessions)
-            session = self.sessions[0]
+            session, wait = schedule.schedule(self.sessions)
+            self.log("Scheduler has selected {}".format(session))
+            # session = self.sessions[0]
 
             # check whether we need to wait before executing
-            wait = session.get('wait')
-            if wait is not None:
+            if wait != -1:
+                self.log('Sleeping for {} seconds as requested by scheduler'.format(wait))
+                if wait > 10*60:
+                    self.telescope.close_down()
                 time.sleep(wait)
 
             # check whether every session executed correctly
@@ -193,7 +196,7 @@ class Executor(object):
         """
 
         # calculate base file name
-        date = time.strftime('%Y_%m_%d', time.gmtime())
+        date = time.strftime('%Y-%m-%d', time.gmtime())
         dirname = self.remote_dir+'/'+'_'.join([date, session.get('user'), session.get('target')])
 
         # create directory
@@ -202,6 +205,7 @@ class Executor(object):
         basename = dirname+'/'+'_'.join([date, session.get('user'), session.get('target')])
 
         try:
+            self.telescope.open_dome()
             # point telescope at target
             self.log("Slewing to {}".format(session['target']))
             if self.telescope.goto_target(session['target']) is False:
@@ -301,7 +305,7 @@ class Executor(object):
         the logging file. 
         """
         name = self.config.get('general').get('shortname') or 'atlas'
-        self.log_file = open('/var/log/'+name+'/executor.log', 'a')
+        # self.log_file = open('/var/log/'+name+'/executor.log', 'a')
 
         return True
 
@@ -315,7 +319,7 @@ class Executor(object):
         logtime = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
         log = logtime+' EXECUTOR: '+msg
         color_log = '\033[1;'+colors[color]+'m'+log+'\033[0m'
-        self.log_file.write(log+'\n')
-        self.log_file.flush()
+        # self.log_file.write(log+'\n')
+        # self.log_file.flush()
         print(color_log)
         return True

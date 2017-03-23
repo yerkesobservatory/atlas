@@ -35,9 +35,9 @@ def schedule(target_list: [str]):
     sunup_time = times[np.where((sun_altaz.alt < -12*u.deg) == True)[0][-1]]
     
     for target in target_list:
-        max_altitude_time['target'].append(target)
-        
-        target_coordinates = SkyCoord.from_name(target)
+        max_altitude_time['target'].append(target['target'])
+
+        target_coordinates = SkyCoord.from_name(target['target'])
         target_altaz = target_coordinates.transform_to(frame)
         if (np.max(target_altaz.alt)) > 40*u.degree:
             max_altitude_time['altitude'].append(np.max(target_altaz.alt))
@@ -56,4 +56,11 @@ def schedule(target_list: [str]):
     
     primary_target = max_altitude_time['target'][np.argmin(Time(max_altitude_time['time'])-Time.now())]
     primary_target_id = np.argmin(Time(max_altitude_time['time'])-Time.now())
-    return primary_target, max_altitude_time['wait'][primary_target_id]
+
+    for target in target_list:
+        if target['target'].upper() == primary_target.upper():
+            return target, int(max_altitude_time['wait'][primary_target_id].value)
+
+    print("Scheduler couldn't pick an object - returning first object in queue")
+    return target_list[0], -1
+
