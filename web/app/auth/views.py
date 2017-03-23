@@ -11,6 +11,7 @@ from ..email import send_email
 def login():
     """ Authenticates a user using email/password.
     """
+
     # create login form
     form = LoginForm()
 
@@ -50,12 +51,15 @@ def register():
         # create serializer to decode token
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
-            data = s.loads(form.token.data)
-        except:
-            data = {}
-        
+            data = s.loads(form.token.data.rstrip())
+        except Exception as e:
+            print(u"Invalid registration token - received {}, expected {}".format(form.token.data, form.email.data))
+            flash(u"Invalid registration token", 'register')
+            print(e)
+            return redirect(url_for('auth.login'))
+
         # check that email and lastname matches
-        if data.get('email').rstrip() != form.email.data.rstrip():
+        if data.get('email') != form.email.data.rstrip():
             print(u"Invalid registration token - received {}, expected {}".format(data.get('email'), form.email.data))
             flash(u"Invalid registration token", 'register')
         else:
@@ -79,6 +83,8 @@ def register():
             db.session.commit()
 
             print(u"User {} successfully registered".format(user.email))
+
+            return render_template('auth/thanksregister.html')
 
             # generate confirmation token and send
             # token = user.generate_confirmation_token()
@@ -188,6 +194,9 @@ def password_reset(token):
 
     return render_template('auth/reset_password.html', form=form)
 
+@auth.route('thanksregister', methods=['GET'])
+def thanksregister():
+    return render_template('auth/thanksregister.html')
 
 @auth.route('/logout')
 @login_required
