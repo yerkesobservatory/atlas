@@ -22,7 +22,7 @@ class QueueServer(mqtt.MQTTServer):
         """
 
         # MUST INIT SUPERCLASS FIRST
-        super().__init__(config, "SERVER NAME")
+        super().__init__(config, "Queue Server")
 
         # the time (in UTC) to start observing
         self.start_time = (self.config.get('queue').get('start_time') or "02:00")
@@ -52,16 +52,6 @@ class QueueServer(mqtt.MQTTServer):
 
         return ['/'+self.config.get('general').get('shortname')+'/queue']
 
-    
-    def process_message(self, msg: {str}):
-        """ This function is given a JSON dictionary message from the broker
-        and must decide how to process the message given the servers purpose. This
-        is automatically called whenever a message is received
-        """
-
-        # USER MUST COMPLETE
-
-        return
 
     def find_queue(self) -> str:
         """ Searches queue_dir for all valid queue files,
