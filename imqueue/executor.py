@@ -1,6 +1,8 @@
 ## This file implements the execution of telescope queues; at the scheduled time,
 ## it loads in the queue file for tonight's imaging and executes each request
 
+import json
+import time
 from templates import mqtt
 import telescope
 from telescope import telescope
@@ -23,7 +25,7 @@ class Executor(mqtt.MQTTServer):
 
         # load queue from disk
         self.sessions = []
-        self.load_queue(self.filename)
+        self.load_queue(filename)
         self.log("Executor has successfully loaded queue")
 
         # instantiate telescope object for control
@@ -48,17 +50,17 @@ class Executor(mqtt.MQTTServer):
         """
 
         try:
-            with open(self.filename) as queue:
+            with open(filename) as queue:
                 for line in queue:
                     if line[0] == '#' or len(line) <= 1:
                         continue
                     else:
                         self.sessions.append(json.loads(line))
-        except:
+        except Exception as e:
             self.log('Unable to open queue file. Please check that it exists. Exitting',
                      color='red')
             # TODO: Email system admin if there is an error
-            self.log("load_queue: "+str(sys.exc_info()), color='red')
+            self.log("load_queue: "+str(e), color='red')
             exit(-1)
 
             
@@ -105,7 +107,10 @@ class Executor(mqtt.MQTTServer):
             location = ""
 
             # schedule remaining sessions
-            session, wait = schedule.schedule(self.sessions)
+            # session, wait = schedule.schedule(self.sessions)
+            session = self.sessions[0]
+            session['target'] = session['target'].replace(' ', '')
+            wait = -1
             self.log("Scheduler has selected {}".format(session))
 
             # check whether we need to wait before executing
@@ -128,10 +133,10 @@ class Executor(mqtt.MQTTServer):
                 # remove the session from the remaining sessions
                 self.sessions.remove(session)
 
-            except:
+            except Exception as e:
                 self.log("Error while executiong session for {}".format(session['user']),
                          color="red")
-                self.log("start: "+str(sys.exc_info()), color='red')
+                self.log("start: "+str(e), color='red')
                 self.finish()
                 exit(1)
                 
@@ -188,10 +193,10 @@ class Executor(mqtt.MQTTServer):
             # return the directory containing the files
             return dirname
 
-        except:
+        except Exception as e:
             self.log('The executor has encountered an error. Please manually'
                      'close down the telescope.', 'red')
-            self.log("execute: "+str(sys.exc_info()), color='red')
+            self.log("execute: "+str(e), color='red')
             self.finish()
             return None
 

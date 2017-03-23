@@ -59,6 +59,7 @@ def schedule(target_list: [str]):
 
     for target in target_list:
         if target['target'].upper() == primary_target.upper():
+            target['target'] = target['target'].strip()
             return target, int(max_altitude_time['wait'][primary_target_id].value)
 
     print("Scheduler couldn't pick an object - returning first object in queue")
