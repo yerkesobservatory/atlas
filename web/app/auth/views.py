@@ -173,17 +173,27 @@ def password_reset(token):
 
     # check if user is already logged in
     if not current_user.is_anonymous:
-        return redirect(url_for('main.index'))
+        return redirect(url_for('auth.login'))
 
     form = PasswordResetForm()
 
  # if form is valid
     if form.validate_on_submit():
-
+        
+        # create serializer to decode token
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except Exception as e:
+            print(u"Invalid password reset token")
+            flash(u"Invalid password reset token", 'register')
+            print(e)
+            return redirect(url_for('auth.login'))
+        
         # check if user exists
-        user = User.query.filter_by(email=form.email.data).first()
+        user = User.query.filter_by(email=data.get('email')).first()
         if user is None:
-            return redirect(url_for('main.index'))
+            return redirect(url_for('auth.login'))
 
         # update password
         if user.reset_password(token, form.password.data):
