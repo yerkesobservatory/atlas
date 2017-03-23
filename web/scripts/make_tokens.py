@@ -21,10 +21,12 @@ s = Serializer(config.Config.SECRET_KEY)
 ######################### READ IN FILE AND CREATE TOKENS ######################
 users = open(args.usernames, 'r')
 for line in users:
+    if line == '' or line == '\n':
+        continue
     elems = line.split(' ')
     # if we just have a username
     if len(elems) == 1:
-        msg = {'email':elems[0], 'expiry':default_date}
+        msg = {'email':elems[0].rstrip(), 'expiry':default_date}
         print(elems[0]+' '+s.dumps(msg).decode())
     if len(elems) == 2:
         msg = {'email':elems[0], 'expiry':elems[1]}
