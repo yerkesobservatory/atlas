@@ -14,15 +14,6 @@
 <script language="javascript" type="text/javascript">
 
 
-window.addEventListener('click', function(e){   
-  var testName=document.getElementById('targetName').value
-  if (!document.getElementById('targetName').contains(e.target)){
-	  if(testName.length>0){
-    		objectExists(testName)
-	  }
-  	}
-});
-
 xmlhttp = new XMLHttpRequest();
 function objectExists(str){
 	xmlhttp.onreadystatechange = function(){
@@ -80,7 +71,7 @@ function objectExists(str){
             	<div class="input-group col-xs-12" style="margin-bottom: 17px">
                 	<span class="input-group-addon" id="sizing-addon4" style="width: 30%; background-color: #0F425C; color: #fff;">Target</span>
                     <label class="sr-only" for="form-target">Target</label>
-                    <input type="text" name="target" placeholder="" class="form-target form-control" id="targetName" required>
+                    <input type="text" name="target" placeholder="" class="form-target form-control" id="targetName" onchange="objectExists(targetName.value)" required>
 		    <p style="color:white;"><span id="return"></span></p>
 	            </div>
 	                        
