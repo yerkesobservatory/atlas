@@ -6,7 +6,7 @@ import time
 from templates import mqtt
 import telescope
 from telescope import telescope
-from imqueue import schedule
+from routines import schedule
 
 
 class Executor(mqtt.MQTTServer):
