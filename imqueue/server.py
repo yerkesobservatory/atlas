@@ -1,6 +1,7 @@
 # This file implements a Server that listens for requests from Submit programs
 # to add Sessions to the queue for tonight's imaging session
 
+import os
 import threading
 import multiprocessing
 import maya
@@ -231,7 +232,9 @@ class QueueServer(mqtt.MQTTServer):
         down open files or connections. 
         """
 
-        if self.queue_file is not None:
+        try:
             self.queue_file.close()
-        
+        except Exception as e:
+            self.log("Encountered error while shutting down")
+            
         return 
