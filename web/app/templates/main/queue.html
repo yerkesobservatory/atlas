@@ -28,7 +28,7 @@ function objectExists(str){
 	xmlhttp.onreadystatechange = function(){
 		if(this.readyState==4 && this.status==200){	
 			if(this.responseText.length<300){
-				document.getElementById('return').innerHTML="Object not found in SIMBAD Database"
+				document.getElementById('return').innerHTML="<p style='color: red;'>Object not found in SIMBAD Database</p>"
 			}
 			else{
 				document.getElementById('return').innerHTML=""
@@ -99,7 +99,7 @@ function objectExists(str){
 	            <div class="input-group col-xs-12" style="margin-bottom: 17px">
 	                <span class="input-group-addon" id="sizing-addon3" style="width: 30%; background-color: #0F425C; color: #fff;">Binning</span>
 	                <label class="sr-only" for="form-binning">Binning</label>
-	                <input type="text" name="binning" placeholder="2" class="form-binning form-control" id="form-binning" required>
+	                <input type="text" name="binning" class="form-binning form-control" id="form-binning" value="2" required>
 	            </div>
 	                        		
 	            <div class="input-group col-xs-12 col-xs-offset-1">
