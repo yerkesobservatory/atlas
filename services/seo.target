@@ -4,4 +4,6 @@ Description=Stone Edge Observatory
 Requires=seo-broker.service
 Requires=seo-queue.service
 Requires=seo-web.service
+Requires=seo-notify.service
+Requires=seo-logging.service
 After=multi-user.target
