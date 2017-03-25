@@ -61,12 +61,12 @@ header a, a:visited {
 }
 
 .stars {
-  background:#000 url(images/stars_background.png) repeat top center;
+  background:#000 url(../images/stars_background.png) repeat top center;
   z-index:0;
 }
 
 .twinkling{
-  background:transparent url(images/twinkling_background.png) repeat top center;
+  background:transparent url(../images/twinkling_background.png) repeat top center;
   z-index:0;
 
 
