@@ -19,7 +19,7 @@ function objectExists(str){
 	xmlhttp.onreadystatechange = function(){
 		if(this.readyState==4 && this.status==200){	
 			if(this.responseText.length<300){
-				document.getElementById('return').innerHTML="<p style='color: red;'>Object not found in SIMBAD Database</p>"
+				document.getElementById('return').innerHTML="Object not found in SIMBAD Database"
 			}
 			else{
 				document.getElementById('return').innerHTML=""
