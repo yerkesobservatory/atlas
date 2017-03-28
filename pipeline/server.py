@@ -62,7 +62,7 @@ class PipelineServer(mqtt.MQTTServer):
 
         # connect!
         try:
-            ssh.connect(remote, username=username)
+            ssh.connect(remote, username=username, key_filename='/home/rprechelt/.ssh/id_rsa')
             self.log('Successfully connected to server: {}'.format(remote), color='green')
         except paramiko.AuthenticationException: # unable to authenticate
             self.log('Unable to authenticate ssh connection to {}'.format(remote), color='red')
