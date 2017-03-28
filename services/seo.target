@@ -6,4 +6,5 @@ Requires=seo-queue.service
 Requires=seo-web.service
 Requires=seo-notify.service
 Requires=seo-logging.service
+Requires=seo-pipeline.service
 After=multi-user.target
