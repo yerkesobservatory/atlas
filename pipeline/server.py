@@ -16,15 +16,19 @@ class PipelineServer(mqtt.MQTTServer):
         super().__init__(config, "PIPELINE SERVER")
 
         # we first verify that we can connect to the two servers
-        # connect to telescope server
-        self.telescope = self.connect_to_telescope()
+        try:
+            # connect to telescope server
+            self.telescope = self.connect_to_telescope()
 
-        # connect to storage server
-        self.storage = self.connect_to_storage()
+            # connect to storage server
+            self.storage = self.connect_to_storage()
 
-        # let's disconnect until we are ready to avoid timeouts
-        self.telescope.close()
-        self.storage.close()
+            # let's disconnect until we are ready to avoid timeouts
+            self.telescope.close()
+            self.storage.close()
+        except Exception as e:
+            self.log('Pipeline server unable to connect to servers', color='red')
+            self.log('__init__: '+str(e))
 
         # MUST END WITH start() - THIS BLOCKS
         self.start()
@@ -67,6 +71,7 @@ class PipelineServer(mqtt.MQTTServer):
         except Exception as e: # something else went wrong
             self.log('sirius has encountered an unknown error in connecting to aster',
                      color='red')
+            self.log('connect_ssh: {}'.format(str(e)))
             self.notify('Pipeline server unable to connect via ssh to {}. \n{}'.format(remote, e))
             exit(1)
 
