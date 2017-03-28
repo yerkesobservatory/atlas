@@ -116,7 +116,7 @@ class PipelineServer(mqtt.MQTTServer):
             local_file = self.copy_remote_to_local(tarball, '/home/rprechelt/projects/seo/'+name)
 
             # extract the date
-            date = (fdir.split('/')[-1]).split('_')
+            date = (fdir.split('/')[-1]).split('-')
             year = date[0]; month = date[1]
 
             # copy the tarball to the storage server
