@@ -50,10 +50,6 @@ msg['filters'] = args.filters
 msg['binning'] = args.binning
 msg['user'] = os.environ['USER']
 
-f = open("queue.json", "w")
-f.write(json.dumps(msg))
-f.close()
-
 
 ######################### CONNECT TO STONE EDGE SERVER #########################
 
