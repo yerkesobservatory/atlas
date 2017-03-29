@@ -68,7 +68,7 @@ def register():
             flash(u"Invalid registration token", 'register')
         else:
             # check if user exists
-            if User.query.filter_by(email=form.email.data).first():
+            if User.query.filter_by(email=form.email.data.strip()).first():
                 flash(u"User already exists", 'register')
                 print(u"User already exists")
                 return redirect(request.args.get('next') or url_for('auth.login'))
