@@ -3,6 +3,7 @@ from flask_login import login_user, login_required, logout_user, current_user
 from ..models import User
 from .forms import LoginForm, RegistrationForm, PasswordResetForm, PasswordRequestForm
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from itsdangerous import Signer
 from . import auth
 from .. import db
 from ..email import send_email
@@ -49,9 +50,12 @@ def register():
     if form.validate_on_submit():
 
         # create serializer to decode token
-        s = Serializer(current_app.config['SECRET_KEY'])
+        s = Signer(current_app.config['SECRET_KEY'])
+        valid_token = False
         try:
-            data = s.loads(form.token.data.rstrip())
+            token = form.email.data.strip() + '.' + form.token.data.strip()
+            s.unsign(token)
+            valid_token = True
         except Exception as e:
             print(u"Invalid registration token - received {}, expected {}".format(form.token.data, form.email.data))
             flash(u"Invalid registration token", 'register')
@@ -59,7 +63,7 @@ def register():
             return redirect(url_for('auth.login'))
 
         # check that email and lastname matches
-        if data.get('email') != form.email.data.rstrip():
+        if valid_token is False:
             print(u"Invalid registration token - received {}, expected {}".format(data.get('email'), form.email.data))
             flash(u"Invalid registration token", 'register')
         else:
