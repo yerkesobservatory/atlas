@@ -5,6 +5,7 @@ import os
 import threading
 import multiprocessing
 import maya
+import json
 from templates import mqtt
 from imqueue import executor
 
@@ -137,9 +138,11 @@ class QueueServer(mqtt.MQTTServer):
             return False
         else:
             self.log('Adding new request from {} to queue.'.format(msg.get('user')))
+            print(self.queue_dir+'/'+self.queue_file)
             with open(self.queue_dir+'/'+self.queue_file, 'a+') as f:
                 f.write(json.dumps(msg)+'\n')
                 self.log(json.dumps(msg))
+                f.flush()
 
             return True
 
@@ -152,7 +155,8 @@ class QueueServer(mqtt.MQTTServer):
         date = msg.get('date') or None
         if date is not None:
             filename = '_'.join([date.replace('/', '-'), name, 'imaging_queue.json'])
-            with open(self.queue_dir+'/'+filename, 'w') as f:
+            self.log('Saving queue in file: {}'.format(self.queue_dir+'/'+filename))
+            with open(self.queue_dir+'/'+filename, 'w+') as f:
                 f.write('# IMAGING QUEUE FOR {} CREATED ON {}\n'.format(date, maya.now()))
                 self.log('Creating image queue for {} on {}'.format(date, maya.now()), color='green')
 
