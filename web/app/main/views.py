@@ -70,7 +70,7 @@ def build_msg(form):
     if form.filter_clear.data is True:
         msg['filters'].append('clear')
     if form.filter_ha.data is True:
-        msg['filters'].append('ha')
+        msg['filters'].append('h-alpha')
 
     return msg
 
