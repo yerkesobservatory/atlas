@@ -58,7 +58,7 @@ else
     # restart seo services
     echo "About to restart seo.services..."
     read -n 1
-    systemctl start seo.target
+    systemctl restart seo.target
 
     # restart nginx
     echo "About to restart nginx..."
