@@ -159,13 +159,14 @@ class Executor(mqtt.MQTTServer):
 
         # calculate base file name
         date = time.strftime('%Y-%m-%d', time.gmtime())
-        dirname = self.remote_dir+'/'+'_'.join([date, session.get('user'), session.get('target')])
+        username = session.get('user').split('@')[0]
+        dirname = self.remote_dir+'/'+'_'.join([date, username, session.get('target')])
 
         # create directory
         self.log('Making directory to store observations on telescope server...')
         self.telescope.make_dir(dirname)
 
-        basename = dirname+'/'+'_'.join([date, session.get('user'), session.get('target')])
+        basename = dirname+'/'+'_'.join([date, username, session.get('target')])
 
         try:
             self.telescope.open_dome()
