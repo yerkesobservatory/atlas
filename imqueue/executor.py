@@ -69,6 +69,7 @@ class Executor(mqtt.MQTTServer):
         Waits 10 minutes between each trial. Cancels execution
         if weather is bad for 4 hours.
         """
+        self.log('Waiting until weather is good...')
         elapsed_time = 0 # total elapsed wait time
 
         # get weather from telescope
@@ -87,6 +88,8 @@ class Executor(mqtt.MQTTServer):
             # update weather
             weather = self.telescope.weather_ok()
 
+
+        self.log('Weather is good...')
         return True
 
     
@@ -98,6 +101,7 @@ class Executor(mqtt.MQTTServer):
         self.wait_until_good()
 
         # open telescope
+        self.log('Opening telescope dome...')
         self.telescope.open_dome()
 
         # iterate over session list
@@ -109,6 +113,8 @@ class Executor(mqtt.MQTTServer):
             # schedule remaining sessions
             # session, wait = schedule.schedule(self.sessions)
             session = self.sessions[0]
+
+            # remove whitespace 'M 83' -> 'M82'
             session['target'] = session['target'].replace(' ', '')
             wait = -1
             self.log("Scheduler has selected {}".format(session))
@@ -157,6 +163,7 @@ class Executor(mqtt.MQTTServer):
         dirname = self.remote_dir+'/'+'_'.join([date, session.get('user'), session.get('target')])
 
         # create directory
+        self.log('Making directory to store observations on telescope server...')
         self.telescope.make_dir(dirname)
 
         basename = dirname+'/'+'_'.join([date, session.get('user'), session.get('target')])

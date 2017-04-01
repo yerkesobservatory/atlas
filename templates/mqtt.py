@@ -149,6 +149,9 @@ class MQTTServer(object):
 
         # close MQTT connection
         self.client.disconnect()
+
+        # quit the process
+        exit(1)
             
     
     def log(self, msg: str, color: str='white') -> bool:
