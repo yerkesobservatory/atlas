@@ -77,8 +77,9 @@ class Executor(mqtt.MQTTServer):
         while weather is False:
 
             # sleep for 10 minutes
-            time.sleep(10*60) # time to sleep in seconds
-            elapsed_time += (10*60)
+            self.log('Executor is sleeping for 15 minutes...')
+            time.sleep(15*60) # time to sleep in seconds
+            elapsed_time += (15*60)
 
             # shut down after 4 hours of continuous waiting
             if elapsed_time >= 14400:
@@ -87,7 +88,6 @@ class Executor(mqtt.MQTTServer):
 
             # update weather
             weather = self.telescope.weather_ok()
-
 
         self.log('Weather is good...')
         return True
@@ -111,8 +111,7 @@ class Executor(mqtt.MQTTServer):
             location = ""
 
             # schedule remaining sessions
-            # session, wait = schedule.schedule(self.sessions)
-            session = self.sessions[0]
+            session, wait = schedule.schedule(self.sessions)
 
             # remove whitespace 'M 83' -> 'M82'
             session['target'] = session['target'].replace(' ', '')
