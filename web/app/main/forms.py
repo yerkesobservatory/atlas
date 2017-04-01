@@ -1,13 +1,13 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField
-from wtforms import DecimalField, BooleanField, IntegerField
+from wtforms import FloatField, BooleanField, IntegerField
 from wtforms.validators import DataRequired, Email, Length
 
 class QueueForm(FlaskForm):
     """ Represents the standard queue submission form.
     """
     target = StringField('Target', validators=[DataRequired()])
-    exptime = IntegerField('Exposure Time', validators=[DataRequired()])
+    exptime = FloatField('Exposure Time', validators=[DataRequired()])
     expcount = IntegerField('Exposure Count', validators=[DataRequired()])
     binning = IntegerField('Binning', validators=[DataRequired()])
     filter_clear = BooleanField('clear')

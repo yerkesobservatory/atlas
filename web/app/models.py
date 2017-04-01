@@ -32,25 +32,30 @@ class User(UserMixin, db.Model):
     default_expiry = datetime.date(today.year+1, today.month, today.day)
     expire = db.Column(db.Date, unique=False, default=default_expiry)
     confirmed = db.Column(db.Boolean, index=True, default=False)
-    
 
+    # relationships - one-to-many with session objects
+    sessions = db.relationship('Session', backref='user')
+    
     @property
     def password(self):
         """ Prevent accessing of password hash.
         """
         raise AttributeError('password is not a readable attribute')
 
+    
     @password.setter
     def password(self, password):
         """ Computes the hash of a password and stores it in the db session.
         """
         self.password_hash = security.generate_password_hash(password)
 
+        
     def verify_password(self, password):
         """ Verify that given password matches the stored password hash.
         """
         return security.check_password_hash(self.password_hash, password)
 
+    
     @login_manager.user_loader
     def load_user(user_id):
         """ Callback to return user given user_id. Required for flask_login.
@@ -65,6 +70,7 @@ class User(UserMixin, db.Model):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'id': self.id, 'email': self.email})
 
+    
     def reset_password(self, token, new_password):
         """ Takes a token received by the web app and if it is valid,
         changes the user's password to the new password.
@@ -83,6 +89,7 @@ class User(UserMixin, db.Model):
 
         return False
 
+    
     def generate_confirmation_token(self, expiration=3600):
         """ Generate a confirmation token to send to a user's email
         to validate that their email is correct.
@@ -91,6 +98,7 @@ class User(UserMixin, db.Model):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'confirm': self.id})
 
+    
     def confirm(self, token):
         """ Confirm a received token matches the one received.
         """
@@ -115,3 +123,42 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         """ Pretty-printing of user objects. """
         return "<User %r>" % (self.email)
+
+
+    
+class Session(db.Model):
+    """ This class represents a session for queue observation.
+    Fields:
+        id: unique id
+        target: a string representing the target name or RA/DEC pairs
+        exposure_time: the time in seconds for each exposure
+        exposure_count: the number of exposures to take for each filter
+        filter_*: whether to use that filter in the exposure
+        binning: the binning to use with the CCD
+        user_id: the ID of the user who submitted this request
+        submit_date: the date that the session was submitted
+        executed: whether the session has been executed
+        exec_date: the date and time that the user was executed
+    """
+    __tablename__ = 'queue'
+    id = db.Column(db.Integer,  primary_key=True)
+    target = db.Column(db.String(32), index=True, unique=False)
+    exposure_time = db.Column(db.Float, unique=False)
+    exposure_count = db.Column(db.Integer, unique=False)
+    filter_i = db.Column(db.Boolean, unique=False, default=False)
+    filter_r = db.Column(db.Boolean, unique=False, default=False)
+    filter_g = db.Column(db.Boolean, unique=False, default=False)
+    filter_u = db.Column(db.Boolean, unique=False, default=False)
+    filter_z = db.Column(db.Boolean, unique=False, default=False)
+    filter_ha = db.Column(db.Boolean, unique=False, default=False)
+    filter_clear = db.Column(db.Boolean, unique=False, default=True)
+    binning = db.Column(db.Integer, unique=False, default=2)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    today = datetime.date.today()
+    submit_date = db.Column(db.Date, index=True, unique=False, default=today)
+    executed = db.Column(db.Boolean, index=True, unique=False, default=False)
+    exec_date = db.Column(db.DateTime, index=True, nullable=True, unique=False, default=None)
+
+
+    def __repr__(self):
+        return "<Session {}: {}>".format(self.target, self.user)
