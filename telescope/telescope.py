@@ -330,21 +330,32 @@ class Telescope(object):
             except socket.error as e:
                 self.ssh = self.connect()
 
-            # try and execute command
-            try:
-                stdin, stdout, stderr = self.ssh.exec_command(command, timeout=10*60)
-                result = stdout.readlines()
-                if len(result) > 0:
-                    result = result[0]
-                print(result)
-                return result
-            except:
-                self.log(str(sys.exc_info()), color='red')
-                self.log("Failed while executing {}".format(command), color="red")
-                self.log("{}".format(sys.stderr.readlines()), color="red")
-                self.log("Please manually close the dome by running"
-                         " `closedown` and `logout`.", color="red")
-                exit(1)
+            # try and execute command 5 times if it fails
+            numtries = 0; exit_code = 1
+            while numtries < 5 and exit_code != 0:
+                try:
+                    stdin, stdout, stderr = self.ssh.exec_command(command, timeout=10*60)
+                    numtries += 1
+                    result = stdout.readlines()
+                    # check exit code
+                    exit_code = stdout.channel.recv_exit_status()
+                    if exit_code != 0:
+                        self.log("Command returned {}. Retrying in 3 seconds...".format(exit_code))
+                        time.sleep(3)
+                        continue
+
+                    # valid result received
+                    if len(result) > 0:
+                        result = result[0]
+                        print(result)
+                        return result
+                except:
+                    self.log(str(sys.exc_info()), color='red')
+                    self.log("Failed while executing {}".format(command), color="red")
+                    self.log("{}".format(sys.stderr.readlines()), color="red")
+                    self.log("Please manually close the dome by running"
+                             " `closedown` and `logout`.", color="red")
+                    exit(1)
 
 
 
