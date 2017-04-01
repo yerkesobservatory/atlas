@@ -42,6 +42,7 @@ class QueueServer(mqtt.MQTTServer):
             self.start_timer()
         else:
             self.log('Initializing queue server without any queue', color='green')
+            self.exec_time = None
 
         # MUST END WITH start() - THIS BLOCKS
         self.start()
@@ -108,10 +109,12 @@ class QueueServer(mqtt.MQTTServer):
         # calculate time at which we start the executor
         exec_time = maya.parse(self.queue_date.iso8601()[0:10]+' '+self.start_time+' UTC')
         delta_time = (exec_time.datetime() - maya.now().datetime()).total_seconds()
+        self.exec_time = exec_time
 
         if delta_time < (60*60*24*30*12):
             # create timer to start executor in delta_time
             self.timer = threading.Timer(delta_time, self.start_executor)
+            self.log('Starting timer; queue will start at {}'.format(self.exec_time))
             self.timer.start()
         else:
             self.log('Queue date is too far in the past or future', color='red')
@@ -167,6 +170,17 @@ class QueueServer(mqtt.MQTTServer):
 
         return True
 
+    
+    def time_request(self) -> bool:
+        """ Send a message containing the time that the queue will start
+        to the /seo/status channel. 
+        """
+        msg = {'type':'info', 'start_time':self.exec_time}
+        topic = '/'+self.config['general']['shortname']+'/status'
+        self.client.publish(topic, json.dumps(msg))
+
+        return True
+
 
     def update_state(self, msg: str) -> bool:
         """ This takes a raw message from process_message and updates
@@ -179,9 +193,25 @@ class QueueServer(mqtt.MQTTServer):
         elif msg.get('action') == 'disable':
             self.log('Disabling queueing server...', color='cyan')
             self.disable()
+        elif msg.get('action') == 'time':
+            self.log('Received request for time information')
+            self.time_request()
 
         else:
             self.log('Received invalid queue state message...', color='magenta')
+
+            
+    def process_info(self, msg: str) -> bool:
+        """ This takes a raw message from process_message and updates
+        the internal server state
+        """
+        # request for time update
+        if msg.get('info') == 'time':
+            self.log('Received request for time information...')
+            self.time_request()
+        # we don't know what this is
+        else:
+            self.log('Received invalid queue info message...', color='magenta')
 
 
     def process_message(self, msg) -> list:
@@ -201,6 +231,11 @@ class QueueServer(mqtt.MQTTServer):
         elif msg_type == 'state':
             self.update_state(msg)
 
+        # request information about server
+        elif msg_type == 'info':
+            self.process_info(msg)
+
+        # something we don't understand
         else:
             self.log('Received unknown queue message...', color='magenta')
 
