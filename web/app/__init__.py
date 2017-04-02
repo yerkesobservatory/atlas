@@ -40,5 +40,9 @@ def create_app(config_name):
     from .auth import auth as auth_blueprint
     application.register_blueprint(auth_blueprint, url_prefix='/auth')
 
+    # register admin blueprint
+    from .admin import admin as admin_blueprint
+    application.register_blueprint(admin_blueprint, url_prefix='/admin')
+
     # done
     return application
