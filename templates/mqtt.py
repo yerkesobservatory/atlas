@@ -141,17 +141,19 @@ class MQTTServer(object):
         """
         self.log('Closing down...', 'cyan')
 
-        # call user close function
-        self.close()
+        try:
 
-        # close log file
-        self.log_file.close()
+            # call user close function
+            self.close()
+            
+            # close log file
+            self.log_file.close()
 
-        # close MQTT connection
-        self.client.disconnect()
-
-        # quit the process
-        exit(1)
+            # close MQTT connection
+            self.client.disconnect()
+        finally:
+            # quit the process
+            exit(1)
             
     
     def log(self, msg: str, color: str='white') -> bool:
