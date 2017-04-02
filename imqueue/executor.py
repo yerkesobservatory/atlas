@@ -3,10 +3,12 @@
 
 import json
 import time
+import sqlalchemy
 from templates import mqtt
 import telescope
 from telescope import telescope
 from routines import schedule
+from db.models import User, Session
 
 
 class Executor(mqtt.MQTTServer):
@@ -15,7 +17,7 @@ class Executor(mqtt.MQTTServer):
     the queue server.
     """
 
-    def __init__(self, filename: str, config: {str}, dryrun: bool=False):
+    def __init__(self, config: {str}, dryrun: bool=False):
         """ This creates a new executor to execute a single nights
         list of sessions stored in the JSON file specified by filename.
         """
@@ -23,13 +25,17 @@ class Executor(mqtt.MQTTServer):
         # MUST INIT SUPERCLASS FIRST
         super().__init__(config, "Executor")
 
-        # load queue from disk
-        self.sessions = []
-        self.load_queue(filename)
-        self.log("Executor has successfully loaded queue")
-
         # instantiate telescope object for control
         self.telescope = telescope.Telescope(dryrun=dryrun)
+        self.log("Executor has connection to telescope")
+
+        # create connection to database
+        self.engine = sqlalchemy.create_engine(config['database']['address'], echo=False)
+
+        # create session to database with engine
+        session_maker = sqlalchemy.orm.sessionmaker(bind=engine)
+        self.dbsession = session_maker
+        self.log("Succesfully connected to the queue database")
 
         # take numbias*exposure_count biases
         self.numbias = config.get('queue').get('numbias') or 5
@@ -37,33 +43,21 @@ class Executor(mqtt.MQTTServer):
         # directory to store images on telescope controller
         self.remote_dir = config.get('queue').get('remote_dir') or '/tmp'
 
-        # directory to store images locally during pipeline
-        self.local_dir = config.get('queue').get('dir')
-
         # MUST END WITH start() - THIS BLOCKS
         self.start()
 
 
-    def load_queue(self, filename: str) -> list:
-        """ This loads a JSON queue file into a list of Python session
-        objects that can then be executed.
+    def load_sessions(self) -> ['Sessions']:
+        """ This function returns a list of all session objects
+        in the database that have not been executed
         """
+        # get unexecuted sessions
+        sessions = self.dbsession.query(Session).filter_by(executed = False)
 
-        try:
-            with open(filename) as queue:
-                for line in queue:
-                    if line[0] == '#' or len(line) <= 1:
-                        continue
-                    else:
-                        self.sessions.append(json.loads(line))
-        except Exception as e:
-            self.log('Unable to open queue file. Please check that it exists. Exitting',
-                     color='red')
-            # TODO: Email system admin if there is an error
-            self.log("load_queue: "+str(e), color='red')
-            exit(-1)
+        # execute query and return all sessions
+        return sessions.all()
 
-            
+
     def wait_until_good(self) -> bool:
         """ Wait until the weather is good for observing.
         Waits 10 minutes between each trial. Cancels execution
@@ -104,6 +98,9 @@ class Executor(mqtt.MQTTServer):
         self.log('Opening telescope dome...')
         self.telescope.open_dome()
 
+        # load queues from database
+        self.sessions = self.load_sessions()
+
         # iterate over session list
         while len(self.sessions) != 0:
 
@@ -114,7 +111,7 @@ class Executor(mqtt.MQTTServer):
             session, wait = schedule.schedule(self.sessions)
 
             # remove whitespace 'M 83' -> 'M82'
-            session['target'] = session['target'].replace(' ', '')
+            session.target = session.target.replace(' ', '')
             wait = -1
             self.log("Scheduler has selected {}".format(session))
 
@@ -122,11 +119,12 @@ class Executor(mqtt.MQTTServer):
             if wait != -1:
                 self.log('Sleeping for {} seconds as requested by scheduler'.format(wait))
                 if wait > 10*60:
+                    self.log('Closing down the telescope while we sleep')
                     self.telescope.close_down()
                 time.sleep(wait)
 
             # check whether every session executed correctly
-            self.log("Executing session for {}".format(session.get('user') or 'none'), color="blue")
+            self.log("Executing session for {}".format(session.user.email or 'none'), color="blue")
             try:
                 # execute session
                 location = self.execute(session)
@@ -139,7 +137,7 @@ class Executor(mqtt.MQTTServer):
                 self.sessions.remove(session)
 
             except Exception as e:
-                self.log("Error while executiong session for {}".format(session['user']),
+                self.log("Error while executiong session for {}".format(session.user.email),
                          color="red")
                 self.log("start: "+str(e), color='red')
                 self.finish()
@@ -151,7 +149,7 @@ class Executor(mqtt.MQTTServer):
 
         return True
 
-
+    
     def execute(self, session: dict) -> str:
         """ Execute a single imaging session. If successful, returns
         directory where files are stored on telescope control server.
@@ -159,30 +157,30 @@ class Executor(mqtt.MQTTServer):
 
         # calculate base file name
         date = time.strftime('%Y-%m-%d', time.gmtime())
-        username = session.get('user').split('@')[0]
-        dirname = self.remote_dir+'/'+'_'.join([date, username, session.get('target')])
+        username = session.user.email.split('@')[0]
+        dirname = self.remote_dir+'/'+'_'.join([date, username, session.target])
 
         # create directory
         self.log('Making directory to store observations on telescope server...')
         self.telescope.make_dir(dirname)
 
-        basename = dirname+'/'+'_'.join([date, username, session.get('target')])
+        basename = dirname+'/'+'_'.join([date, username, session.target])
 
         try:
             self.telescope.open_dome()
             # point telescope at target
-            self.log("Slewing to {}".format(session['target']))
-            if self.telescope.goto_target(session['target']) is False:
+            self.log("Slewing to {}".format(session.target))
+            if self.telescope.goto_target(session.target) is False:
                 self.log("Object is not currently visible. Skipping...", color='magenta')
                 return ""
 
             # extract variables
-            exposure_time = session['exposure_time']
-            exposure_count = session['exposure_count']
-            binning = session['binning']
+            exposure_time = session.exposure_time
+            exposure_count = session.exposure_count
+            binning = session.binning
 
             # for each filter
-            filters = session.get('filters') or ['clear']
+            filters = self.parse_filters(Session)
             for filt in filters:
                 self.telescope.enable_tracking()
                 self.take_exposures(basename, exposure_time, exposure_count, binning, filt)
@@ -207,7 +205,31 @@ class Executor(mqtt.MQTTServer):
             self.finish()
             return None
 
+        
+    def parse_filter(self, session) -> [str]:
+        """ Parse a session objects boolean session
+        fields and return a list of strings representing
+        the filters to be used for the session. 
+        """
+        filters = []
+        if session.filter_i is True:
+            filters.append('i')
+        if session.filter_r is True:
+            filters.append('r')
+        if session.filter_g is True:
+            filters.append('g')
+        if session.filter_u is True:
+            filters.append('u')
+        if session.filter_z is True:
+            filters.append('z')
+        if session.filter_ha is True:
+            filters.append('h-alpha')
+        if session.filter_clear is True:
+            filters.append('clear')
 
+        return filters
+
+    
     def take_exposures(self, basename: str, exp_time: int,
                        count: int, binning: int, filt: str) -> bool:
         """ Take count exposures, each of length exp_time, with binning, using the filter
@@ -264,12 +286,14 @@ class Executor(mqtt.MQTTServer):
         return True
 
     
-    def finish(self) -> bool:
+    def finish(self):
         """ Close the executor in event of success of failure; closes the telescope, 
         closes ssh connection, closes log file
         """
         self.telescope.close_down()
         self.telescope.disconnect()
+
+        return 
 
         
     def close(self):

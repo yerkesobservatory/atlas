@@ -48,8 +48,8 @@ arg_group.add_argument('--start-web', '-w', action='store_true',
                     default=False, help='Start the web application')
 arg_group.add_argument('--start-notify', '-n', action='store_true',
                     default=False, help='Start the notification server')
-arg_group.add_argument('--start-executor', '-e', default=None,
-                        help='Start the executor with a given file')
+arg_group.add_argument('--start-executor', '-e', action='store_true',
+                    default=False, help='Start the queue executor')
 arg_group.add_argument('--version', action='version', version='%(prog)s 0.0.1')
 parser.add_argument('--dry-run', '-d', action='store_true',
                     default=False, help='Print the executor commands but do not run them')
@@ -60,8 +60,8 @@ ARGS = parser.parse_args()
 ###################### START THE APPROPRIATE SERVICES #####################
 if ARGS.start_queue is True:
     imqueue = imqueue.server.QueueServer(config)
-if ARGS.start_executor is not None:
-    executr = imqueue.executor.Executor(ARGS.start_executor, config, dryrun=ARGS.dry_run)
+if ARGS.start_executor is True:
+    executr = imqueue.executor.Executor(config, dryrun=ARGS.dry_run)
 if ARGS.start_pipeline is True:
     pipeline = pipeline.server.PipelineServer(config)
 if ARGS.start_notify is True:
