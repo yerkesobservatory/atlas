@@ -4,11 +4,13 @@ import flask_mail
 import flask_bootstrap
 import flask_sqlalchemy
 import flask_login
+import flask_admin
 
 # initialize global contexts
 mail = flask_mail.Mail()
 db = flask_sqlalchemy.SQLAlchemy()
 boostrap = flask_bootstrap.Bootstrap()
+admin = flask_admin.Admin()
 
 # init authentication
 login_manager = flask_login.LoginManager()
@@ -29,6 +31,7 @@ def create_app(config_name):
     boostrap.init_app(application)
     mail.init_app(application)
     db.init_app(application)
+    admin.init_app(application)
     login_manager.init_app(application)
 
     # register main routes and error handlers
@@ -40,9 +43,8 @@ def create_app(config_name):
     from .auth import auth as auth_blueprint
     application.register_blueprint(auth_blueprint, url_prefix='/auth')
 
-    # register admin blueprint
-    from .admin import admin as admin_blueprint
-    application.register_blueprint(admin_blueprint, url_prefix='/admin')
+    # register admin views
+    from .admin import views
 
     # done
     return application
