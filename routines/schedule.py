@@ -5,7 +5,7 @@ import astropy.units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun
 
-def schedule(target_list: [str]):
+def schedule(target_list: [str], endtime: [datetime]):
     """
     This function receives a list of target names and outputs a primary
     observable target
@@ -13,6 +13,7 @@ def schedule(target_list: [str]):
     Inputs:
     -------
     target_list :str: :list: List containing the names of the targets.
+    endtime: :list: 'obj' datetime (i.e. datetime(year, month, day, hour, minute, second))
     
     Outputs:
     --------
@@ -49,7 +50,7 @@ def schedule(target_list: [str]):
         
         aux_delta_time = delta_obs_time[np.argmax(target_altaz.alt)]
         
-        if (times[np.argmax(target_altaz.alt)] > sundown_time)& (times[np.argmax(target_altaz.alt)] < sunup_time):
+        if (times[np.argmax(target_altaz.alt)] > sundown_time) & (times[np.argmax(target_altaz.alt)] < sunup_time) & (times[np.argmax(target_altaz.alt)] < Time(endtime,scale='utc')):
             max_altitude_time['wait'].append(aux_delta_time.to(u.second))
         else:
             max_altitude_time['wait'].append('-1')
