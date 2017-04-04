@@ -80,6 +80,17 @@ class Telescope(object):
         else:
             return False
 
+    def keep_open(self, time: int) -> bool:
+        """ Keeps the dome open for a specified number of seconds. Assumes
+        dome is already open.
+        """
+        result = self.run_command("keepopen maxtime={} slit".format(int(time)))
+        if result == True: # everything was good
+            return True
+        else: # one of the commands failed
+            # should we handle this error more seriously
+            return False
+
 
     def close_down(self) -> bool:
         """ Closes the current session, closes the dome, and logs out. Returns

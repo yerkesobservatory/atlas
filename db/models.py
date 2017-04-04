@@ -91,4 +91,4 @@ class Session(Base):
 
 
     def __repr__(self):
-        return "<Session {}: Target: {}, User: {}>".format(self.id, self.target, self.user)
+        return "<Session {}: Target: {}, User: {}>".format(self.id, self.target, self.user.email)

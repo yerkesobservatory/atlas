@@ -136,7 +136,7 @@ class Executor(mqtt.MQTTServer):
             if wait != -1:
                 self.log('Sleeping for {} seconds as requested by scheduler'.format(wait))
                 if wait > 10*60:
-                    if self.dome_open() is True:
+                    if self.telescope.dome_open() is True:
                         self.log('Closing down the telescope while we sleep')
                         self.telescope.close_down()
                 time.sleep(wait)
@@ -147,14 +147,17 @@ class Executor(mqtt.MQTTServer):
                 # execute session
                 location = self.execute(session, ra, dec)
 
-                # send remote path to pipeline for async processing
-                msg = {'type':'process', 'location':location}
-                self.client.publish('/seo/pipeline', json.dumps(msg))
+                # succesful execution
+                if location != "":
 
-                # set the session as completed
-                session.executed = True
-                self.dbsession.commit()
-                self.log("Completed executing {}.".format(session))
+                    # send remote path to pipeline for async processing
+                    msg = {'type':'process', 'location':location}
+                    self.client.publish('/seo/pipeline', json.dumps(msg))
+
+                    # set the session as completed
+                    session.executed = True
+                    self.dbsession.commit()
+                    self.log("Completed executing {}.".format(session))
                 
                 # remove the session from the remaining sessions
                 self.sessions.remove(session)
@@ -190,7 +193,9 @@ class Executor(mqtt.MQTTServer):
         basename = dirname+'/'+'_'.join([date, username, session.target])
 
         try:
-            self.telescope.open_dome()
+            if self.telescope.dome_open() is False:
+                self.telescope.open_dome()
+                self.telescope.keep_open(36000)
             # point telescope at target
             self.log("Slewing to {}".format(session.target))
             if self.telescope.goto(ra, dec) is False:
@@ -205,6 +210,9 @@ class Executor(mqtt.MQTTServer):
             # for each filter
             filters = self.parse_filters(session)
             for filt in filters:
+                if self.telescope.dome_open() is False:
+                    self.telescope.open_dome()
+                    self.telescope.keep_open(36000)
                 self.telescope.enable_tracking()
                 self.take_exposures(basename, exposure_time, exposure_count, binning, filt)
 
