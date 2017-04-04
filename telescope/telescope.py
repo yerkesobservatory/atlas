@@ -156,18 +156,21 @@ class Telescope(object):
         if self.dryrun is False:
 
             # check sun has set
-            if self.get_sun_alt() >= -12.5:
-                self.close_dome()
+            if self.get_sun_alt() >= -15.0:
+                if self.dome_open() is True:
+                    self.close_dome()
                 return False
 
             # check that it isn't raining
             if self.get_rain() != 0:
-                self.close_dome()
+                if self.dome_open() is True:
+                    self.close_dome()
                 return False
 
             # check cloud cover is below 40%
             if self.get_cloud() >= 0.40:
-                self.close_dome()
+                if self.dome_open() is True:
+                    self.close_dome()
                 return False
 
         # weather is good!
@@ -387,6 +390,8 @@ class Telescope(object):
                     self.log("Please manually close the dome by running"
                              " `closedown` and `logout`.", color="red")
                     exit(1)
+
+            return None
 
 
 
