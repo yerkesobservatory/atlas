@@ -9,6 +9,7 @@ from templates import mqtt
 import telescope
 from telescope import telescope
 from routines import schedule
+from routines import target
 from db.models import User, Session
 
 
@@ -114,14 +115,19 @@ class Executor(mqtt.MQTTServer):
             # schedule remaining sessions
             session, wait = schedule.schedule(self.sessions, endtime=endtime)
 
+            # if the scheduler returns None, we are done
+            if session is None:
+                self.session.remove(session)
+                continue
+
             # convert observations to ra/dec
             try:
-                ra, dec = target.find_target(session['target'])
-            except:
+                ra, dec = target.find_target(session.target)
+            except Exception as e:
+                self.log("find_target: "+str(e))
                 self.log('Target unable to find object. Skipping...', color='magenta')
                 continue
 
-            # remove whitespace 'M 83' -> 'M82'
             wait = -1
             self.log("Scheduler has selected {}".format(session))
 
