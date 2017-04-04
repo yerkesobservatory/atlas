@@ -129,8 +129,9 @@ class Executor(mqtt.MQTTServer):
             if wait != -1:
                 self.log('Sleeping for {} seconds as requested by scheduler'.format(wait))
                 if wait > 10*60:
-                    self.log('Closing down the telescope while we sleep')
-                    self.telescope.close_down()
+                    if self.dome_open() is True:
+                        self.log('Closing down the telescope while we sleep')
+                        self.telescope.close_down()
                 time.sleep(wait)
 
             # check whether every session executed correctly
