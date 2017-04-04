@@ -27,7 +27,7 @@ class MyServer(mqtt.MQTTServer):
         return []
 
     
-    def process_message(self, msg: {str}):
+    def process_message(self, topic: str, msg: {str}):
         """ This function is given a JSON dictionary message from the broker
         and must decide how to process the message given the servers purpose. This
         is automatically called whenever a message is received

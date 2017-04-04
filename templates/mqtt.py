@@ -44,7 +44,7 @@ class MQTTServer(object):
         return []
 
     
-    def process_message(self, msg: {str}) -> bool:
+    def process_message(self, topic: str, msg: {str}) -> bool:
         """ This function is given a JSON dictionary message from the broker
         and must decide how to process the message given the application. 
         """
@@ -60,7 +60,15 @@ class MQTTServer(object):
         down open files or connections. 
         """
 
-        return 
+        return
+
+
+    def publish(self, topic: str, message: dict) -> True:
+        """ This method converts the message to JSON and publishes
+        it on the topic given by topic. 
+        """
+        self.client.publish(topic, json.dumps(message))
+        return True
 
     
     def _connect(self) -> bool:
@@ -103,11 +111,12 @@ class MQTTServer(object):
     def _process_message(self, client, userdata, msg) -> list:
         """ This function is called whenever a message is received.
         """
+        topic = msg.topic
         msg = json.loads(msg.payload.decode())
-        self.process_message(msg)
+        self.process_message(topic, msg)
 
 
-    def notify(self, content, to:str = None) -> bool:
+    def email(self, content, to:str = None) -> bool:
         """ Send an email to the 'to' destination, with content 'content'
         """
         msg = {}
@@ -119,6 +128,8 @@ class MQTTServer(object):
         msg['subject'] = self.config['mail']['subject']
         msg['content'] = content
         self.client.publish('/seo/notify', json.dumps(msg))
+
+        return True
         
             
     def _init_log(self) -> bool:
