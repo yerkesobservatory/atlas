@@ -195,6 +195,7 @@ class Executor(mqtt.MQTTServer):
         basename = dirname+'/'+'_'.join([date, username, session.target])
 
         try:
+            self.wait_until_good()
             if self.telescope.dome_open() is False:
                 self.telescope.open_dome()
             # point telescope at target
@@ -211,9 +212,20 @@ class Executor(mqtt.MQTTServer):
             # for each filter
             filters = self.parse_filters(session)
             for filt in filters:
+
+                # check weather - wait until weather is good
+                self.wait_until_good()
+                
+                # if the telescope has randomly closed, open up
                 if self.telescope.dome_open() is False:
                     self.telescope.open_dome()
+
+                # repoint ourselves - we shouldn't have to do this, but we do
+                self.log("Reslewing to {}".format(session.target))
+                self.telescope.goto(ra, dec)
                 self.telescope.enable_tracking()
+
+                # take exposures!
                 self.take_exposures(basename, exposure_time, exposure_count, binning, filt)
 
             # reset filter back to clear
@@ -271,7 +283,8 @@ class Executor(mqtt.MQTTServer):
         self.telescope.change_filter(filt)
 
         # take exposure_count exposures
-        for i in range(0, count):
+        i = 0
+        while i < count: 
 
             # create image name
             filename = basename+'_'+filt+'_'+str(exp_time)+'s'
@@ -280,6 +293,14 @@ class Executor(mqtt.MQTTServer):
 
             # take exposure
             self.telescope.take_exposure(filename, exp_time, binning)
+
+            # if the telescope has randomly closed, open up and repeat the exposure
+            if self.telescope.dome_open() is False:
+                self.log('Slit closed during exposure - repeating previous exposure!', color='magenta')
+                self.telescope.open_dome()
+                continue
+            else: # this was a sucessful exposure - take the next one
+                i += 1
 
         return True
 
@@ -306,7 +327,7 @@ class Executor(mqtt.MQTTServer):
         """
 
         # create file name for biases
-        biasname = basename+'_'+str(exp_time)
+        biasname = basename+'_'+str(exp_time)+'s'
         biasname += '_bin'+str(binning)
         self.log("Taking {} biases with names: {}".format(count*numbias, biasname))
 
