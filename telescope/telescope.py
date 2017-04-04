@@ -149,7 +149,7 @@ class Telescope(object):
 
     def weather_ok(self) -> bool:
         """ Checks whether the sun has set, there is no rain (rain=0) and that
-        it is less than 40% cloudy. Returns true if the weather is OK to open up,
+        it is less than 30% cloudy. Returns true if the weather is OK to open up,
         false otherwise.
         """
 
@@ -168,7 +168,7 @@ class Telescope(object):
                 return False
 
             # check cloud cover is below 40%
-            if self.get_cloud() >= 0.40:
+            if self.get_cloud() >= 0.30:
                 if self.dome_open() is True:
                     self.close_dome()
                 return False
@@ -215,7 +215,7 @@ class Telescope(object):
         successfully (object was visible), and returns False if unable to set
         telescope (failure, object not visible).
         """
-        if self.point_visible(target) == True:
+        if self.point_visible(ra, dec) == True:
             # TODO: Check if we're using coordinates or target names
             cmd = "tx point ra="+ra+" dec="+dec+" equinox=2000"
             result = self.run_command(cmd)
