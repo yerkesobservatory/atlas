@@ -8,8 +8,7 @@ import sqlalchemy
 from templates import mqtt
 import telescope
 from telescope import telescope
-from routines import schedule
-from routines import target
+from routines import schedule, target, pinpoint
 from db.models import User, Session
 
 
@@ -204,6 +203,16 @@ class Executor(mqtt.MQTTServer):
                 self.log("Object is not currently visible. Skipping...", color='magenta')
                 return ""
 
+            # we should be pointing roughly at the right place
+            # now we pinpoint
+            self.log("Starting telescope pinpointing...")
+            good_pointing = pinpoint.point(ra, dec, self.telescope)
+
+            # let's check that pinpoint did not fail
+            if good_pointing is False:
+                self.log("Pinpoint failed!")
+                # TODO : Notify Slack because something is wrong
+
             # extract variables
             exposure_time = session.exposure_time
             exposure_count = session.exposure_count
@@ -220,9 +229,7 @@ class Executor(mqtt.MQTTServer):
                 if self.telescope.dome_open() is False:
                     self.telescope.open_dome()
 
-                # repoint ourselves - we shouldn't have to do this, but we do
-                self.log("Reslewing to {}".format(session.target))
-                self.telescope.goto(ra, dec)
+                # reenable tracking
                 self.telescope.enable_tracking()
 
                 # take exposures!
