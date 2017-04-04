@@ -27,6 +27,9 @@ def queue():
         # commit new session
         db.session.commit()
 
+        # return thanks
+        return render_template('main/thanksqueue.html')
+
         
     else:
         for field, errors in form.errors.items():
