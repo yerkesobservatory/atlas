@@ -87,13 +87,12 @@ class Telescope(object):
         """ Keeps the dome open for a specified number of seconds. Assumes
         dome is already open.
         """
-        result = self.run_command("keepopen maxtime={} slit".format(int(time)))
-        if result == True: # everything was good
+        try:
+            result = self.run_command("keepopen maxtime={} slit".format(int(time)),
+                                      timeout = 5, ignore = True)
+        finally:
             return True
-        else: # one of the commands failed
-            # should we handle this error more seriously
-            return False
-
+        
 
     def close_down(self) -> bool:
         """ Closes the current session, closes the dome, and logs out. Returns
@@ -351,6 +350,18 @@ class Telescope(object):
         # run tin?
         pass
 
+    def offset(self, ra: float, dec: float) -> bool:
+        """ Offset the telescope by `ra` degrees, and 
+        `dec` degrees. 
+        """
+        if not self.dryrun:
+            cmd = 'tx offset ra={} dec={}'.format(float(ra), float(dec))
+            result = self.run_command(cmd)
+            if result == True: # everything was good
+                return True
+            else:
+                return False
+            
 
     def log(self, msg: str, color: str = "white") -> bool:
         """ Prints a log message to STDOUT. Returns True if successful, False
@@ -364,7 +375,7 @@ class Telescope(object):
         return True
 
 
-    def run_command(self, command: str) -> str:
+    def run_command(self, command: str, timeout: int = 600, ignore: bool = False) -> str:
         """ Executes a shell command either locally, or remotely via ssh.
         Returns the byte string representing the captured STDOUT
         """
@@ -383,7 +394,7 @@ class Telescope(object):
             while numtries < 5 and exit_code != 0:
                 try:
                     session = self.transport.open_session()
-                    stdin, stdout, stderr = self.ssh.exec_command(command)
+                    stdin, stdout, stderr = self.ssh.exec_command(command, timeout)
                     numtries += 1
                     result = stdout.readlines()
                     # check exit code
@@ -400,6 +411,8 @@ class Telescope(object):
                         print(result)
                         return result
                 except Exception as e:
+                    if ignore is True:
+                        return True
                     self.log('run_command: '+str(e), color='red')
                     self.log("Failed while executing {}".format(command), color="red")
                     self.log("Please manually close the dome by running"
