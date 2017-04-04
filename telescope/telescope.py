@@ -364,7 +364,7 @@ class Telescope(object):
         return True
 
 
-    def run_command(self, command: str, timeout: int = 600) -> str:
+    def run_command(self, command: str) -> str:
         """ Executes a shell command either locally, or remotely via ssh.
         Returns the byte string representing the captured STDOUT
         """
@@ -382,11 +382,13 @@ class Telescope(object):
             numtries = 0; exit_code = 1
             while numtries < 5 and exit_code != 0:
                 try:
-                    stdin, stdout, stderr = self.ssh.exec_command(command, timeout=timeout)
+                    session = self.transport.open_session()
+                    stdin, stdout, stderr = self.ssh.exec_command(command)
                     numtries += 1
                     result = stdout.readlines()
                     # check exit code
                     exit_code = stdout.channel.recv_exit_status()
+                    session.close()
                     if exit_code != 0:
                         self.log("Command returned {}. Retrying in 3 seconds...".format(exit_code))
                         time.sleep(3)
