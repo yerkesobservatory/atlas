@@ -98,7 +98,9 @@ class Executor(mqtt.MQTTServer):
 
         # open telescope
         self.log('Opening telescope dome...')
+        self.telescope.close_dome()
         self.telescope.open_dome()
+        self.telescope.keep_open(36000)
 
         # load queues from database
         self.sessions = self.load_sessions()
@@ -195,7 +197,6 @@ class Executor(mqtt.MQTTServer):
         try:
             if self.telescope.dome_open() is False:
                 self.telescope.open_dome()
-                self.telescope.keep_open(36000)
             # point telescope at target
             self.log("Slewing to {}".format(session.target))
             if self.telescope.goto(ra, dec) is False:
@@ -212,7 +213,6 @@ class Executor(mqtt.MQTTServer):
             for filt in filters:
                 if self.telescope.dome_open() is False:
                     self.telescope.open_dome()
-                    self.telescope.keep_open(36000)
                 self.telescope.enable_tracking()
                 self.take_exposures(basename, exposure_time, exposure_count, binning, filt)
 

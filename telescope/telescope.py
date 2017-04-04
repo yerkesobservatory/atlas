@@ -21,11 +21,14 @@ class Telescope(object):
         """
         self.dryrun = dryrun
         if self.dryrun is not True:
-            # create an SSH client and connect
+            # create a SSH transport
             self.ssh = self.connect()
 
             # save ssh transport
             self.transport = self.ssh.get_transport()
+
+            # create session
+            self.session = self.transport.open_session()
 
 
     def connect(self):
@@ -361,7 +364,7 @@ class Telescope(object):
         return True
 
 
-    def run_command(self, command: str) -> str:
+    def run_command(self, command: str, timeout: int = 600) -> str:
         """ Executes a shell command either locally, or remotely via ssh.
         Returns the byte string representing the captured STDOUT
         """
@@ -379,7 +382,7 @@ class Telescope(object):
             numtries = 0; exit_code = 1
             while numtries < 5 and exit_code != 0:
                 try:
-                    stdin, stdout, stderr = self.ssh.exec_command(command, timeout=10*60)
+                    stdin, stdout, stderr = self.ssh.exec_command(command, timeout=timeout)
                     numtries += 1
                     result = stdout.readlines()
                     # check exit code
@@ -394,10 +397,9 @@ class Telescope(object):
                         result = result[0]
                         print(result)
                         return result
-                except:
-                    self.log(str(sys.exc_info()), color='red')
+                except Exception as e:
+                    self.log('run_command: '+str(e), color='red')
                     self.log("Failed while executing {}".format(command), color="red")
-                    self.log("{}".format(sys.stderr.readlines()), color="red")
                     self.log("Please manually close the dome by running"
                              " `closedown` and `logout`.", color="red")
                     exit(1)
