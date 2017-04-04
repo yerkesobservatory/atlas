@@ -228,7 +228,7 @@ class Executor(mqtt.MQTTServer):
             return None
 
         
-    def parse_filter(self, session) -> [str]:
+    def parse_filters(self, session) -> [str]:
         """ Parse a session objects boolean session
         fields and return a list of strings representing
         the filters to be used for the session. 
