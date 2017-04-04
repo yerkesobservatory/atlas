@@ -3,6 +3,7 @@
 
 import json
 import time
+import datetime
 import sqlalchemy
 from templates import mqtt
 import telescope
@@ -33,8 +34,8 @@ class Executor(mqtt.MQTTServer):
         self.engine = sqlalchemy.create_engine(config['database']['address'], echo=False)
 
         # create session to database with engine
-        session_maker = sqlalchemy.orm.sessionmaker(bind=engine)
-        self.dbsession = session_maker
+        session_maker = sqlalchemy.orm.sessionmaker(bind=self.engine)
+        self.dbsession = session_maker()
         self.log("Succesfully connected to the queue database")
 
         # take numbias*exposure_count biases
@@ -101,6 +102,9 @@ class Executor(mqtt.MQTTServer):
         # load queues from database
         self.sessions = self.load_sessions()
 
+        # default endtime - queue_start + 8 hours
+        endtime = datetime.datetime.today() + datetime.timedelta(hours=8)
+
         # iterate over session list
         while len(self.sessions) != 0:
 
@@ -108,10 +112,16 @@ class Executor(mqtt.MQTTServer):
             location = ""
 
             # schedule remaining sessions
-            session, wait = schedule.schedule(self.sessions)
+            session, wait = schedule.schedule(self.sessions, endtime=endtime)
+
+            # convert observations to ra/dec
+            try:
+                ra, dec = target.find_target(session['target'])
+            except:
+                self.log('Target unable to find object. Skipping...', color='magenta')
+                continue
 
             # remove whitespace 'M 83' -> 'M82'
-            session.target = session.target.replace(' ', '')
             wait = -1
             self.log("Scheduler has selected {}".format(session))
 
@@ -127,12 +137,17 @@ class Executor(mqtt.MQTTServer):
             self.log("Executing session for {}".format(session.user.email or 'none'), color="blue")
             try:
                 # execute session
-                location = self.execute(session)
+                location = self.execute(session, ra, dec)
 
                 # send remote path to pipeline for async processing
                 msg = {'type':'process', 'location':location}
                 self.client.publish('/seo/pipeline', json.dumps(msg))
 
+                # set the session as completed
+                session.executed = True
+                self.dbsession.commit()
+                self.log("Completed executing {}.".format(session))
+                
                 # remove the session from the remaining sessions
                 self.sessions.remove(session)
 
@@ -150,7 +165,7 @@ class Executor(mqtt.MQTTServer):
         return True
 
     
-    def execute(self, session: dict) -> str:
+    def execute(self, session: dict, ra: str, dec: str) -> str:
         """ Execute a single imaging session. If successful, returns
         directory where files are stored on telescope control server.
         """
@@ -170,7 +185,7 @@ class Executor(mqtt.MQTTServer):
             self.telescope.open_dome()
             # point telescope at target
             self.log("Slewing to {}".format(session.target))
-            if self.telescope.goto_target(session.target) is False:
+            if self.telescope.goto(ra, dec) is False:
                 self.log("Object is not currently visible. Skipping...", color='magenta')
                 return ""
 

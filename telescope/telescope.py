@@ -206,6 +206,21 @@ class Telescope(object):
 
         return False
 
+    
+    def goto(self, ra: str, dec: str) -> bool:
+        """ Points the telescope at the given ra, dec in question. Returns True if
+        successfully (object was visible), and returns False if unable to set
+        telescope (failure, object not visible).
+        """
+        if self.point_visible(target) == True:
+            # TODO: Check if we're using coordinates or target names
+            cmd = "tx point ra="+ra+" dec="+dec+" equinox=2000"
+            result = self.run_command(cmd)
+            return result
+
+        return False
+
+    
     def make_dir(self, name: str) -> bool:
         """ Creates a directory in the current directory with a given name. Returns
         True if successful. 
@@ -225,6 +240,22 @@ class Telescope(object):
         """
         if self.dryrun is False:
             cmd = "catalog "+target+" | altaz"
+            altaz = self.run_command(cmd)
+            alt = float(re.search(r"(?<=alt=).*?(?= )", altaz).group(0))
+            if alt >= 40:
+                return True
+        else:
+            return True
+
+        return False
+
+    
+    def point_visible(self, ra: str, dec: str) -> bool:
+        """ Checks whether a given (ra, dec) is visible, and whether it is > 40 degrees
+        in altitude. Returns True if visible and >40, False otherwise
+        """
+        if self.dryrun is False:
+            cmd = ' '.join(('echo', ra, dec, '2000', '| altaz'))
             altaz = self.run_command(cmd)
             alt = float(re.search(r"(?<=alt=).*?(?= )", altaz).group(0))
             if alt >= 40:
