@@ -113,6 +113,7 @@ class Executor(mqtt.MQTTServer):
             location = ""
 
             # schedule remaining sessions
+            self.log("Calling the scheduler...")
             session, wait = schedule.schedule(self.sessions, endtime=endtime)
 
             # if the scheduler returns None, we are done
@@ -202,7 +203,7 @@ class Executor(mqtt.MQTTServer):
             binning = session.binning
 
             # for each filter
-            filters = self.parse_filters(Session)
+            filters = self.parse_filters(session)
             for filt in filters:
                 self.telescope.enable_tracking()
                 self.take_exposures(basename, exposure_time, exposure_count, binning, filt)
