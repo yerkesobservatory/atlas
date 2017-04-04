@@ -130,6 +130,19 @@ class MQTTServer(object):
         self.client.publish('/seo/notify', json.dumps(msg))
 
         return True
+
+    def slack(self, content: str, channel: str) -> bool:
+        """ Publish `content` to the Slack channel `channel`. 
+        'channel' can be group channels #queue or users @rprechelt
+        """
+
+        msg = {}
+        msg['action'] = 'slack'
+        msg['channel'] = channel
+        msg['content'] = msg
+        self.client.publish('/seo/notify', json.dumps(msg))
+
+        return True
         
             
     def _init_log(self) -> bool:
