@@ -37,7 +37,11 @@ def schedule(target_list: [str], endtime):
     for target in target_list:
         max_altitude_time['target'].append(target.target)
 
-        target_coordinates = SkyCoord.from_name(target.target)
+        try:
+            target_coordinates = SkyCoord.from_name(target.target)
+        except:
+            continue
+        
         target_altaz = target_coordinates.transform_to(frame)
         if (np.max(target_altaz.alt)) > 40*u.degree:
             max_altitude_time['altitude'].append(np.max(target_altaz.alt))
@@ -64,6 +68,6 @@ def schedule(target_list: [str], endtime):
             else:
                 return target, int(max_altitude_time['wait'][primary_target_id])
 
-    print("Scheduler couldn't pick an object - returning first object in queue")
-    return target_list[0], -1
+    self.log("Scheduler couldn't pick an object")
+    return None, -1
 
