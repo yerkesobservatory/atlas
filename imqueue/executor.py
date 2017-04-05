@@ -54,10 +54,11 @@ class Executor(mqtt.MQTTServer):
         in the database that have not been executed
         """
         # get unexecuted sessions
-        sessions = self.dbsession.query(Session).filter_by(executed = False)
+        sessions = self.dbsession.query(Session).filter_by(executed = False).all()
 
+        self.log('Queue contains {} unexecuted sessions'.format(len(sessions)))
         # execute query and return all sessions
-        return sessions.all()
+        return sessions
 
 
     def wait_until_good(self) -> bool:
@@ -100,7 +101,6 @@ class Executor(mqtt.MQTTServer):
         # open telescope
         self.log('Opening telescope dome...')
         #self.slack("Opening telescope dome...", "@rprechelt")
-        self.telescope.close_dome()
         self.telescope.open_dome()
         self.telescope.keep_open(36000)
 
@@ -117,8 +117,8 @@ class Executor(mqtt.MQTTServer):
         for s in self.sessions:
             # convert observations to ra/dec
             try:
-                ra, dec = target.find_target(session.target)
-                objects.append((session.id, ra, dec))
+                ra, dec = target.find_target(s.target)
+                objects.append((s.id, ra, dec))
             except Exception as e:
                 self.log("find_target: "+str(e))
                 self.log('Target unable to find object. Skipping...', color='magenta')

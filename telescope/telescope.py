@@ -90,7 +90,8 @@ class Telescope(object):
         try:
             result = self.run_command("keepopen maxtime={} slit".format(int(time)),
                                       timeout = 5, ignore = True)
-        finally:
+            return True
+        except:
             return True
         
 
@@ -394,7 +395,7 @@ class Telescope(object):
             while numtries < 5 and exit_code != 0:
                 try:
                     session = self.transport.open_session()
-                    stdin, stdout, stderr = self.ssh.exec_command(command, timeout)
+                    stdin, stdout, stderr = self.ssh.exec_command(command, timeout=timeout)
                     numtries += 1
                     result = stdout.readlines()
                     # check exit code
