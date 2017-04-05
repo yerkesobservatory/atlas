@@ -20,6 +20,7 @@ iso8601==0.1.11
 isort==4.2.5
 jdatetime==1.8.1
 Jinja2==2.9.5
+jplephem==2.6
 lazy-object-proxy==1.2.2
 lockfile==0.12.2
 luigi==2.6.1
