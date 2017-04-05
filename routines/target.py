@@ -21,7 +21,7 @@ def find_target(target: str) -> (str, str):
 
     # planetary bodies - TODO: Add moons of planets? 
     solar_system = ['mercury','venus','moon','mars','jupiter','saturn','uranus','neptune','pluto']
-    solar_system_ephemeris.set('builtin')
+    solar_system_ephemeris.set('de432s')
 
     # convert it all to lowercase and strip whitespace
     target = target.lower().strip()
