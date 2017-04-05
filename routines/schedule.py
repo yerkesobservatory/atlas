@@ -6,17 +6,17 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun
 
 def schedule(target_list: [str], endtime):
     """
-    This function receives a list of target names and outputs a primary
+    This function receives a list of target coordinates and outputs a primary
     observable target
     
     Inputs:
     -------
-    target_list :str: :list: List containing the names of the targets.
+    target_list :str: :list: List containing the names of the targets (i.e. [(id, ra, dec), (id, ra, dec), ...]).
     endtime: :list: 'obj' datetime (i.e. datetime(year, month, day, hour, minute, second))
     
     Outputs:
     --------
-    primary_target :str: Name of the highest priority target
+    primary_target :str: (id, ra, dec) of the highest priority target
     wait :astropy.Time: Wait time in seconds until optimal observation.
     It takes the value -1 when the object(s) is not observable.
     """
@@ -35,10 +35,15 @@ def schedule(target_list: [str], endtime):
     sunup_time = times[np.where((sun_altaz.alt < -12*u.deg) == True)[0][-1]]
     
     for target in target_list:
+        
+        target_ra = target[1]
+        target_dec = target[2]
+        input_coordinates = target_ra+" "+target_dec
+        
         max_altitude_time['target'].append(target.target)
 
         try:
-            target_coordinates = SkyCoord.from_name(target.target)
+            target_coordinates = SkyCoord(input_coordinates, unit=(u.hourangle, u.deg))
         except:
             continue
         
@@ -69,5 +74,5 @@ def schedule(target_list: [str], endtime):
                 return target, int(max_altitude_time['wait'][primary_target_id])
 
     self.log("Scheduler couldn't pick an object")
-    return None, -1
+    return (-1, -1, -1), -1
 

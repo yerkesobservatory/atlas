@@ -109,7 +109,20 @@ class Executor(mqtt.MQTTServer):
         self.slack("Queue has {} unexecuted sessions".format(len(self.session)), "#queue")
 
         # default endtime - queue_start + 8 hours
+        # TODO: Draw this from database
         endtime = datetime.datetime.today() + datetime.timedelta(hours=8)
+
+        # we build an (id, ra, dec) list
+        objects = []
+        for s in self.sessions:
+            # convert observations to ra/dec
+            try:
+                ra, dec = target.find_target(session.target)
+                objects.append((session.id, ra, dec))
+            except Exception as e:
+                self.log("find_target: "+str(e))
+                self.log('Target unable to find object. Skipping...', color='magenta')
+                continue
 
         # iterate over session list
         while len(self.sessions) != 0:
@@ -119,22 +132,23 @@ class Executor(mqtt.MQTTServer):
 
             # schedule remaining sessions
             self.log("Calling the scheduler...")
-            session, wait = schedule.schedule(self.sessions, endtime=endtime)
+            (objid, ra, dec), wait = schedule.schedule(objects, endtime=endtime)
 
             # if the scheduler returns None, we are done
-            if session is None:
-                self.session.remove(session)
+            if objid == -1:
+                break
+
+            # find object by id
+            found_sessions = list(filter(lambda x: x.id == objid, self.sessions))
+
+            # make sure we found something - this should only be length one
+            if len(found_sessions) != 1:
+                self.log('We were unable to find a session by that ID', color='magenta')
+                self.log(found_sessions)
                 continue
 
-            # convert observations to ra/dec
-            try:
-                ra, dec = target.find_target(session.target)
-            except Exception as e:
-                self.log("find_target: "+str(e))
-                self.log('Target unable to find object. Skipping...', color='magenta')
-                continue
-
-            wait = -1
+            # pick session
+            session = found_sessions[0]
             self.log("Scheduler has selected {}".format(session))
             self.slack("Scheduler has selected {}".format(session),
                        "#queue")
