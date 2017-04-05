@@ -7,6 +7,10 @@ tar zxvf astrometry.net-0.70.tar.gz
 rm *.tar.gz
 mv astrometry.net-0.70 build
 cd build
-make -j
+make -ji || true # continue even if errors occur as it tries to build optional components
 mkdir install
-INSTALL_DIR=/home/rprechelt/projects/seo/astrometry/install make install -j
+INSTALL_DIR=`pwd`/../install make install -j
+cd ../install/data/
+for i in `seq -f %02g 0 1 11`; do
+    wget -c data.astrometry.net/4200/index-4207-${i}.fits
+done
