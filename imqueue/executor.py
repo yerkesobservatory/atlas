@@ -25,6 +25,7 @@ class Executor(mqtt.MQTTServer):
 
         # MUST INIT SUPERCLASS FIRST
         super().__init__(config, "Executor")
+        self.slack("The queue executor has started up...", "#queue")
 
         # instantiate telescope object for control
         self.telescope = telescope.Telescope(dryrun=dryrun)
@@ -79,12 +80,13 @@ class Executor(mqtt.MQTTServer):
             # shut down after 4 hours of continuous waiting
             if elapsed_time >= 14400:
                 self.log("Bad weather for 4 hours. Shutting down the queue...", color="magenta")
+                self.slack("Bad weather for 4 hours. Shutting down the queue...", "#queue")
                 exit(1)
 
             # update weather
             weather = self.telescope.weather_ok()
 
-        self.log('Weather is good...')
+        self.log('Weather is good.')
         return True
 
     
@@ -97,12 +99,14 @@ class Executor(mqtt.MQTTServer):
 
         # open telescope
         self.log('Opening telescope dome...')
+        self.slack("Opening telescope dome...", "#queue")
         self.telescope.close_dome()
         self.telescope.open_dome()
         self.telescope.keep_open(36000)
 
         # load queues from database
         self.sessions = self.load_sessions()
+        self.slack("Queue has {} unexecuted sessions".format(len(self.session)), "#queue")
 
         # default endtime - queue_start + 8 hours
         endtime = datetime.datetime.today() + datetime.timedelta(hours=8)
@@ -132,10 +136,13 @@ class Executor(mqtt.MQTTServer):
 
             wait = -1
             self.log("Scheduler has selected {}".format(session))
+            self.slack("Scheduler has selected {}".format(session),
+                       "#queue")
 
             # check whether we need to wait before executing
             if wait != -1:
                 self.log('Sleeping for {} seconds as requested by scheduler'.format(wait))
+                self.slack('Sleeping for {} seconds as requested by scheduler'.format(wait), "#queue")
                 if wait > 10*60:
                     if self.telescope.dome_open() is True:
                         self.log('Closing down the telescope while we sleep')
@@ -144,6 +151,7 @@ class Executor(mqtt.MQTTServer):
 
             # check whether every session executed correctly
             self.log("Executing session for {}".format(session.user.email or 'none'), color="blue")
+            self.slack("Executing session for {}".format(session.user.email or 'none'), "#queue")
             try:
                 # execute session
                 location = self.execute(session, ra, dec)
@@ -159,6 +167,8 @@ class Executor(mqtt.MQTTServer):
                     session.executed = True
                     self.dbsession.commit()
                     self.log("Completed executing {}.".format(session))
+                    self.slack("Completed executing {} for {}.".format(session.target,
+                                                                       session.user.email), "#queue")
                 
                 # remove the session from the remaining sessions
                 self.sessions.remove(session)
@@ -172,6 +182,7 @@ class Executor(mqtt.MQTTServer):
                 
         # close down
         self.log('Finished executing the queue! Closing down...', color='green')
+        self.slack('Finished executing the queue! Closing down...', "#queue")
         self.finish()
 
         return True
@@ -219,6 +230,7 @@ class Executor(mqtt.MQTTServer):
             binning = session.binning
 
             # for each filter
+            self.slack("Taking science exposures...", "#queue")
             filters = self.parse_filters(session)
             for filt in filters:
 
@@ -228,6 +240,10 @@ class Executor(mqtt.MQTTServer):
                 # if the telescope has randomly closed, open up
                 if self.telescope.dome_open() is False:
                     self.telescope.open_dome()
+
+                # check our pointing with pinpoint again
+                self.log("Re-pinpointing telescope...")
+                pinpoint.point(ra, dec, self.telescope)
 
                 # reenable tracking
                 self.telescope.enable_tracking()
@@ -240,6 +256,7 @@ class Executor(mqtt.MQTTServer):
             self.telescope.change_filter('clear')
 
             # take exposure_count darks
+            self.slack("Taking dark frames...", "#queue")
             self.take_darks(basename, exposure_time, exposure_count, binning)
 
             # take numbias*exposure_count biases
@@ -363,3 +380,21 @@ class Executor(mqtt.MQTTServer):
         self.finish()
         
         return 
+
+    
+    def log(self, msg: str, color: str='white') -> bool:
+        """ Prints a log message to STDOUT. Returns True if successful, False
+        otherwise.
+        """
+        colors = {'red':'31', 'green':'32', 'blue':'34', 'cyan':'36',
+                  'white':'37', 'yellow':'33', 'magenta':'34'}
+        logtime = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        logname = self._name.upper()
+        log = logtime+' '+logname+': '+msg
+        color_log = '\033[1;'+colors[color]+'m'+log+'\033[0m'
+        
+        self.log_file.write(log+'\n')
+        self.log_file.flush()
+        print(color_log)
+        
+        return True
