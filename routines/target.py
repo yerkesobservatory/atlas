@@ -24,7 +24,7 @@ def find_target(target: str) -> (str, str):
     solar_system_ephemeris.set('de432s')
 
     # convert it all to lowercase and strip whitespace
-    target = target.lower().strip()
+    target = target.lower()
 
     # we have a planetary body
     if target in solar_system:
