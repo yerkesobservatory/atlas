@@ -408,7 +408,7 @@ class Telescope(object):
 
                     # valid result received
                     if len(result) > 0:
-                        result = result[0]
+                        result = ' '.join(result)
                         print(result)
                         return result
                 except Exception as e:
