@@ -40,7 +40,7 @@ def schedule(target_list: [str], endtime):
         target_dec = target[2]
         input_coordinates = target_ra+" "+target_dec
         
-        max_altitude_time['target'].append(target.target)
+        max_altitude_time['target'].append(target[0])
 
         try:
             target_coordinates = SkyCoord(input_coordinates, unit=(u.hourangle, u.deg))
@@ -67,7 +67,7 @@ def schedule(target_list: [str], endtime):
     primary_target_id = np.argmin(Time(max_altitude_time['time'])-Time.now())
 
     for target in target_list:
-        if target.target.upper() == primary_target.upper():
+        if target[0] == primary_target:
             if type(max_altitude_time['wait'][primary_target_id]) is not str:
                 return target, int(max_altitude_time['wait'][primary_target_id].value)
             else:
