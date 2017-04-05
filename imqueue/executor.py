@@ -136,6 +136,7 @@ class Executor(mqtt.MQTTServer):
 
             # if the scheduler returns None, we are done
             if objid == -1:
+                self.log("Scheduler returned no object. Quitting the executor...")
                 break
 
             # find object by id
@@ -144,7 +145,7 @@ class Executor(mqtt.MQTTServer):
             # make sure we found something - this should only be length one
             if len(found_sessions) != 1:
                 self.log('We were unable to find a session by that ID', color='magenta')
-                self.log(found_sessions)
+                self.log(str(found_sessions))
                 continue
 
             # pick session
@@ -153,6 +154,9 @@ class Executor(mqtt.MQTTServer):
             #self.slack("Scheduler has selected {}".format(session),
                        # "@rprechelt")
 
+            # strip the whitespace from the names
+            session.target = session.target.strip().replace(' ', '')
+            
             # check whether we need to wait before executing
             if wait != -1:
                 self.log('Sleeping for {} seconds as requested by scheduler'.format(wait))
@@ -183,9 +187,15 @@ class Executor(mqtt.MQTTServer):
                     self.log("Completed executing {}.".format(session))
                     #self.slack("Completed executing {} for {}.".format(session.target,
 #                                                                       session.user.email), "@rprechelt")
-                
+
+
                 # remove the session from the remaining sessions
                 self.sessions.remove(session)
+
+                # remove the object
+                obj = list(filter(lambda x: x[0] == objid, objects))[0]
+                objects.remove(obj)
+
 
             except Exception as e:
                 self.log("Error while executiong session for {}".format(session.user.email),
@@ -335,6 +345,7 @@ class Executor(mqtt.MQTTServer):
             # if the telescope has randomly closed, open up and repeat the exposure
             if self.telescope.dome_open() is False:
                 self.log('Slit closed during exposure - repeating previous exposure!', color='magenta')
+                self.wait_until_good()
                 self.telescope.open_dome()
                 continue
             else: # this was a sucessful exposure - take the next one
