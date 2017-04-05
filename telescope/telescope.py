@@ -180,8 +180,8 @@ class Telescope(object):
                     self.close_dome()
                 return False
 
-            # check cloud cover is below 40%
-            if self.get_cloud() >= 0.30:
+            # check cloud cover is below 35%
+            if self.get_cloud() >= 0.35:
                 if self.dome_open() is True:
                     self.close_dome()
                 return False
