@@ -25,10 +25,10 @@ class MQTTServer(object):
 
         # initialize logging
         self._init_log()
-        self.log('Creating new '+name+'...', 'green')
 
         # connect to MQTT broker
         self.client = self._connect()
+        self.log('Creating new '+name+'...', 'green')
 
         # register atexit handler
         atexit.register(self._handle_exit)
