@@ -44,6 +44,7 @@ def point(ra: str, dec: str, telescope: 'Telescope') -> bool:
     seo_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     astrometry_dir = '/'.join((seo_dir, 'astrometry', 'install', 'bin', ''))
     solve_field = astrometry_dir+'solve-field'
+    solve_field = '/home/mcnowinski/astrometry/bin/solve-field'
 
     # static parameters for astrometry
     # TODO: these should be drawn from the global config file
@@ -57,7 +58,7 @@ def point(ra: str, dec: str, telescope: 'Telescope') -> bool:
 
     # parameters for image command on aster
     time = 10; binning = 2
-    fits_fname = '/tmp/pointing.fits'
+    fits_fname = '/tmp/pointing'
 
     # setup loop variables at maximum values
     iteration = 0
@@ -87,15 +88,16 @@ def point(ra: str, dec: str, telescope: 'Telescope') -> bool:
                                  '--ra {} --dec {} --scale-unit arcsecperpix '
                                  '--scale-low {} --scale-high {} --radius {} '
                                  '--index-xyls none --axy none --temp-axy --solved none --match none '
-                                 '--rdls none --corr none --pnm none --wcs none {} '
+                                 '--rdls none --corr none --pnm none --wcs none {}.fits '
                                  ''.format(downsample, cpu_limit, ra_target, dec_target,
                                            scale_low, scale_high, radius, fits_fname))
 
         # run astrometry!
-        output = subprocess.check_output(astro_cmd, shell=True)
+        output = telescope.run_command(astro_cmd)
+        print(output)
 
         #look for field center in solve-field output
-        match = re.search('Field center\: \(RA,Dec\) \= \(([0-9\-\.\s]+)\,([0-9\-\.\s]+)\) deg\.', output)
+        match = re.search('RA,Dec \= \(([0-9\-\.\s]+)\,([0-9\-\.\s]+)\)', output)
         if match:
             # extract RA/DEC from image
             RA_image = match.group(1).strip()
