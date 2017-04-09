@@ -137,9 +137,10 @@ class MQTTServer(object):
         """
 
         msg = {}
+        msg['type'] = 'notify'
         msg['action'] = 'slack'
+        msg['content'] = content
         msg['channel'] = channel
-        msg['content'] = msg
         self.client.publish('/seo/notify', json.dumps(msg))
 
         return True

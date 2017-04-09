@@ -1,7 +1,7 @@
 """ This server process listens for notification requests, processes their messages, and emails
 the appropriate email address with the time, date, error message, and other relevant information. 
 """
-
+import time
 import typing
 import smtplib
 import email
@@ -85,10 +85,14 @@ class NotificationServer(mqtt.MQTTServer):
         """
         channel = msg.get('channel') or '#queue'
         content = msg.get('content') or ''
-        
+
         self.sc.api_call("chat.postMessage",
             channel=channel,
             text=content,
             username="sirius", as_user="false")
+
+        # we cannot send more than one message a second
+        # let MQTT build a queue for us
+        time.sleep(1.1)
 
         return True
