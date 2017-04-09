@@ -19,6 +19,8 @@ parser.add_argument('--filters', '-f', help="The list of filters to be used for 
                     default="clear", type=str, nargs='+')
 parser.add_argument('--binning', '-b', help="The desired CCD binning",
                     default=2, type=int)
+parser.add_argument('--user', '-u', help="The email address user to submit this as",
+                    default=None)
 
 ######################### PARSE COMMAND LINE ARGUMENTS #########################
 args = parser.parse_args()
@@ -48,7 +50,7 @@ msg['exposure_time'] = args.exposure_time
 msg['exposure_count'] = args.exposure_count
 msg['filters'] = args.filters
 msg['binning'] = args.binning
-msg['user'] = os.environ['USER']
+msg['user'] = args.user or os.environ['USER']
 
 
 ######################### CONNECT TO STONE EDGE SERVER #########################
