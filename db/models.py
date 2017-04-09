@@ -1,6 +1,6 @@
 import datetime
 import sqlalchemy
-from sqlalchemy import String, Integer, Boolean, Date, DateTime, Float
+from sqlalchemy import String, Integer, Boolean, Date, DateTime, Float, Time
 from sqlalchemy.ext.declarative import declarative_base
 import werkzeug.security as security
 
@@ -55,7 +55,6 @@ class User(Base):
         return "<User %r>" % (self.email)
 
 
-    
 class Session(Base):
     """ This class represents a session for queue observation.
     Fields:
@@ -92,3 +91,28 @@ class Session(Base):
 
     def __repr__(self):
         return "<Session {}: Target: {}, User: {}>".format(self.id, self.target, self.user.email)
+
+
+class Night(Base):
+    """ This class represents a session for queue observation.
+    Fields:
+        id: unique id
+        target: a string representing the target name or RA/DEC pairs
+        exposure_time: the time in seconds for each exposure
+        exposure_count: the number of exposures to take for each filter
+        filter_*: whether to use that filter in the exposure
+        binning: the binning to use with the CCD
+        user_id: the ID of the user who submitted this request
+        submit_date: the date that the session was submitted
+        executed: whether the session has been executed
+        exec_date: the date and time that the user was executed
+    """
+    __tablename__ = 'nights'
+    date = sqlalchemy.Column(Date, primary_key=True, index=True, unique=True)
+    start_time = sqlalchemy.Column(Time, index=False, unique=False)
+    end_time = sqlalchemy.Column(Time, index=False, unique=False)
+
+    def __repr__(self):
+        return '<Night: {}, Start: {}, End: {}'.format(self.date,
+                                                                   self.start_time,
+                                                                   self.end_time)

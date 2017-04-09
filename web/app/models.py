@@ -184,7 +184,7 @@ class Night(db.Model):
     end_time = db.Column(db.Time, index=False, unique=False)
 
     def __repr__(self):
-        return '<Night: {}, Start: {}, End: {}, Status: {}'.format(self.date,
+        return '<Night: {}, Start: {}, End: {}'.format(self.date,
                                                                    self.start_time,
-                                                                   self.end_time,
-                                                                   self.status)
+                                                                   self.end_time)
+
