@@ -22,7 +22,7 @@ for line in users:
     if line == '' or line == '\n':
         continue
     tok = s.sign(line.strip().encode()).decode().split('.')
-    print(tok[0]+'.'+tok[1]+' '+tok[2])
+    print('.'.join(tok[0:-1])+' '+tok[-1])
 
 # CLOSE OUT THE USER FILE
 users.close()
