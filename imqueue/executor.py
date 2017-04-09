@@ -52,7 +52,7 @@ class Executor(mqtt.MQTTServer):
         """ This function is given a JSON dictionary message from the broker
         and must decide how to process the message given the application. 
         """
-        if msg.get('action') == 'start':
+        if msg.get('type') == 'start':
             self.execute_queue()
         else:
             self.log("Executor received unknown message")
