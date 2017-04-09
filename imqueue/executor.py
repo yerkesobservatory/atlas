@@ -25,11 +25,10 @@ class Executor(mqtt.MQTTServer):
 
         # MUST INIT SUPERCLASS FIRST
         super().__init__(config, "Executor")
-        #self.slack("The queue executor has started up...", "@rprechelt")
+        self.slack("The queue executor has started up...", "@rprechelt")
 
-        # instantiate telescope object for control
-        self.telescope = telescope.Telescope(dryrun=dryrun)
-        self.log("Executor has connection to telescope")
+        # dummy telescope variable
+        self.telescope = None
 
         # create connection to database
         self.engine = sqlalchemy.create_engine(config['database']['address'], echo=False)
@@ -47,6 +46,18 @@ class Executor(mqtt.MQTTServer):
 
         # MUST END WITH start() - THIS BLOCKS
         self.start()
+
+
+    def process_message(self, topic: str, msg: {str}) -> bool:
+        """ This function is given a JSON dictionary message from the broker
+        and must decide how to process the message given the application. 
+        """
+        if msg.get('action') == 'start':
+            self.execute_queue()
+        else:
+            self.log("Executor received unknown message")
+
+        return True
 
 
     def load_sessions(self) -> ['Sessions']:
@@ -75,38 +86,45 @@ class Executor(mqtt.MQTTServer):
 
             # sleep for 10 minutes
             self.log('Executor is sleeping for 15 minutes...')
+            self.slack('Executor is sleeping for 15 minutes', '@rprechelt')
             time.sleep(15*60) # time to sleep in seconds
             elapsed_time += (15*60)
 
             # shut down after 4 hours of continuous waiting
             if elapsed_time >= 14400:
                 self.log("Bad weather for 4 hours. Shutting down the queue...", color="magenta")
-                #self.slack("Bad weather for 4 hours. Shutting down the queue...", "@rprechelt")
+                self.slack("Bad weather for 4 hours. Shutting down the queue...", "@rprechelt")
                 exit(1)
 
             # update weather
             weather = self.telescope.weather_ok()
 
-        self.log('Weather is good.')
+        self.log('Weather is currently good.')
+        self.slack('Weather is currently good.', '@rprechelt')
         return True
 
     
-    def start(self) -> bool:
+    def execute_queue(self) -> bool:
         """ Executes the list of session objects for this queue.
         """
+        self.slack("Starting execution of the queue...", "@rprechelt")
 
-        # wait until weather is good
+        # instantiate telescope object for control
+        self.telescope = telescope.Telescope(dryrun=dryrun)
+        self.log("Executor has connection to telescope")
+
+        # ait until weather is good
         self.wait_until_good()
 
         # open telescope
         self.log('Opening telescope dome...')
-        #self.slack("Opening telescope dome...", "@rprechelt")
+        self.slack("Opening telescope dome...", "@rprechelt")
         self.telescope.open_dome()
         self.telescope.keep_open(36000)
 
         # load queues from database
         self.sessions = self.load_sessions()
-        #self.slack("Queue has {} unexecuted sessions".format(len(self.session)), "@rprechelt")
+        self.slack("Queue has {} unexecuted sessions".format(len(self.session)), "@rprechelt")
 
         # default endtime - queue_start + 8 hours
         # TODO: Draw this from database
@@ -121,7 +139,8 @@ class Executor(mqtt.MQTTServer):
                 objects.append((s.id, ra, dec))
             except Exception as e:
                 self.log("find_target: "+str(e))
-                self.log('Target unable to find object. Skipping...', color='magenta')
+                self.log('find_target unable to find object. Skipping...', color='magenta')
+                self.slack('find_target unable to find object. Skipping...', '@rprechelt')
                 continue
 
         # iterate over session list
@@ -150,13 +169,13 @@ class Executor(mqtt.MQTTServer):
             # pick session
             session = found_sessions[0]
             self.log("Scheduler has selected {}".format(session))
-            #self.slack("Scheduler has selected {}".format(session),
-                       # "@rprechelt")
+            self.slack("Scheduler has selected {}".format(session),
+                       "@rprechelt")
 
             # check whether we need to wait before executing
             if wait != -1:
                 self.log('Sleeping for {} seconds as requested by scheduler'.format(wait))
-                #self.slack('Sleeping for {} seconds as requested by scheduler'.format(wait), "@rprechelt")
+                self.slack('Sleeping for {} seconds as requested by scheduler'.format(wait), "@rprechelt")
                 if wait > 10*60:
                     if self.telescope.dome_open() is True:
                         self.log('Closing down the telescope while we sleep')
@@ -165,7 +184,7 @@ class Executor(mqtt.MQTTServer):
 
             # check whether every session executed correctly
             self.log("Executing session for {}".format(session.user.email or 'none'), color="blue")
-            #self.slack("Executing session for {}".format(session.user.email or 'none'), "@rprechelt")
+            self.slack("Executing session for {}".format(session.user.email or 'none'), "@rprechelt")
             try:
                 # execute session
                 location = self.execute(session, ra, dec)
@@ -175,28 +194,30 @@ class Executor(mqtt.MQTTServer):
 
                     # send remote path to pipeline for async processing
                     msg = {'type':'process', 'location':location}
+                    self.slack('Sending location to pipeline: {}...'.format(location), '@rprechelt')
                     self.client.publish('/seo/pipeline', json.dumps(msg))
 
                     # set the session as completed
                     session.executed = True
                     self.dbsession.commit()
                     self.log("Completed executing {}.".format(session))
-                    #self.slack("Completed executing {} for {}.".format(session.target,
-#                                                                       session.user.email), "@rprechelt")
+                    self.slack("Completed executing {} for {}.".format(session.target,
+                                                                      session.user.email), "@rprechelt")
                 
                 # remove the session from the remaining sessions
                 self.sessions.remove(session)
 
             except Exception as e:
-                self.log("Error while executiong session for {}".format(session.user.email),
+                self.log("Error while executing session {}".format(session.id),
                          color="red")
+                self.slack('An exception occured while executiong session {}'.format(session.id), '@rprechelt')
                 self.log("start: "+str(e), color='red')
                 self.finish()
                 exit(1)
                 
         # close down
         self.log('Finished executing the queue! Closing down...', color='green')
-        #self.slack('Finished executing the queue! Closing down...', "@rprechelt")
+        self.slack('Finished executing the queue! Closing down...', "@rprechelt")
         self.finish()
 
         return True
@@ -215,6 +236,7 @@ class Executor(mqtt.MQTTServer):
         # create directory
         self.log('Making directory to store observations on telescope server...')
         self.telescope.make_dir(dirname)
+        self.slack('Succesfully made directory to store files: {}'.format(dirname), '@rprechelt')
 
         basename = dirname+'/'+'_'.join([date, username, session.target])
 
@@ -236,7 +258,7 @@ class Executor(mqtt.MQTTServer):
             # let's check that pinpoint did not fail
             if good_pointing is False:
                 self.log("Pinpoint failed!")
-                # TODO : Notify Slack because something is wrong
+                self.slack("Pinpoint failed!", "@rprechelt")
 
             # extract variables
             exposure_time = session.exposure_time
@@ -244,7 +266,7 @@ class Executor(mqtt.MQTTServer):
             binning = session.binning
 
             # for each filter
-            #self.slack("Taking science exposures...", "@rprechelt")
+            self.slack("Taking science exposures...", "@rprechelt")
             filters = self.parse_filters(session)
             for filt in filters:
 
@@ -253,6 +275,7 @@ class Executor(mqtt.MQTTServer):
                 
                 # if the telescope has randomly closed, open up
                 if self.telescope.dome_open() is False:
+                    self.slack('Dome closed unexpectedly. Opening up', '@rprechelt')
                     self.telescope.open_dome()
 
                 # check our pointing with pinpoint again
@@ -270,18 +293,21 @@ class Executor(mqtt.MQTTServer):
             self.telescope.change_filter('clear')
 
             # take exposure_count darks
-            #self.slack("Taking dark frames...", "@rprechelt")
+            self.slack("Taking dark frames...", "@rprechelt")
             self.take_darks(basename, exposure_time, exposure_count, binning)
 
             # take numbias*exposure_count biases
+            self.slack("Taking bias frames...", "@rprechelt")
             self.take_biases(basename, exposure_time, exposure_count, binning, self.numbias)
 
             # return the directory containing the files
             return dirname
 
         except Exception as e:
-            self.log('The executor has encountered an error. Please manually'
+            self.log('The executor has encountered a fatal error. Please manually'
                      'close down the telescope.', 'red')
+            self.slack('The executor has encountered a fatal error. Please manually'
+                       'close down the telescope. \n {}'.format(e), '@rprechelt')
             self.log("execute: "+str(e), color='red')
             self.finish()
             return None
@@ -335,6 +361,7 @@ class Executor(mqtt.MQTTServer):
             # if the telescope has randomly closed, open up and repeat the exposure
             if self.telescope.dome_open() is False:
                 self.log('Slit closed during exposure - repeating previous exposure!', color='magenta')
+                self.slack('Slit closed during exposure - repeating previous exposure!', '@rprechelt')
                 self.telescope.open_dome()
                 continue
             else: # this was a sucessful exposure - take the next one
@@ -380,8 +407,10 @@ class Executor(mqtt.MQTTServer):
         """ Close the executor in event of success of failure; closes the telescope, 
         closes ssh connection, closes log file
         """
-        self.telescope.close_down()
-        self.telescope.disconnect()
+        if self.telescope is not None:
+            self.slack('Closing down the telescope and disconnecting...', '@rprechelt')
+            self.telescope.close_down()
+            self.telescope.disconnect()
 
         return 
 
