@@ -50,10 +50,10 @@ def point(ra: str, dec: str, telescope: 'Telescope') -> bool:
     # TODO: these should be drawn from the global config file
     downsample = 2
     scale_low = 0.55; scale_high = 2.00
-    radius = 10.0
+    radius = 20.0
     cpu_limit = 50
     min_ra_offset = 0.05; min_dec_offset = 0.05
-    max_ra_offset = 10.0; max_dec_offset = 10.0
+    max_ra_offset = 20.0; max_dec_offset = 20.0
     max_tries = 20
 
     # parameters for image command on aster
@@ -94,7 +94,6 @@ def point(ra: str, dec: str, telescope: 'Telescope') -> bool:
 
         # run astrometry!
         output = telescope.run_command(astro_cmd)
-        print(output)
 
         #look for field center in solve-field output
         match = re.search('RA,Dec \= \(([0-9\-\.\s]+)\,([0-9\-\.\s]+)\)', output)
