@@ -121,7 +121,7 @@ class Executor(mqtt.MQTTServer):
         self.slack("Starting execution of the queue...", "@rprechelt")
 
         # instantiate telescope object for control
-        self.telescope = telescope.Telescope(dryrun=self.dryrun)
+        self.telescope = telescope.Telescope(self.config, dryrun=self.dryrun)
         self.log("Executor has connection to telescope")
 
         # ait until weather is good
