@@ -251,15 +251,9 @@ class Executor(mqtt.MQTTServer):
         # calculate base file name
         date = time.strftime('%Y-%m-%d', time.gmtime())
         username = session.user.email.split('@')[0]
-        dirname = self.remote_dir+'/'+'_'.join([date, username, session.target])
+        dirname = self.remote_dir+'/'+'_'.join([date, username, session.target, str(session.id)])
 
-        # create directory
-        self.log('Making directory to store observations on telescope server...')
-        self.telescope.make_dir(dirname)
-        self.slack('Succesfully made directory to store files: {}'.format(dirname), '@rprechelt')
-
-        basename = dirname+'/'+'_'.join([date, username, session.target, session.id])
-
+        # try and execute
         try:
             self.wait_until_good()
             if self.telescope.dome_open() is False:
@@ -269,6 +263,13 @@ class Executor(mqtt.MQTTServer):
             if self.telescope.goto(ra, dec) is False:
                 self.log("Object is not currently visible. Skipping...", color='magenta')
                 return ""
+
+            # create directory
+            self.log('Making directory to store observations on telescope server...')
+            self.telescope.make_dir(dirname)
+            self.slack('Succesfully made directory to store files: {}'.format(dirname), '@rprechelt')
+
+            basename = dirname+'/'+'_'.join([date, username, session.target])
 
             # we should be pointing roughly at the right place
             # now we pinpoint
