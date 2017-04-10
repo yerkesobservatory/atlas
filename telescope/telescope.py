@@ -15,10 +15,17 @@ class Telescope(object):
     server using paramiko.
     """
 
-    def __init__(self, dryrun=False):
+    def __init__(self, config, dryrun=False):
         """ This function is responsible for establishing the
         connection with aster.
         """
+
+        # save config
+        self.config = config
+        
+        # initialize logging system
+        self._init_log()
+        
         self.dryrun = dryrun
         if self.dryrun is not True:
             # create a SSH transport
@@ -362,17 +369,37 @@ class Telescope(object):
                 return True
             else:
                 return False
-            
 
+            
+    def _init_log(self) -> bool:
+        """ Initialize the object logging system - currently only opens
+        the logging file
+        """
+        logname = 'telescope'
+        logdir = self.config['server']['logdir']
+        try:
+            self.log_file = open(logdir+'/'+logname+'.log', 'a+')
+        except:
+            self.log('Unable to open log file', color='red')
+
+        return True
+
+    
     def log(self, msg: str, color: str = "white") -> bool:
         """ Prints a log message to STDOUT. Returns True if successful, False
         otherwise.
         """
-        colors = {"red":"31", "green":"32", "blue":"34", "cyan":"36",
-                  "white":"37", "yellow":"33", "magenta":"34"}
-        logtime = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
-        log = "\033[1;"+colors[color]+"m"+logtime+" TELESCOPE: "+msg+"\033[0m"
-        print(log)
+        colors = {'red':'31', 'green':'32', 'blue':'34', 'cyan':'36',
+                  'white':'37', 'yellow':'33', 'magenta':'34'}
+        logtime = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+        logname = "TELESCOPE"
+        log = logtime+' '+logname+': '+msg
+        color_log = '\033[1;'+colors[color]+'m'+log+'\033[0m'
+        
+        self.log_file.write(log+'\n')
+        self.log_file.flush()
+        print(color_log)
+        
         return True
 
 
