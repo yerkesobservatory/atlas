@@ -32,7 +32,7 @@ class LogServer(mqtt.MQTTServer):
         return ['#']
 
 
-    def process_message(self, topic: str, msg: {str}) -> list:
+    def process_message(self, topic: str, msg: {str}) -> bool:
         """ This function is called whenever a message is received.
         """
         self.log(topic+": "+msg)
