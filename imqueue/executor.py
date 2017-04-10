@@ -30,6 +30,9 @@ class Executor(mqtt.MQTTServer):
         # dummy telescope variable
         self.telescope = None
 
+        # save dryrun
+        self.dryrun = dryrun
+
         # create connection to database
         self.engine = sqlalchemy.create_engine(config['database']['address'], echo=False)
 
@@ -118,7 +121,7 @@ class Executor(mqtt.MQTTServer):
         self.slack("Starting execution of the queue...", "@rprechelt")
 
         # instantiate telescope object for control
-        self.telescope = telescope.Telescope(dryrun=dryrun)
+        self.telescope = telescope.Telescope(dryrun=self.dryrun)
         self.log("Executor has connection to telescope")
 
         # ait until weather is good
