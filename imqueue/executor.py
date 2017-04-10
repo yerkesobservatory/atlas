@@ -135,7 +135,7 @@ class Executor(mqtt.MQTTServer):
 
         # load queues from database
         self.sessions = self.load_sessions()
-        self.slack("Queue has {} unexecuted sessions".format(len(self.session)), "@rprechelt")
+        self.slack("Queue has {} unexecuted sessions".format(len(self.sessions)), "@rprechelt")
 
         # default endtime - queue_start + 8 hours
         # TODO: Draw this from database
