@@ -247,7 +247,7 @@ class Executor(mqtt.MQTTServer):
         self.telescope.make_dir(dirname)
         self.slack('Succesfully made directory to store files: {}'.format(dirname), '@rprechelt')
 
-        basename = dirname+'/'+'_'.join([date, username, session.target])
+        basename = dirname+'/'+'_'.join([date, username, session.target, session.id])
 
         try:
             self.wait_until_good()
