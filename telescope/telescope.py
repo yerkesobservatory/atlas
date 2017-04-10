@@ -177,7 +177,7 @@ class Telescope(object):
         if self.dryrun is False:
 
             # check sun has set
-            if self.get_sun_alt() >= -15.0:
+            if self.get_sun_alt() > -15.0:
                 if self.dome_open() is True:
                     self.close_dome()
                 return False
