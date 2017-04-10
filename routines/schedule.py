@@ -85,4 +85,4 @@ def schedule(target_list: [str], endtime):
         self.log("Scheduler couldn't pick an object")
         return (-1, -1, -1), -1
     
-    return target, int(max_altitude_time['wait'][primary_target_id].value)
+    return target_list[primary_target_id], int(max_altitude_time['wait'][primary_target_id].value)
