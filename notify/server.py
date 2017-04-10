@@ -77,6 +77,9 @@ class NotificationServer(mqtt.MQTTServer):
         # send the email and quit
         s.send_message(message)
         s.quit()
+
+        # log
+        self.log('Sent email to {}'.format(msg.get('to')))
         
 
     def publish_slack(self,  msg: {str}) -> bool:
@@ -86,10 +89,14 @@ class NotificationServer(mqtt.MQTTServer):
         channel = msg.get('channel') or '#queue'
         content = msg.get('content') or ''
 
+        # send request to Slack API
         self.sc.api_call("chat.postMessage",
             channel=channel,
             text=content,
             username="sirius", as_user="false")
+
+        # log our actions
+        self.log('Published Slack message to {}'.format(channel))
 
         # we cannot send more than one message a second
         # let MQTT build a queue for us
