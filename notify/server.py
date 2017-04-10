@@ -102,6 +102,6 @@ class NotificationServer(mqtt.MQTTServer):
 
         # we cannot send more than one message a second
         # let MQTT build a queue for us
-        time.sleep(1.1)
+        time.sleep(2.0)
 
         return True
