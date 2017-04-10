@@ -45,8 +45,10 @@ class NotificationServer(mqtt.MQTTServer):
 
         if msg.get('type') == 'notify':
             if msg.get('action') == 'email':
+                self.log('Received a request for email')
                 self.send_email(msg)
             elif msg.get('action') == 'slack':
+                self.log('Received a request for Slack messaging')
                 self.publish_slack(msg)
             else:
                 self.log('Unknown message received', color='magenta')
