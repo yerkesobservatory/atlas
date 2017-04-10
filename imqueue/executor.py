@@ -48,6 +48,14 @@ class Executor(mqtt.MQTTServer):
         self.start()
 
 
+    def topics(self) -> [str]:
+        """ This function must return a list of topics that you wish the server
+        to subscribe to. i.e. ['/seo/queue'] etc.
+        """
+
+        return ['/'+self.config['general']['shortname']+'/executor']
+
+    
     def process_message(self, topic: str, msg: {str}) -> bool:
         """ This function is given a JSON dictionary message from the broker
         and must decide how to process the message given the application. 
