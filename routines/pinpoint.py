@@ -1,4 +1,4 @@
-""" This file provides functions to WCS pinpoint a conncted telescope
+""" This file provides functions to WCS pinpoint a connected telescope
 object to a given RA/Dec.
 """
 
@@ -44,7 +44,7 @@ def point(ra: str, dec: str, telescope: 'Telescope', ) -> bool:
         telescope.log('point: Unable to parse ra/dec.', color='red')
         return False
         
-    # astrometry is stored in seo/astrometry/bin directory
+    # location of solve-field binary of astrometry
     solve_field = config.astrometry.bin_dir+'/solve-field'
 
     # static config parameters for astrometry
@@ -59,7 +59,7 @@ def point(ra: str, dec: str, telescope: 'Telescope', ) -> bool:
     max_dec_offset = config.astrometry.max_dec_offset
     max_tries = config.astrometry.max_tries
 
-    # parameters for image command on aster
+    # parameters for image command
     time = config.astrometry.exposure_time
     binning = config.astrometry.binning
     fits_fname = '/tmp/pointing'
@@ -117,8 +117,8 @@ def point(ra: str, dec: str, telescope: 'Telescope', ) -> bool:
 
         # if they are valid offsets, apply them to the scope
         if abs(ra_offset) <= max_ra_offset and abs(dec_offset) <=max_dec_offset:
-            telescope.offset(ra_offset, dec_offset)
             telescope.log('dRA={} deg dDEC={} deg'.format(ra_offset, dec_offset))
+            telescope.offset(ra_offset, dec_offset)
         else:
             telescope.log('Calculated offsets too large '
                           '(tx offset ra={} dec={})'.format(ra_offset, dec_offset))
