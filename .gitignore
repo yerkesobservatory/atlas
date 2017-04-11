@@ -1,19 +1,6 @@
-# PROJECT SPECIFIC
-astrometry/install
-astrometry/build
-elm-stuff
-config.py
-app/__pycache__/
-*.pyc
-venv/
-*~
-\#*
-#*
-logs/*
-.DS_Store
-config.yaml
-.*env
-*.env
+.env
+local
+
 
 
 # Byte-compiled / optimized / DLL files
