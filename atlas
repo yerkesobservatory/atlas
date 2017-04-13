@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+
+import time
+import argparse
+
+import websockets
+import paho.mqtt.client as mqtt
+
+from config import config
+
+### Create command-line parser ###
+parser = argparse.ArgumentParser(description='Interface and control an Atlas infrastructure')
+subparsers = parser.add_subparsers(title='subcommands', dest='subparser')
+
+### Create subparser for submit ###
+parser_submit = subparsers.add_parser('submit', help='Submit imaging requests to an Atlas queue')
+parser_submit.add_argument('--target', '-t', help="The target to be imaged", required=True,
+                    type=str)
+parser_submit.add_argument('--exposure_time', '-e', help="The exposure time for each frame",
+                    default=60, type=float)
+parser_submit.add_argument('--exposure_count', '-c', help="The total exposure count for each filter",
+                    default=1, type=int)
+parser_submit.add_argument('--filters', '-f', help="The list of filters to be used for each exposure",
+                    default="clear", type=str, nargs='+')
+parser_submit.add_argument('--binning', '-b', help="The desired CCD binning",
+                    default=2, type=int)
+parser_submit.add_argument('--user', '-u', help="The email address of the user to submit as",
+                    default=None)
+
+### Create subparser for listen ###
+parser_listen = subparsers.add_parser('listen', help='Listen to messages on an Atlas topic')
+parser_listen.add_argument('--topics', '-t', help="A list of topics to subscribe to",
+                    type=str, nargs='+', required=True)
+
+### Create subparser for publish ###
+parser_publish = subparsers.add_parser('publish', help='Publish messages to an Atlas topic')
+parser_publish.add_argument('--message', '-m', help="The message to be sent", type=str, required=True)
+parser_publish.add_argument('--topics', '-t', nargs='+', help="The topics for the message",
+                            type=str, required=True)
+
+### Parse!
+args = parser.parse_args()
+
+########## FUNCTIONS ##########
+def log(msg: str, color: str='white') -> None:
+    """ Log a message to the logging system. 
+
+    This prints a colorized version to STDOUT, and writes
+    a plaintext version to the modules log file. Available colors
+    are: red, green, blue, cyan, white, yellow, magenta. 
+    The default color is white. 
+    """
+    colors = {'red':'31', 'green':'32', 'blue':'34', 'cyan':'36',
+              'white':'37', 'yellow':'33', 'magenta':'34'}
+    logtime = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+    logname = 'ATLAS'
+    log = logtime+' '+logname+': '+msg
+    color_log = '\033[1;'+colors[color]+'m'+log+'\033[0m'
+
+    print(color_log)
+
+    
+def process_message(client, userdata, msg) -> list:
+    """ This function is called whenever a message is received on the broker.
+        
+    This function parses the message data, and passes the topic and decoded
+    dictionary to the user process_message function. 
+    """
+    topic = msg.topic
+    msg = json.loads(msg.payload.decode())
+    log('{}: {}'.format(topic, msg))
+
+    
+def connect() -> mqtt.Client:
+    """ Connect to an Atlas infrastructure. 
+    
+    This method establishes a MQTT connection to the broker. Runs
+    exit(-1) if an exception was thrown while connecting to the 
+    broker.
+    """
+
+    # mqtt client to handle connection
+    client = mqtt.Client()
+
+    # server information
+    host = config.server.host 
+    port = config.mosquitto.port
+    name = config.general.name
+    email = config.notification.sysadmin
+    
+    # connect to message broker
+    try:
+        client.connect(host, port, 60)
+        log('Successfully connected to '+name, color='green')
+    except Exception as e:
+        log('Unable to connect to '+name+'. Please try again later. '
+            'If the problem persists, please contact '+email, 'red')
+        log(str(e))
+        exit(-1)
+
+    return client
+
+
+########################################
+#              _     _ _     _
+#  _ __  _   _| |__ | (_)___| |__
+# | '_ \| | | | '_ \| | / __| '_ \ 
+# | |_) | |_| | |_) | | \__ \ | | |
+# | .__/ \__,_|_.__/|_|_|___/_| |_|
+# |_|                              
+# publish
+if args.subparser == 'publish':
+    client = connect()
+    for topic in args.topics:
+        log('Succesfully published message to {}'.format(topic))
+        client.publish(topic, args.message)
+########################################
+
+
+########################################
+#  _ _     _
+# | (_)___| |_ ___ _ __
+# | | / __| __/ _ \ '_ \ 
+# | | \__ \ ||  __/ | | |
+# |_|_|___/\__\___|_| |_|
+# listen                    
+
+if args.subparser == 'listen':
+    client = connect()
+    client.on_message = process_message
+    for topic in args.topics:
+        log('Succesfully subscribed to {}'.format(topic))
+        client.subscribe(topic)
+    client.loop_forever()
+########################################
+
+
+########################################
+#            _               _ _
+#  ___ _   _| |__  _ __ ___ (_) |_
+# / __| | | | '_ \| '_ ` _ \| | __|
+# \__ \ |_| | |_) | | | | | | | |_
+# |___/\__,_|_.__/|_| |_| |_|_|\__|
+# submit
+            
+if args.subparser == 'submit':
+    client = connect()
+    msg = {}
+    msg['type'] = 'request'
+    msg['target'] = args.target
+    msg['exposure_time'] = args.exposure_time
+    msg['exposure_count'] = args.exposure_count
+    msg['filters'] = args.filters
+    msg['binning'] = args.binning
+    msg['user'] = args.user or os.environ['USER']
+
+    topic = '/'.join(('', config.general.shortname, 'queue'))
+    client.publish(topic, msg)
+    log('Succesfully submitted imaging request for {}'.format(args.target))
+########################################    
+        
+
