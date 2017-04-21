@@ -1,0 +1,64 @@
+[general]
+	name = "Your Observatory Name"
+	shortname = "myobs"
+
+
+[server]
+	host = "server.myhostname.com"
+	logdir = "/var/log/atlas"
+	
+	[server.mosquitto]
+	port = 19387
+
+	[server.mongodb]
+	host = "server.myhostname.com"
+	port = 74937
+
+	[server.storage]
+	host = "storage.mythirdhostname.com"
+	username = "username"
+	directory = "/home/username/images"
+	port = 22
+
+	[server.email]
+	host = "smtp.myhostname.com"
+	username = "myuser@myhostname.com"
+	password = "IfThisIsBlankWeDrawFromEnvVar"
+
+
+[telescope]
+	host = "telescope.myotherhostname.com"
+	username = "username"
+	port = 22
+
+
+[queue]
+	remote_dir = "data/queue"
+	numbias = 5
+	wait_time = 15
+	max_wait_time = 4
+
+
+[notification]
+	email = true
+	sysadmin = 'admin@myhostname.com'
+	subject = "My Observatory Name Notification"
+	slack = true
+	slack_token = "xoxp-23204hont-23p48f2nho-2938f4dh-aha"
+	slack_channel = "#queue"
+	
+
+[astrometry]
+	bin_dir = "/usr/local/bin"
+	binning = 2
+	exposure_time = 10
+	downsample = 2
+	scale_low = 0.55
+	scale_high = 0.05
+	radius = 20.0
+	cpu_limit = 50
+	min_ra_offset = 0.05
+	min_dec_offset = 0.05
+	max_ra_offset = 20.0
+	max_dec_offset = 20.0
+	max_tries = 20

@@ -1,3 +1,6 @@
+# General class for config settings
+class Config(object): pass
+
 # GENERAL SETTINGS
 ############################################################
 general = Config()
@@ -15,10 +18,29 @@ general.shortname = 'obs'
 server = Config()
 
 # server host or IP address where the broker and queue is running
-server.host = 'server.myhostname.com'
+server.host = '127.0.0.1'
 
 # place to store the log files on server.host
 server.logdir = '/var/log/atlas'
+############################################################
+
+# QUEUE SETTINGS
+############################################################
+queue = Config()
+
+# directory on telescope server to store images
+queue.remote_dir = '/data/queue/'
+
+# number of biases to take PER science exposure
+queue.numbias = 5
+
+# how many minutes to wait between checking for bad weather
+queue.wait_time = 15
+
+# after how many hours of bad weather should the queue
+# wait for before shutting down for the night
+queue.max_wait_time = 4
+
 ############################################################
 
 
@@ -70,6 +92,9 @@ notification = Config()
 
 # enable/disable email communication
 notification.email = True
+
+# email to be displayed to users in case of error
+notification.sysadmin = 'admin@myhostname.com'
 
 # STMP mail server for email
 notification.server = 'smtp.myhostname.com'
@@ -137,8 +162,3 @@ astrometry.max_dec_offset = 20.0
 # the maximum number of tries before WCS quits
 astrometry.max_tries = 20
 ############################################################
-
-
-# General class for config settings
-class Config():
-    pass
