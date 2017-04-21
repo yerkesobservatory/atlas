@@ -33,6 +33,11 @@ def point(ra: str, dec: str, telescope: 'Telescope', ) -> bool:
     res: bool
         True if pointing was successful, False if otherwise
 
+    Notes
+    ------
+    Author: rprechelt
+    Author: mcnowinski
+
     """
 
     # we try and parse RA and DEC
