@@ -1,7 +1,7 @@
 import time
 import json
 import atexit
-import typing
+from typing import List, Dict
 
 import paho.mqtt.client as mqtt
 
@@ -32,8 +32,8 @@ class AtlasServer(object):
         # register atexit handler
         atexit.register(self.__handle_exit)
 
-
-    def topics(self) -> [str]:
+    @staticmethod
+    def topics() -> List[str]:
         """ Returns the topics the server will be subscribed to.
 
         This function must return a list of topics that you wish the server
@@ -108,7 +108,7 @@ class AtlasServer(object):
         on the specified port until it receives a request
         """
         self.client.on_message = self.__process_message
-        for topic in self.topics():
+        for topic in self.topics:
             self.client.subscribe(topic)
         self.client.loop_forever()
 
