@@ -1,0 +1,51 @@
+[Organize]
+    requires = ''
+
+[MasterDark]
+    requires = 'Organize'
+    filenames = '[data]_[user]_[telescope]_[object]_dark_[time]s_bin[binning]_[id]'
+
+[MasterFlat]
+    requires = 'Organize'
+
+[MasterBias]
+    requires = 'Organize'
+    filenames = '[data]_[user]_[telescope]_[object]_bias_[time]s_bin[binning]_[id]'
+
+[LoadScience]
+    requires = ['MasterDark', 'MasterFlat', 'MasterBias']
+    filters = ['u', 'i', 'r', 'g', 'v', 'ha', 'clear']
+    filenames = '[data]_[user]_[telescope]_[object]_[filter]_[time]s_bin[binning]_[id]'
+
+[SubtractDark]
+    requires = 'LoadScience'
+
+[SubtractBias]
+    requires = 'SubtractDark'
+
+[DivideFlat]
+    requires = 'SubtractBias'
+
+[WCS]
+    requires = 'DivideFlat'
+
+[MakeMaster]
+    requires = 'WCS'
+
+[FilterCorrection]
+    requires = 'MakeMaster'
+
+[MakeRGB]
+    requires = 'FilterCorrection'
+
+[MakeMono]
+    requires = 'FilterCorrection'
+
+[Compress]
+    requires = ['MakeRGB', 'MakeMono']
+
+[Transfer]
+    requires = 'Compress'
+
+[Notify]
+    requires = 'Transfer'
