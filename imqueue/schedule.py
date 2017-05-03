@@ -23,8 +23,10 @@ def schedule(observations: List[Observation], session: Session) -> Observation:
 
     Returns
     -------
-    Observation:
+    obs: Observation
         The next observation that should be executed. 
+    wait: int
+        The number of seconds to wait before imaging this observation
     """
 
     # the normal scheduler
