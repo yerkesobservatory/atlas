@@ -75,11 +75,11 @@ def execute(observation: Observation, telescope: Telescope, session: Session) ->
 
     # the normal executor
     if session.scheduler == 'general':
-        return schedulers.general.execute(observation, telescope, session, db)
+        return schedulers.general.execute(observation, telescope, session)
 
     # asteroids
     elif session.scheduler == 'asteroid':
-        return schedulers.asteroid.execute(observation, telescope, session, db)
+        return schedulers.asteroid.execute(observation, telescope, session)
     
     # try and load the scheduler dynamically 
     else:
@@ -89,7 +89,7 @@ def execute(observation: Observation, telescope: Telescope, session: Session) ->
 
             # check that it provides both schedule and execute commands
             if 'schedule' in dir(scheduler) and 'execute' in dir(scheduler):
-                return scheduler.execute(observation, telescope, session, db)
+                return scheduler.execute(observation, telescope, session)
         # if the above does not work, use general scheduler
         finally:
-            return scheduler.general.schedule(observation, telescope, session, db)
+            return scheduler.general.schedule(observation, telescope, session)
