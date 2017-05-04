@@ -14,8 +14,8 @@ subparsers = parser.add_subparsers(title='subcommands', dest='subparser')
 
 ### Create subparser for submit ###
 parser_submit = subparsers.add_parser('submit', help='Submit imaging requests to an Atlas queue')
-parser_submit.add_argument('--target', '-t', help="The target to be imaged", required=True,
-                    type=str)
+parser_submit.add_argument('--target', '-t', help="The catalog name or RA/DEC of the target to be imaged",
+                           required=True, type=str)
 parser_submit.add_argument('--exposure_time', '-e', help="The exposure time for each frame",
                     default=60, type=float)
 parser_submit.add_argument('--exposure_count', '-c', help="The total exposure count for each filter",
@@ -24,6 +24,8 @@ parser_submit.add_argument('--filters', '-f', help="The list of filters to be us
                     default="clear", type=str, nargs='+')
 parser_submit.add_argument('--binning', '-b', help="The desired CCD binning",
                     default=2, type=int)
+parser_submit.add_argument('--type', help="The type of observation - general, asteroid, etc.",
+                           default='general', type=str)
 parser_submit.add_argument('--user', '-u', help="The email address of the user to submit as",
                     default=None)
 
@@ -153,6 +155,7 @@ if args.subparser == 'submit':
     msg['filters'] = args.filters
     msg['binning'] = args.binning
     msg['user'] = args.user or os.environ['USER']
+    msg['type'] = args.type
 
     topic = '/'.join(('', config.general.shortname, 'queue'))
     client.publish(topic, msg)
