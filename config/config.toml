@@ -1,6 +1,9 @@
 [general]
 	name = "Your Observatory Name"
 	shortname = "myobs"
+        latitude = 33.314
+        longitude = -110.5138
+        altitude = 32
 
 
 [server]
