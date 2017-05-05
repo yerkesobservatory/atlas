@@ -7,6 +7,8 @@ import telescope
 from typing import List, Dict
 from config import config
 from imqueue import schedule
+from routines import focus
+from routines import flats
 from db.observation import Observation
 from db.session import Session
 from telescope import telescope
@@ -83,12 +85,21 @@ class Executor(base.AtlasServer):
         self.telescope = telescope.Telescope()
         self.log('Executor has connection to telescope')
 
-        # wait until the weather is good to observe
-        self.telescope.wait_until_good()
+        # check that weather is acceeptable for flats
+        self.telescope.wait_until_good(sun=0)
 
         # open telescope
         self.log('Opening telescope dome...')
         self.open_up()
+
+        # take flats
+        flats.take_flats(self.telescope)
+
+        # wait until the weather is good to observe proper
+        self.telescope.wait_until_good()
+
+        # focus the telescope
+        focus.focus(self.telescope)
 
         # continually execute observations from the queue
         while True:
