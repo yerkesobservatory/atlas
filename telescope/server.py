@@ -74,6 +74,24 @@ class TelescopeServer(object):
         self.loop.run_until_complete(start_server)
         self.loop.run_forever()
 
+    def command_valid(self, command: str) -> bool:
+        """ Check whether a message is valid and safe for execution. 
+        
+        Returns True if it should be executed, False otherwise. 
+        """
+        # a list of banned keywords that shouldn't be executed
+        # under any circum
+        banned = ['sudo', 'su ', '&&', '||', 'sh ', 'bash ', 'zsh ',
+                  'ssh ', 'cd ', 'systemctl ', 'logout', 'exit ',
+                  'rm ', 'root ', 'wget ', 'curl ', 'python ', 'pip p']
+
+        # check whether any banned words are in command
+        for string in banned:
+            if string in command:
+                return False
+
+        return True
+
     async def process(self, websocket, path):
         """ This is the handler for new websocket
         connections. This exists for the lifetime of 
@@ -90,9 +108,14 @@ class TelescopeServer(object):
                 msg = await websocket.recv()
                 self.log(f'Received message: {msg}')
 
-                # run command on the telescope
-                result = self.run_command(msg)
-
+                # check that command is valid
+                if self.command_valid(msg):
+                    # run command on the telescope
+                    result = self.run_command(msg)
+                else:
+                    result = 'INVALID'
+                    self.log(f'Invalid command: {msg}', color='magenta')
+                    
                 # send result back on websocket
                 await websocket.send(result)
 
