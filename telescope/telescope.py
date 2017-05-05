@@ -1,8 +1,8 @@
 import re
 import time
 import websocket as ws
-import config
 import config.telescope as telescope
+from config import config
 from telescope.exception import *
 
 
@@ -17,8 +17,11 @@ class Telescope(object):
     def connect() -> ws.WebSocket:
         try:
             # try and connect to telescope server
-            websocket = ws.create_connection('ws://localhost:8765')  # get this from config
+            connect_str = f'ws://localhost:{config.telescope.wsport}'
+            websocket = ws.create_connection(connect_str)
+            print('Successfully created connect to TelescopeServer')
         except Exception as e:
+            print(e)
             # TODO: More specific exception handling for connection errors
             websocket = None
 
@@ -276,6 +279,7 @@ class Telescope(object):
 
         # take numbias*exposure_count biases
         for n in range(0, count):
+            pass
             # TODO: Send command to telescope and parse output
 
         return True
