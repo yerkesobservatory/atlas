@@ -75,17 +75,23 @@ class Executor(base.AtlasServer):
         self.telescope.enable_tracking()
         self.telescope.keep_open(3600)  # TODO: use shorter keep_open times more regularly
 
-    def execute_session(self, session: Session) -> bool:
-        """ Executes the list of observations.
-        
-        TODO: Describe docstring
-        """
+    def start(self) -> bool:
+        """ Start the execution routine. 
 
+        This method is called by the Threading timer when the executor
+        is scheduled to start. This attempts to lock the telescope, take flats, 
+        focus the telescope, and then, if their is a scheduled Session, execute
+        that session, or if not, unlock the telescope and start a new timer. 
+        """
         # instantiate telescope object for control
         self.telescope = telescope.Telescope()
         self.log('Executor has connection to telescope')
 
-        # check that weather is acceeptable for flats
+        # try and acquire the telescope lock; TODO: This could be made smarter
+        while not self.telescope.lock(config.telescope.username):
+            time.sleep(300) # sleep for 5 minutes
+            
+        # check that weather is acceptable for flats
         self.telescope.wait_until_good(sun=0)
 
         # open telescope
@@ -95,11 +101,24 @@ class Executor(base.AtlasServer):
         # take flats
         flats.take_flats(self.telescope)
 
-        # wait until the weather is good to observe proper
+        # wait until the weather is good to observe stars
         self.telescope.wait_until_good()
 
         # focus the telescope
         focus.focus(self.telescope)
+
+        # TODO: Check if queue is scheduled
+        session = None # TODO: we need to find the sesion for tonight
+        while self.execute_session(session):
+            pass # we need to find the next session for tonight
+
+        return True
+
+    def execute_session(self, session: Session) -> bool:
+        """ Executes the list of observations.
+        
+        TODO: Describe docstring
+        """
 
         # continually execute observations from the queue
         while True:
@@ -119,6 +138,9 @@ class Executor(base.AtlasServer):
 
             # if we need to wait for this observation, we wait
             self.telescope.wait(wait)
+
+            # make sure that the weather is still good
+            self.telescope_wait_until_good()
 
             self.log(f'Executing session for {observation.user}')
             try:
