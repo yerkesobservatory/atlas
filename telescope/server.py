@@ -65,33 +65,41 @@ class TelescopeServer(object):
         """ Start the event loop listening for websocket
         connections. 
         """
-        start_server = websockets.serve(self.process, 'localhost',
+
+        process = lambda w, p: self.process(w, p)
+        start_server = websockets.serve(process, 'localhost',
                                         config.telescope.wsport)
 
         self.log('Starting websocket server', color='green')
         self.loop.run_until_complete(start_server)
         self.loop.run_forever()
 
-    @staticmethod
-    async def process(websocket, path):
+    async def process(self, websocket, path):
         """ This is the handler for new websocket
         connections. This exists for the lifetime of 
         the connection by a Telescope class. 
         """
         try:
-            TelescopeServer.log(f'Client connected.')
+            self.log(f'Client connected.')
             # set our state as connected
-            TelescopeServer.connected = True
+            self.connected = True
 
             # keep processing messages until client disconnects
             while True:
                 # wait for arrival of a message
                 msg = await websocket.recv()
-                TelescopeServer.log(f'Received message: {msg}')
+                self.log(f'Received message: {msg}')
+
+                # run command on the telescope
+                result = self.run_command(msg)
+
+                # send result back on websocket
+                await websocket.send(result)
+
         except websockets.exceptions.ConnectionClosed as _:
             pass
         finally:
-            TelescopeServer.log(f'Client disconnected')
+            self.log(f'Client disconnected')
             # make sure we set our state as disconnected
             TelescopeServer.connected = False
 
@@ -99,7 +107,7 @@ class TelescopeServer(object):
         """ Executes a shell command either locally, or remotely via ssh.
         Returns the byte string representing the captured STDOUT
         """
-        self.log("Executing: {}".format(command), color="magenta")
+        self.log(f'Executing: {command}', color='cyan')
 
         # make sure the connection hasn't timed out due to sleep
         # if it has, reconnect
@@ -112,7 +120,9 @@ class TelescopeServer(object):
         numtries = 0; exit_code = 1
         while numtries < 5 and exit_code != 0:
             try:
-                stdin, stdout, stderr = self.ssh.exec_command(command, timeout=timeout)
+
+                # run command on server
+                stdin, stdout, stderr = self.ssh.exec_command(command)
                 result = stdout.readlines()
 
                 # increment number of tries
@@ -128,7 +138,7 @@ class TelescopeServer(object):
                 # valid result received
                 if len(result) > 0:
                     result = ' '.join(result)
-                    self.log(result)
+                    self.log(f'Command Result: {result}')
                     return result
 
             except Exception as e:
@@ -140,8 +150,7 @@ class TelescopeServer(object):
 
         return ''
 
-    @classmethod
-    def log(cls, msg: str, color: str='white'):
+    def log(self, msg: str, color: str='white'):
         """ Log a message to the logging system. 
 
         This prints a colorized version to STDOUT, and writes
