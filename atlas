@@ -6,6 +6,7 @@ import argparse
 import websockets
 import paho.mqtt.client as mqtt
 
+import telescope
 from config import config
 
 ### Create command-line parser ###
@@ -39,6 +40,14 @@ parser_publish = subparsers.add_parser('publish', help='Publish messages to an A
 parser_publish.add_argument('--message', '-m', help="The message to be sent", type=str, required=True)
 parser_publish.add_argument('--topics', '-t', nargs='+', help="The topics for the message",
                             type=str, required=True)
+
+### Create a sub parser to start server
+server_parser = subparsers.add_parser('server', help="Control Atlas server infrastructure")
+server_subparsers = server_parser.add_subparsers(title='server subcommands', dest='server_subparser')
+
+### Start servers
+start_parser = server_subparsers.add_parser('start', help='Start an Atlas server or module')
+start_parser.add_argument('server', help='The Atlas server or module to start')
 
 ### Parse!
 args = parser.parse_args()
@@ -161,5 +170,19 @@ if args.subparser == 'submit':
     client.publish(topic, msg)
     log('Succesfully submitted imaging request for {}'.format(args.target))
 ########################################    
-        
 
+
+########################################
+#  ___  ___ _ ____   _____ _ __
+# / __|/ _ \ '__\ \ / / _ \ '__|
+# \__ \  __/ |   \ V /  __/ |
+# |___/\___|_|    \_/ \___|_|
+# server
+
+if args.subparser == 'server':
+
+    # start the telescope server
+    if args.server == 'telescope':
+        t = telescope.TelescopeServer()
+        
+########################################    
