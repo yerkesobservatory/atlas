@@ -65,6 +65,9 @@ telescope.username = 'username'
 
 # port for telescope communication
 telescope.port = 22
+
+# port for websocket connection with telescope control server
+telescope.wsport = 27404
 ############################################################
 
 
