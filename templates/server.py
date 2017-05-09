@@ -19,8 +19,8 @@ class MyServer(base.AtlasServer):
         # MUST END WITH start() - THIS BLOCKS
         self.start()
 
-
-    def topics(self) -> [str]:
+    @staticmethod
+    def topics() -> [str]:
         """ Returns the topics the server will be subscribed to.
 
         This function must return a list of topics that you wish the server
@@ -30,15 +30,13 @@ class MyServer(base.AtlasServer):
         # USER MUST COMPLETE
 
         return []
-
     
-    def process_message(self, topic: str, msg: dict) -> None:
+    def process_message(self, topic: str, msg: dict):
         """ This function is given a dictionary message from the broker
         and must decide how to process the message. 
         """
         # USER MUST COMPLETE
 
-    
     def close(self) -> bool:
         """ This function is called during close down; use this to close
         any resources that you have opened. 
@@ -49,4 +47,3 @@ class MyServer(base.AtlasServer):
         """
 
         return True
-
