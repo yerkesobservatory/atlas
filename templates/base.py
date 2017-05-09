@@ -181,16 +181,13 @@ class AtlasServer(object):
             success = self.close()
 
             # close up logging system for this module
-            logging.shutdown([self.log])
+            logging.shutdown()
 
             # close MQTT connection
             self.client.disconnect()
         except Exception as e:
             self.log.critical(e)
             exit(1)
-        finally:
-            # quit the process
-            exit(success)
 
     def __init_log(self) -> bool:
         """ Initialize the logging system for this module and set
