@@ -18,10 +18,10 @@ general.shortname = 'obs'
 server = Config()
 
 # server host or IP address where the broker and queue is running
-server.host = '127.0.0.1'
+server.host = 'sirius.stoneedgeobservatory.com'
 
 # place to store the log files on server.host
-server.logdir = '/var/log/atlas'
+server.logdir = '.'
 ############################################################
 
 # QUEUE SETTINGS
@@ -49,19 +49,19 @@ queue.max_wait_time = 4
 mosquitto = Config()
 
 # por for mosquitto communication
-mosquitto.port = 19387
+mosquitto.port = 27748
 ############################################################
 
 
-# TELESCOPE SETTINGS
-############################################################
+# TELESCOPE SETTINGS#
+###########################################################
 telescope = Config()
 
 # hostname/IP for telescope control/communication
-telescope.host = 'telescope.myotherhostname.com'
+telescope.host = 'sirius.stoneedgeobservatory.com'
 
 # ssh username for remote telescope control
-telescope.username = 'username'
+telescope.username = 'rprechelt'
 
 # port for telescope communication
 telescope.port = 22
@@ -165,3 +165,8 @@ astrometry.max_dec_offset = 20.0
 # the maximum number of tries before WCS quits
 astrometry.max_tries = 20
 ############################################################
+
+logging = Config()
+
+logging.fmt = '%(log_color)s%(asctime)s [%(levelname)s] [name]: %(message)s%(reset)s'
+logging.datefmt = '%Y-%m-%d %H:%M:%S'
