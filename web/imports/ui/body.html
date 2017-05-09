@@ -1,0 +1,13 @@
+<body>
+  <h1>Observations</h1>
+
+    <ul>
+      {{#each observations}}
+      {{> observation}}
+      {{/each}}
+    </ul>
+</body>
+
+<template name="observation">
+  <li>{{text}}</li>
+</template>
