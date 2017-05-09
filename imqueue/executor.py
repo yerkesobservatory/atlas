@@ -2,6 +2,7 @@
 it loads in the queue file for tonight's imaging and executes each request
 """
 
+import time
 import pymodm
 import telescope
 from typing import List, Dict
@@ -14,6 +15,7 @@ from db.session import Session
 from telescope import telescope
 from templates import base
 from telescope.exception import *
+
 
 class Executor(base.AtlasServer):
     """ This class is responsible for executing and scheduling a
@@ -34,9 +36,9 @@ class Executor(base.AtlasServer):
         # dummy telescope variable
         self.telescope: telescope.Telescope = None
 
-        # create mongodb session
-        self.db = odm.ThreadLocalODMSession(bind=ming.create_datastore('observations'))
-        self.log('Successfully connected to the queue database')
+        # connect to mongodb
+        pymodm.connect("mongodb://localhost:3001/meteor", alias="atlas")
+        self.log.info('Successfully connected to the queue database')
 
         # MUST END WITH start() - THIS BLOCKS
         self.start()
@@ -56,7 +58,7 @@ class Executor(base.AtlasServer):
         and must decide how to process the message. 
         """
         # TODO: what messages should the queue receive? 
-        self.log('Executor received unknown message')
+        self.log.warn('Executor received unknown message')
 
     def load_observations(self, session: Session) -> List[Observation]:
         """ This function returns a list of all observations
@@ -84,8 +86,11 @@ class Executor(base.AtlasServer):
         that session, or if not, unlock the telescope and start a new timer. 
         """
         # instantiate telescope object for control
-        self.telescope = telescope.Telescope()
-        self.log('Executor has connection to telescope')
+        try:
+            self.telescope = telescope.Telescope()
+            self.log.info('Executor has connection to telescope')
+        except Exception as e:
+            self.log.warn(f'Error connecting to telescope: {e}')
 
         # try and acquire the telescope lock; TODO: This could be made smarter
         while not self.telescope.lock(config.telescope.username):
@@ -95,7 +100,7 @@ class Executor(base.AtlasServer):
         self.telescope.wait_until_good(sun=0)
 
         # open telescope
-        self.log('Opening telescope dome...')
+        self.log.info('Opening telescope dome...')
         self.open_up()
 
         # take flats
@@ -128,50 +133,40 @@ class Executor(base.AtlasServer):
             observations = self.load_observations(session)
 
             # run the scheduler and get the next observation to complete
-            self.log(f'Calling the {session.scheduler} scheduler...')
+            self.log.info(f'Calling the {session.scheduler} scheduler...')
             observation, wait = schedule.schedule(observations, session)
 
             # if the scheduler returns None, we are done
             if not observation:
-                self.log('Scheduler reports no observations left for tonight... Closing down')
+                self.log.info('Scheduler reports no observations left for tonight... Closing down')
                 break
 
             # if we need to wait for this observation, we wait
             self.telescope.wait(wait)
 
             # make sure that the weather is still good
-            self.telescope_wait_until_good()
+            self.telescope.wait_until_good()
 
-            self.log(f'Executing session for {observation.user}')
+            self.log.info(f'Executing session for {observation.user}')
             try:
                 # execute session
                 schedule.execute(observation, self.telescope, session, self.db)
             except Exception as e:
-                self.log(f'Error while executing {observation}', color='red')
+                self.log.warn(f'Error while executing {observation}')
                 break
 
         # close down
-        self.log('Finished executing the queue! Closing down...', color='green')
-        self.finish()
+        self.log.info('Finished executing the queue! Closing down...')
+        self.close()
 
         return True
     
-    def finish(self):
+    def close(self) -> bool:
         """ Close the executor in event of success of failure; closes the telescope, 
-        closes ssh connection, closes log file
+        closes ssh connection. Returns True if shutdown was successful, False otherwise.
         """
         if self.telescope is not None:
             self.telescope.close_down()
             self.telescope.disconnect()
 
-        return 
-
-        
-    def close(self):
-        """ This function is called when the server receives a shutdown
-        signal (Ctrl+C) or SIGINT signal from the OS. Use this to close
-        down open files or connections. 
-        """
-        self.finish()
-        
-        return
+        return True

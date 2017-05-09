@@ -1,5 +1,7 @@
 import re
 import time
+import logging
+import colorlog
 import websocket as ws
 import config.telescope as telescope
 from config import config
@@ -9,23 +11,26 @@ from telescope.exception import *
 class Telescope(object):
 
     def __init__(self):
+        """ Create a new Telescope object by connectiong to the TelescopeServer
+        and initializing the logging system. 
+        """
+
+        # initialize logging system
+        self.__init_log()
 
         # connect to telescope server
         self.websocket: ws.WebSocket = self.connect()
 
-    @staticmethod
-    def connect() -> ws.WebSocket:
+    def connect(self) -> ws.WebSocket:
         try:
             # try and connect to telescope server
             connect_str = f'ws://localhost:{config.telescope.wsport}'
             websocket = ws.create_connection(connect_str)
-            print('Successfully created connect to TelescopeServer')
+            self.log.info('Successfully created connect to TelescopeServer')
+            return websocket
         except Exception as e:
-            print(e)
-            # TODO: More specific exception handling for connection errors
-            websocket = None
-
-        return websocket
+            self.log.critical(f'Error occurred in connecting to TelescopeServer: {e}')
+            raise ConnectionException(f'Unable to connect to TelescopeServer: {e}')
 
     def is_alive(self) -> bool:
         pass
@@ -76,6 +81,9 @@ class Telescope(object):
 
         # TODO: Parse output to make sure dome closed successfully
         # use telescope.close_dome_re
+        return True
+
+    def close_down(self) -> bool:
         return True
 
     def lock(self, user: str) -> bool:
@@ -171,13 +179,13 @@ class Telescope(object):
         if wait <= 0:
             return
 
-        self.log(f'Sleeping for {wait} seconds...')
+        self.log.info(f'Sleeping for {wait} seconds...')
         # if the wait time is long enough, close down the telescope in the meantime
         if wait >= 60 * config.telescope.wait_time:
 
             # if the dome is open, close it
             if self.dome_open() is True:
-                self.log('Closing down the telescope while we sleep...')
+                self.log.info('Closing down the telescope while we sleep...')
                 self.close_down()
 
             # sleep
@@ -212,7 +220,7 @@ class Telescope(object):
         weather: bool = self.weather_ok()
         while not weather:
 
-            self.log('Waiting until weather is good...')
+            self.log.info('Waiting until weather is good...')
 
             # sleep for specified wait time
             self.wait(time_to_sleep)
@@ -220,7 +228,7 @@ class Telescope(object):
 
             # shut down after max_time hours of continuous waiting
             if elapsed_time >= 60 * 60 * max_wait:
-                self.log(f'Bad weather for {max_wait} hours. Shutting down the queue...', color='magenta')
+                self.log.warn(f'Bad weather for {max_wait} hours. Shutting down the queue...', color='magenta')
                 raise WeatherException
 
             # update weather
@@ -235,21 +243,21 @@ class Telescope(object):
         filt, and save it in the file built from basename.
         """
         # change to that filter
-        self.log(f'Switching to {filt} filter')
+        self.log.info(f'Switching to {filt} filter')
         self.change_filter(filt)
 
         # take exposure_count exposures
         i: int = 0
         while i < count:
 
-            self.log(f'Taking exposure {i+1}/{count} with name: {filename}')
+            self.log.info(f'Taking exposure {i+1}/{count} with name: {filename}')
 
             # take exposure
             # TODO: Send message to telescope - parse output
 
             # if the telescope has randomly closed, open up and repeat the exposure
             if not self.dome_open():
-                self.log('Slit closed during exposure - repeating previous exposure!', color='magenta')
+                self.log.warn('Slit closed during exposure - repeating previous exposure!')
                 self.wait_until_good()
                 self.open_dome()
                 continue
@@ -263,7 +271,7 @@ class Telescope(object):
         dark frames.
         """
         for n in range(0, count):
-            self.log(f'Taking dark {n+1}/{count} with name: {filename}')
+            self.log.info(f'Taking dark {n+1}/{count} with name: {filename}')
 
             # TODO: Send command to telescope and take dark
 
@@ -275,7 +283,7 @@ class Telescope(object):
         """
 
         # create file name for biases
-        self.log('Taking {count} biases with names: {filename}')
+        self.log.info('Taking {count} biases with names: {filename}')
 
         # take numbias*exposure_count biases
         for n in range(0, count):
@@ -293,8 +301,27 @@ class Telescope(object):
         result = self.websocket.recv()
 
         # print result
-        print(result)
+        self.log.info(result)
 
         # return it for processing by other methods
         return result
 
+    def __init_log(self) -> bool:
+        """ Initialize the logging system for this module and set
+        a ColoredFormatter. 
+        """
+        # create format string for this module
+        format_str = config.logging.fmt.replace('[name]', 'TELESCOPE')
+        formatter = colorlog.ColoredFormatter(format_str, datefmt=config.logging.datefmt)
+
+        # create stream
+        stream = logging.StreamHandler()
+        stream.setLevel(logging.DEBUG)
+        stream.setFormatter(formatter)
+
+        # assign log method and set handler
+        self.log = logging.getLogger('telescope')
+        self.log.setLevel(logging.DEBUG)
+        self.log.addHandler(stream)
+
+        return True
