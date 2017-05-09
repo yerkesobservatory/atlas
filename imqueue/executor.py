@@ -5,6 +5,7 @@ it loads in the queue file for tonight's imaging and executes each request
 import time
 import pymodm
 import telescope
+import schedule as run
 from typing import List, Dict
 from config import config
 from imqueue import schedule
@@ -37,11 +38,18 @@ class Executor(base.AtlasServer):
         self.telescope: telescope.Telescope = None
 
         # connect to mongodb
-        pymodm.connect("mongodb://localhost:3001/meteor", alias="atlas")
+        pymodm.connect("mongodb://127.0.0.1:3001/meteor", alias="atlas")
         self.log.info('Successfully connected to the queue database')
 
-        # MUST END WITH start() - THIS BLOCKS
-        self.start()
+        # schedule the start() function to run every night
+        run.every().day.at("20:00").do(self.start)
+
+        # loop while we wait for the right time to start
+        while True:
+            wait = run.idle_seconds()
+            self.log.info(f'Executor is sleeping {wait/60/60:.{2}} hours until startup...')
+            run.run_pending()
+            time.sleep(wait)
 
     @staticmethod
     def topics() -> List[str]:
@@ -65,9 +73,8 @@ class Executor(base.AtlasServer):
         in the database that have not been executed, and that match
         the conditions specified in the session. 
         """
-        # TODO - load unexecuted sessions from mongodb
-
-        return []
+        # TODO: Add filtering based upon session requirements
+        return Observation.objects.all()
 
     def open_up(self):
         """ Open up the telescope, enable tracking, and set
