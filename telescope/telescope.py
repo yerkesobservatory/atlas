@@ -106,25 +106,121 @@ class Telescope(object):
         pass
 
     def get_cloud(self) -> float:
-        pass
+        """ Get the current cloud coverage.
+        """
+        # run the command
+        result = self.run_command(telescope.get_cloud)
+
+        # run regex
+        cloud = re.search(telescope.get_cloud_re)
+
+        # extract group and return
+        if cloud is not None:
+            return float(cloud.group(0))
+        else:
+            self.log.warn(f'Unable to parse get_cloud: {result}')
+            return 1.0 # return the safest value
 
     def get_dew(self) -> float:
-        pass
+        """ Get the current dew value.
+        """
+        # run the command
+        result = self.run_command(telescope.get_dew)
+
+        # run regex
+        dew = re.search(telescope.get_dew_re)
+
+        # extract group and return
+        if dew is not None:
+            return float(dew.group(0))
+        else:
+            self.log.warn(f'Unable to parse get_dew: {result}')
+            return 3.0 # return the safest value
 
     def get_rain(self) -> bool:
-        pass
+        """ Get the current rain value.
+        """
+        # run the command
+        result = self.run_command(telescope.get_rain)
+
+        # run regex
+        rain = re.search(telescope.get_rain_re)
+
+        # extract group and return
+        if rain is not None:
+            return float(rain.group(0))
+        else:
+            self.log.warn(f'Unable to parse get_rain: {result}')
+            return 1.0 # return the safest value
 
     def get_sun_alt(self) -> float:
-        pass
+        """ Get the current altitude of the sun. 
+        """
+        # run the command
+        result = self.run_command(telescope.get_sun_alt)
+
+        # run regex
+        alt = re.search(telescope.get_sun_alt_re)
+
+        # extract group and return
+        if alt is not None:
+            return float(alt.group(0))
+        else:
+            self.log.warn(f'Unable to parse get_sun_alt: {result}')
+            return 90.0 # return the safest altitude we can
 
     def get_moon_alt(self) -> float:
-        pass
+        """ Get the current altitude of the moon. 
+        """
+        # run the command
+        result = self.run_command(telescope.get_moon_alt)
+
+        # run regex
+        alt = re.search(telescope.get_moon_alt_re)
+
+        # extract group and return
+        if alt is not None:
+            return float(alt.group(0))
+        else:
+            self.log.warn(f'Unable to parse get_moon_alt: {result}')
+            return 90.0
 
     def get_weather(self) -> dict:
-        pass
+        """ Extract all the values for the current weather 
+        and return it as a python dictionary. 
+        """
+        weather = {'rain': self.get_rain(),
+                   'cloud': self.get_cloud(),
+                   'dew': self.get_dew(), 
+                   'sun': self.get_sun_alt(), 
+                   'moon', self.get_moon_alt()}
+        return weather
 
     def weather_ok(self) -> bool:
-        pass
+        """ Checks whether the sun has set, there is no rain (rain=0) and that
+        it is less than 30% cloudy. Returns true if the weather is OK to open up,
+        false otherwise.
+        """
+        # check sun has set
+        if self.get_sun_alt() > config.telescope.max_sun_alt:
+            if self.dome_open() is True:
+                self.close_dome()
+            return False
+
+        # check that it isn't raining
+        if self.get_rain() != 0:
+            if self.dome_open() is True:
+                self.close_dome()
+            return False
+
+        # check cloud cover is below 35%
+        if self.get_cloud() >= config.telescope.max_cloud:
+            if self.dome_open() is True:
+                self.close_dome()
+            return False
+
+        # weather is good!
+        return True
 
     def goto_target(self, target: str) -> bool:
         pass
