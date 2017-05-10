@@ -1,67 +1,163 @@
 [general]
-	name = "Your Observatory Name"
-	shortname = "myobs"
-        latitude = 33.314
-        longitude = -110.5138
-        altitude = 32
+    # The name of the observatory
+    name = "Your Observatory Name"
 
+    # a shortname - used to name topics in the broker i.e. /obs/queue etc.
+    shortname = "myobs"
 
+    # observatory latitude
+    latitude = 33.314
+
+    # observatory longitude
+    longitude = -110.5138
+
+    # observatory altitude
+    altitude = 32
+
+    # email address of sysadmin for error messages and email
+    sysadmin = 'admin@myhostname.com'
+
+# configurations for servers
 [server]
-	host = "server.myhostname.com"
-	logdir = "/var/log/atlas"
+    # hostname for atlas system
+    host = "server.myhostname.com"
+
+    # log directory for atlas components
+    logdir = "/var/log/atlas"
 	
-	[server.mosquitto]
-	port = 19387
+    [server.mosquitto]
+        # port for MQTT communication
+        port = 19387
 
-	[server.mongodb]
-	host = "server.myhostname.com"
-	port = 74937
+    [server.mongodb]
+        # hostname for mongodb instance
+        host = "server.myhostname.com"
 
-	[server.storage]
-	host = "storage.mythirdhostname.com"
-	username = "username"
+        # port for mongodb communication
+        port = 74937
+
+    [server.storage]
+        # hostname for post-processing storage
+        host = "storage.mythirdhostname.com"
+
+        # scp pusername
+        username = "username"
+
+        # directory to store images
 	directory = "/home/username/images"
+
+        # port for scp
 	port = 22
 
-	[server.email]
-	host = "smtp.myhostname.com"
-	username = "myuser@myhostname.com"
+    [server.email]
+        # SMTP server for mail sending
+        host = "smtp.myhostname.com"
+
+        # username for mail sending
+   	username = "myuser@myhostname.com"
+
+        # password for mail sending
 	password = "IfThisIsBlankWeDrawFromEnvVar"
 
-
+# configurations for telescope
 [telescope]
-	host = "telescope.myotherhostname.com"
-	username = "username"
-	port = 22
+    # hostname of telescope controller
+    host = "telescope.myotherhostname.com"
 
+    # port for telescope server
+    wsport = 27404
 
+    # username for SSH control
+    username = "username"
+
+    # port for SSH control
+    port = 22
+
+    # max cloud cover before shutdown
+    max_cloud = 0.35
+
+    # maximum sun altitude
+    max_sun_alt = -15
+
+    # maximum dewpoint
+    max_dew = 3.0
+
+# configurations for image queue
 [queue]
-	remote_dir = "data/queue"
-	numbias = 5
-	wait_time = 15
-	max_wait_time = 4
+    # where to store temporary images on telescope serve
+    remote_dir = "data/queue"
 
+    # the number of biases to take per exposure
+    numbias = 5
 
+    # the number of MINUTES to wait between weather checks
+    wait_time = 15
+
+    # the maximum number of HOURS to wait for good weather
+    max_wait_time = 4
+
+# configurations for email and slack
 [notification]
-	email = true
-	sysadmin = 'admin@myhostname.com'
-	subject = "My Observatory Name Notification"
-	slack = true
-	slack_token = "xoxp-23204hont-23p48f2nho-2938f4dh-aha"
-	slack_channel = "#queue"
-	
+    # enable email sending
+    email = true
 
+    # subject of emails
+    subject = "My Observatory Name Notification"
+
+    # enable Slack publication
+    slack = true
+
+    # Slack API token
+    slack_token = "xoxp-23204hont-23p48f2nho-2938f4dh-aha"
+
+    # DEFAULT channel for Slack communication
+    slack_channel = "#queue"
+
+# configuration for astrometry solving
 [astrometry]
-	bin_dir = "/usr/local/bin"
-	binning = 2
-	exposure_time = 10
-	downsample = 2
-	scale_low = 0.55
-	scale_high = 0.05
-	radius = 20.0
-	cpu_limit = 50
-	min_ra_offset = 0.05
-	min_dec_offset = 0.05
-	max_ra_offset = 20.0
-	max_dec_offset = 20.0
-	max_tries = 20
+    # location of astrometry binary
+    bin_dir = "/usr/local/bin"
+
+    # default binning
+    binning = 2
+
+    # exposure time for WCS images
+    exposure_time = 10
+
+    # image downsampling
+    downsample = 2
+
+    # minimum pixel scale in arcsec/pix
+    scale_low = 0.55
+
+    # maximum pixel scale in arcsec/pix
+    scale_high = 0.05
+
+    # maximum radius around header WCS to search for
+    radius = 20.0
+
+    # maximum CPU limit for solving
+    cpu_limit = 50
+
+    # the minimum RA resolution before we decide good pointing
+    min_ra_offset = 0.05
+
+    # the minimum Dec resolution before we decide good pointing
+    min_dec_offset = 0.05
+    
+    # the maximum RA resolution before we decide good pointing
+    max_ra_offset = 20.0
+    
+    # the maximum Dec resolution before we decide good pointing
+    max_dec_offset = 20.0
+
+    # the maximum number of tries before we give up
+    max_tries = 20
+
+# configure the logging system
+[logging]
+    # format string for logging messages
+    fmt = '%(log_color)s%(asctime)s [%(levelname)s] [name]: %(message)s%(reset)s'
+
+    # format string for date in format string
+    datefmt = '%Y-%m-%d %H:%M:%S'
