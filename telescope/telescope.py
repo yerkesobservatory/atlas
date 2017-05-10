@@ -193,7 +193,7 @@ class Telescope(object):
                    'cloud': self.get_cloud(),
                    'dew': self.get_dew(), 
                    'sun': self.get_sun_alt(), 
-                   'moon', self.get_moon_alt()}
+                   'moon': self.get_moon_alt()}
         return weather
 
     def weather_ok(self) -> bool:

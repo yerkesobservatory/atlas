@@ -4,8 +4,8 @@ import atexit
 import logging
 import colorlog
 import paho.mqtt.client as mqtt
-from typing import List
 from config import config
+from typing import List
 
 
 class AtlasServer(object):
@@ -82,9 +82,9 @@ class AtlasServer(object):
 
         # server information
         host = config.server.host 
-        port = config.mosquitto.port
+        port = config.server.mosquitto.port
         name = config.general.name
-        email = config.notification.sysadmin
+        email = config.general.sysadmin
         
         # connect to message broker
         try:

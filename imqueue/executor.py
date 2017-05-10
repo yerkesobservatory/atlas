@@ -6,8 +6,8 @@ import time
 import pymodm
 import telescope
 import schedule as run
-from typing import List, Dict
 from config import config
+from typing import List, Dict
 from imqueue import schedule
 from routines import focus
 from routines import flats

@@ -58,7 +58,7 @@ class TelescopeServer(object):
             # TODO: Email admin
         except Exception as e:
             self.log.critical(f'TelescopeServer has encountered an unknown error in '
-                              'connecting to the control server {e}')
+                              f'connecting to the control server {e}')
             exit(1)
 
         return ssh
