@@ -2,11 +2,12 @@
 
 import time
 import argparse
-
 import websockets
 import paho.mqtt.client as mqtt
-
 import telescope
+import imqueue
+import logging
+import colorlog
 from config import config
 
 ### Create command-line parser ###
@@ -53,22 +54,24 @@ start_parser.add_argument('server', help='The Atlas server or module to start')
 args = parser.parse_args()
 
 ########## FUNCTIONS ##########
-def log(msg: str, color: str='white') -> None:
-    """ Log a message to the logging system. 
-
-    This prints a colorized version to STDOUT, and writes
-    a plaintext version to the modules log file. Available colors
-    are: red, green, blue, cyan, white, yellow, magenta. 
-    The default color is white. 
+def create_log():
+    """ Create system logger for atlas messages.
     """
-    colors = {'red':'31', 'green':'32', 'blue':'34', 'cyan':'36',
-              'white':'37', 'yellow':'33', 'magenta':'34'}
-    logtime = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-    logname = 'ATLAS'
-    log = logtime+' '+logname+': '+msg
-    color_log = '\033[1;'+colors[color]+'m'+log+'\033[0m'
+    # create format string for this module
+    format_str = config.logging.fmt.replace('[name]', 'ATLAS')
+    formatter = colorlog.ColoredFormatter(format_str, datefmt=config.logging.datefmt)
 
-    print(color_log)
+    # create stream
+    stream = logging.StreamHandler()
+    stream.setLevel(logging.DEBUG)
+    stream.setFormatter(formatter)
+
+    # assign log method and set handler
+    log = logging.getLogger('atlas')
+    log.setLevel(logging.DEBUG)
+    log.addHandler(stream)
+
+    return log
 
     
 def process_message(client, userdata, msg) -> list:
@@ -79,7 +82,7 @@ def process_message(client, userdata, msg) -> list:
     """
     topic = msg.topic
     msg = json.loads(msg.payload.decode())
-    log('{}: {}'.format(topic, msg))
+    log.info('{}: {}'.format(topic, msg))
 
     
 def connect() -> mqtt.Client:
@@ -102,15 +105,17 @@ def connect() -> mqtt.Client:
     # connect to message broker
     try:
         client.connect(host, port, 60)
-        log('Successfully connected to '+name, color='green')
+        log.info(f'Successfully connected to {name}')
     except Exception as e:
-        log('Unable to connect to '+name+'. Please try again later. '
-            'If the problem persists, please contact '+email, 'red')
-        log(str(e))
+        log.critical(f'Unable to connect to {name}. Please try again later. '
+            f'If the problem persists, please contact {email}')
+        log.critical(e)
         exit(-1)
 
     return client
 
+# create logger for messages
+log = create_log()
 
 ########################################
 #              _     _ _     _
@@ -123,7 +128,7 @@ def connect() -> mqtt.Client:
 if args.subparser == 'publish':
     client = connect()
     for topic in args.topics:
-        log('Succesfully published message to {}'.format(topic))
+        log.info(f'Succesfully published message to {topic}')
         client.publish(topic, args.message)
 ########################################
 
@@ -140,7 +145,7 @@ if args.subparser == 'listen':
     client = connect()
     client.on_message = process_message
     for topic in args.topics:
-        log('Succesfully subscribed to {}'.format(topic))
+        log.info(f'Succesfully subscribed to {topic}')
         client.subscribe(topic)
     client.loop_forever()
 ########################################
@@ -168,7 +173,7 @@ if args.subparser == 'submit':
 
     topic = '/'.join(('', config.general.shortname, 'queue'))
     client.publish(topic, msg)
-    log('Succesfully submitted imaging request for {}'.format(args.target))
+    log.info('Succesfully submitted imaging request for {args.target}')
 ########################################    
 
 
@@ -184,5 +189,9 @@ if args.subparser == 'server':
     # start the telescope server
     if args.server == 'telescope':
         t = telescope.TelescopeServer()
+    elif args.server == 'executor':
+        e = imqueue.Executor()
+    else:
+        log.critical(f'Unknown server - {args.server}')
         
 ########################################    
