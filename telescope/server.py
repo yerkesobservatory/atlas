@@ -1,5 +1,7 @@
 import time
 import socket
+import logging
+import colorlog
 import asyncio
 import websockets
 import paramiko
@@ -18,7 +20,9 @@ class TelescopeServer(object):
         control server and starts the processing of websocket handlers
         on the specified ports. 
         """
-
+        # initialize logging system
+        self.__init_log()
+        
         # create connection to telescope controller
         self.ssh: paramiko.SSHClient = self.connect()
 
@@ -47,16 +51,14 @@ class TelescopeServer(object):
         # connect!
         try:
             ssh.connect(config.telescope.host, username=config.telescope.username)
-            self.log('Successfully connected to the telescope control server', color='green')
+            self.log.info('Successfully connected to the telescope control server')
         except paramiko.AuthenticationException: # unable to authenticate
-            self.log('Unable to authenticate connection to telescope control server', color='red')
+            self.log.critical('Unable to authenticate connection to telescope control server')
             exit(1)
             # TODO: Email admin
         except Exception as e:
-            print(e)
-            self.log(f'TelescopeServer has encountered an unknown error in '
-                     'connecting to the control server \n {e}',
-                     color='red')
+            self.log.critical(f'TelescopeServer has encountered an unknown error in '
+                              'connecting to the control server {e}')
             exit(1)
 
         return ssh
@@ -70,7 +72,7 @@ class TelescopeServer(object):
         start_server = websockets.serve(process, 'localhost',
                                         config.telescope.wsport)
 
-        self.log('Starting websocket server', color='green')
+        self.log.info('Starting websocket server')
         self.loop.run_until_complete(start_server)
         self.loop.run_forever()
 
@@ -106,7 +108,7 @@ class TelescopeServer(object):
             while True:
                 # wait for arrival of a message
                 msg = await websocket.recv()
-                self.log(f'Received message: {msg}')
+                self.log.info(f'Received message: {msg}')
 
                 # check that command is valid
                 if self.command_valid(msg):
@@ -114,7 +116,7 @@ class TelescopeServer(object):
                     result = self.run_command(msg)
                 else:
                     result = 'INVALID'
-                    self.log(f'Invalid command: {msg}', color='magenta')
+                    self.log.warn(f'Invalid command: {msg}')
                     
                 # send result back on websocket
                 await websocket.send(result)
@@ -122,7 +124,7 @@ class TelescopeServer(object):
         except websockets.exceptions.ConnectionClosed as _:
             pass
         finally:
-            self.log(f'Client disconnected')
+            self.log.info(f'Client disconnected')
             # make sure we set our state as disconnected
             TelescopeServer.connected = False
 
@@ -130,7 +132,7 @@ class TelescopeServer(object):
         """ Executes a shell command either locally, or remotely via ssh.
         Returns the byte string representing the captured STDOUT
         """
-        self.log(f'Executing: {command}', color='cyan')
+        self.log.info(f'Executing: {command}')
 
         # make sure the connection hasn't timed out due to sleep
         # if it has, reconnect
@@ -154,37 +156,40 @@ class TelescopeServer(object):
                 # check exit code
                 exit_code = stdout.channel.recv_exit_status()
                 if exit_code != 0:
-                    self.log(f'Command returned {exit_code}. Retrying in 3 seconds...')
+                    self.log.warn(f'Command returned {exit_code}. Retrying in 3 seconds...')
                     time.sleep(3)
                     continue
 
                 # valid result received
                 if len(result) > 0:
                     result = ' '.join(result)
-                    self.log(f'Command Result: {result}')
+                    self.log.info(f'Command Result: {result}')
                     return result
 
             except Exception as e:
-                self.log(f'run_command: {e}', color='red')
-                self.log(f'Failed while executing {command}', color='red')
-                self.log('Please manually close the dome by running'
-                    ' `closedown` and `logout`.', color='red')
-                return ''
+                self.log.critical(f'Failed while executing {command}')
+                self.log.critical(f'run_command: {e}')
+                self.log.critical('Please manually close the dome by running'
+                         ' `closedown` and `logout`.')
 
         return ''
 
-    def log(self, msg: str, color: str='white'):
-        """ Log a message to the logging system. 
-
-        This prints a colorized version to STDOUT, and writes
-        a plaintext version to the modules log file. Available colors
-        are: red, green, blue, cyan, white, yellow, magenta. 
-        The default color is white. 
+    def __init_log(self) -> bool:
+        """ Initialize the logging system for this module and set
+        a ColoredFormatter. 
         """
-        colors = {'red':'31', 'green':'32', 'blue':'34', 'cyan':'36',
-                  'white':'37', 'yellow':'33', 'magenta':'34'}
-        logtime = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
-        log = logtime+' TELESCOPE SERVER: '+msg
-        color_log = '\033[1;'+colors[color]+'m'+log+'\033[0m'
+        # create format string for this module
+        format_str = config.logging.fmt.replace('[name]', 'TELESCOPE SERVER')
+        formatter = colorlog.ColoredFormatter(format_str, datefmt=config.logging.datefmt)
 
-        print(color_log)
+        # create stream
+        stream = logging.StreamHandler()
+        stream.setLevel(logging.DEBUG)
+        stream.setFormatter(formatter)
+
+        # assign log method and set handler
+        self.log = logging.getLogger('telescope_server')
+        self.log.setLevel(logging.DEBUG)
+        self.log.addHandler(stream)
+
+        return True
