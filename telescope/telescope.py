@@ -67,7 +67,7 @@ class Telescope(object):
         slit = re.search(telescope.dome_open_re, result)
 
         # if open, return True
-        if slit is not None and slit.group(0) == 'open':
+        if slit and slit.group(0) == 'open':
             return True
 
         # in any other scenario, return False
@@ -115,7 +115,7 @@ class Telescope(object):
         cloud = re.search(telescope.get_cloud_re)
 
         # extract group and return
-        if cloud is not None:
+        if cloud:
             return float(cloud.group(0))
         else:
             self.log.warn(f'Unable to parse get_cloud: {result}')
@@ -131,7 +131,7 @@ class Telescope(object):
         dew = re.search(telescope.get_dew_re)
 
         # extract group and return
-        if dew is not None:
+        if dew:
             return float(dew.group(0))
         else:
             self.log.warn(f'Unable to parse get_dew: {result}')
@@ -147,7 +147,7 @@ class Telescope(object):
         rain = re.search(telescope.get_rain_re)
 
         # extract group and return
-        if rain is not None:
+        if rain:
             return float(rain.group(0))
         else:
             self.log.warn(f'Unable to parse get_rain: {result}')
@@ -163,7 +163,7 @@ class Telescope(object):
         alt = re.search(telescope.get_sun_alt_re)
 
         # extract group and return
-        if alt is not None:
+        if alt:
             return float(alt.group(0))
         else:
             self.log.warn(f'Unable to parse get_sun_alt: {result}')
@@ -179,7 +179,7 @@ class Telescope(object):
         alt = re.search(telescope.get_moon_alt_re)
 
         # extract group and return
-        if alt is not None:
+        if alt:
             return float(alt.group(0))
         else:
             self.log.warn(f'Unable to parse get_moon_alt: {result}')
@@ -203,19 +203,19 @@ class Telescope(object):
         """
         # check sun has set
         if self.get_sun_alt() > config.telescope.max_sun_alt:
-            if self.dome_open() is True:
+            if self.dome_open():
                 self.close_dome()
             return False
 
         # check that it isn't raining
         if self.get_rain() != 0:
-            if self.dome_open() is True:
+            if self.dome_open():
                 self.close_dome()
             return False
 
         # check cloud cover is below 35%
         if self.get_cloud() >= config.telescope.max_cloud:
-            if self.dome_open() is True:
+            if self.dome_open():
                 self.close_dome()
             return False
 
@@ -280,7 +280,7 @@ class Telescope(object):
         if wait >= 60 * config.telescope.wait_time:
 
             # if the dome is open, close it
-            if self.dome_open() is True:
+            if self.dome_open():
                 self.log.info('Closing down the telescope while we sleep...')
                 self.close_down()
 
