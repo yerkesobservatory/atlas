@@ -12,12 +12,24 @@ close_dome = 'closedown'
 close_dome_re = r''
 
 # keep the slit open for a given amount of time
-keep_open = 'keepopen maxtime={} slit'
+keep_open = f'keepopen maxtime={time} slit'
 keep_open_re = r''
 
 # close down the telescope at the end of the night
 close_down = 'closedown'
 close_down_re = r''
+
+# lock the telescope for a given user
+lock = f'tx lock email={user} comment={comment}'
+lock_re = r''
+
+# check who has the telescope locked
+check_lock = 'tx lock'
+check_lock_re = r''
+
+# unlock the telescope
+unlock = 'tx lock clear'
+unlock_re = r''
 
 # enable tracking
 enable_tracking = 'tx track on'
@@ -51,9 +63,10 @@ dome_open_re = r'(?<=slit=).*?(?= )'
 goto_target = 'catalog {} | dopoint'
 goto_target_re = r''
 
-# get altaz of target
+# get alt of target
 altaz_target = 'catalog {} | altaz'
-altaz_target_re = r'(?<=alt=).*?(?= )'
+alt_target_re = r'(?<=alt=).*?(?= )'
+az_target_re = r'(?<=az=).*?(?= )'
 
 # slew telescope to RA/Dec
 goto = 'tx point ra={} dec={} equinox=2000'

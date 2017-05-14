@@ -82,6 +82,9 @@
     # maximum dewpoint
     max_dew = 3.0
 
+    # minimum altitude for observing
+    min_alt = 40
+
 # configurations for image queue
 [queue]
     # where to store temporary images on telescope serve

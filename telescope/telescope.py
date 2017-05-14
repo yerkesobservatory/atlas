@@ -36,7 +36,11 @@ class Telescope(object):
         pass
 
     def disconnect(self) -> bool:
-        pass
+        """ Disconnect the Telescope from the TelescopeServer. 
+        """
+        self.websocket.close()
+
+        return True
 
     def open_dome(self) -> bool:
         """ Checks that the weather is acceptable using `weather_ok`, 
@@ -86,21 +90,34 @@ class Telescope(object):
     def close_down(self) -> bool:
         return True
 
-    def lock(self, user: str) -> bool:
+    def lock(self, user: str, comment: str = 'observing') -> bool:
         """ Lock the telescope with the given username. 
         """
-        pass
+        result = self.run_command(telescope.lock)
+
+        # TODO: Parse output to make sure telescope is
+        # not already locked by someone else
+
+        return True
 
     def unlock(self) -> bool:
         """ Unlock the telescope if you have the lock. 
         """
-        pass
+        result = self.run_command(telescope.unlock)
+
+        # TODO: Parse output to make sure telescope is unlocked
+
+        return True
 
     def locked(self) -> (bool, str):
         """ Check whether the telescope is locked. If it is, 
         return the username of the lock holder. 
         """
-        pass
+        result = self.run_command(telescope.unlock)
+
+        # TODO: Parse output to extract username
+
+        return True, 'unknown'
 
     def keep_open(self, time: int) -> bool:
         pass
@@ -229,13 +246,40 @@ class Telescope(object):
         pass
 
     def target_visible(self, target: str) -> bool:
-        pass
+        """ Check whether a target is visible using
+        the telescope controller commands. 
+        """
+        result = self.run_command(altaz_target)
+
+        alt = re.search(alt_target_re, result)
+
+        if alt and alt.group(0) >= config.telescope.min_alt:
+            return True
+
+        return False
 
     def point_visible(self, ra: str, dec: str) -> bool:
         pass
 
     def target_altaz(self, target: str) -> (float, float):
-        pass
+        """ Return a (alt, az) pair containing floats indicating
+        the altitude and azimuth of a target - i.e 'M31', 'NGC4779'
+        """
+        # run the command
+        result = self.run_command(altaz_target)
+
+        # search for altitude and azimuth
+        alt = re.search(alt_target_re, result)
+        az = re.search(az_target_re, result)
+
+        # check the search was successful and return
+        if alt and alt.group(0):
+           if az and az.group(0):
+               return (alt, az)
+
+        # else we return -1
+        return (-1.0, -1.0)
+
 
     def point_altaz(self, ra: str, dec: str) -> (float, float):
         pass
