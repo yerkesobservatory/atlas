@@ -1,7 +1,7 @@
 import os
 
-def Organize(**kwargs) -> bool:
-    """ This class organizes the folder of images into a standard
+def organize(**kwargs) -> bool:
+    """ This function organizes the folder of images into a standard
     heirarchy. The dirname is passed in as a keyword argument 'dirname'
     
     Parameters
