@@ -1,10 +1,10 @@
 import os
 from pipeline.modules.master import master
 
-def masterdark(**kwargs) -> cdproc.CCDData:
-    """ This function creates a master dark from the 'dark'
+def masterflat(**kwargs) -> cdproc.CCDData:
+    """ This function creates a master flat from the 'flat'
     folder of given organized directory. It saves the master
-    dark to the directory and returns the created CCDData object. 
+    flat to the directory and returns the created CCDData object. 
     
     Parameters
     -----------
@@ -12,7 +12,7 @@ def masterdark(**kwargs) -> cdproc.CCDData:
     Returns
     -------
     result: ccdproc.CCDData
-        The created master dark
+        The created master flat
     """
     
     # extract dirname
@@ -23,4 +23,4 @@ def masterdark(**kwargs) -> cdproc.CCDData:
         return None
     
     # extract dirname
-    return master(dirname, 'dark')
+    return master(dirname, 'flat')
