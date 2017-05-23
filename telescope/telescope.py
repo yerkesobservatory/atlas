@@ -4,12 +4,12 @@ import logging
 import colorlog
 import websocket as ws
 import config.telescope as telescope
+import routines.pinpoint as pinpoint
 from config import config
 from telescope.exception import *
 
 
 class Telescope(object):
-
     def __init__(self):
         """ Create a new Telescope object by connectiong to the TelescopeServer
         and initializing the logging system. 
@@ -27,13 +27,23 @@ class Telescope(object):
             connect_str = f'ws://localhost:{config.telescope.wsport}'
             websocket = ws.create_connection(connect_str)
             self.log.info('Successfully created connect to TelescopeServer')
-            return websocket
         except Exception as e:
             self.log.critical(f'Error occurred in connecting to TelescopeServer: {e}')
             raise ConnectionException(f'Unable to connect to TelescopeServer: {e}')
 
+        return websocket
+
     def is_alive(self) -> bool:
-        pass
+        """ Check whether connection to telescope server is alive/working, and whether
+        we still have permission to execute commands. 
+        """
+
+        try:
+            self.run_command('echo its alive')
+            return True
+        except Exception as e:
+            self.log.warning(f'{e}')
+            return False
 
     def disconnect(self) -> bool:
         """ Disconnect the Telescope from the TelescopeServer. 
@@ -84,15 +94,12 @@ class Telescope(object):
         result = self.run_command(telescope.close_dome)
 
         # TODO: Parse output to make sure dome closed successfully
-        # use telescope.close_dome_re
-        return True
-
-    def close_down(self) -> bool:
         return True
 
     def lock(self, user: str, comment: str = 'observing') -> bool:
         """ Lock the telescope with the given username. 
         """
+        # TODO: Insert user and str into lock command
         result = self.run_command(telescope.lock)
 
         # TODO: Parse output to make sure telescope is
@@ -113,14 +120,20 @@ class Telescope(object):
         """ Check whether the telescope is locked. If it is, 
         return the username of the lock holder. 
         """
-        result = self.run_command(telescope.unlock)
+        result = self.run_command(telescope.check_lock)
 
-        # TODO: Parse output to extract username
+        # TODO: Parse output to extract username and lock status
 
         return True, 'unknown'
 
     def keep_open(self, time: int) -> bool:
-        pass
+        """ Keep the telescope dome open for {time} seconds. 
+        Returns True if it was successful. 
+        """
+        result = self.run_command(telescope.keep_open.format(time))
+
+        # TODO: Parse output to extract username and lock status
+        return True
 
     def get_cloud(self) -> float:
         """ Get the current cloud coverage.
@@ -129,14 +142,14 @@ class Telescope(object):
         result = self.run_command(telescope.get_cloud)
 
         # run regex
-        cloud = re.search(telescope.get_cloud_re)
+        cloud = re.search(telescope.get_cloud_re, result)
 
         # extract group and return
         if cloud:
             return float(cloud.group(0))
         else:
-            self.log.warn(f'Unable to parse get_cloud: {result}')
-            return 1.0 # return the safest value
+            self.log.warning(f'Unable to parse get_cloud: {result}')
+            return 1.0  # return the safest value
 
     def get_dew(self) -> float:
         """ Get the current dew value.
@@ -145,30 +158,30 @@ class Telescope(object):
         result = self.run_command(telescope.get_dew)
 
         # run regex
-        dew = re.search(telescope.get_dew_re)
+        dew = re.search(telescope.get_dew_re, result)
 
         # extract group and return
         if dew:
             return float(dew.group(0))
         else:
-            self.log.warn(f'Unable to parse get_dew: {result}')
-            return 3.0 # return the safest value
+            self.log.warning(f'Unable to parse get_dew: {result}')
+            return 3.0  # return the safest value
 
-    def get_rain(self) -> bool:
+    def get_rain(self) -> float:
         """ Get the current rain value.
         """
         # run the command
         result = self.run_command(telescope.get_rain)
 
         # run regex
-        rain = re.search(telescope.get_rain_re)
+        rain = re.search(telescope.get_rain_re, result)
 
         # extract group and return
         if rain:
             return float(rain.group(0))
         else:
-            self.log.warn(f'Unable to parse get_rain: {result}')
-            return 1.0 # return the safest value
+            self.log.warning(f'Unable to parse get_rain: {result}')
+            return 1.0  # return the safest value
 
     def get_sun_alt(self) -> float:
         """ Get the current altitude of the sun. 
@@ -177,14 +190,14 @@ class Telescope(object):
         result = self.run_command(telescope.get_sun_alt)
 
         # run regex
-        alt = re.search(telescope.get_sun_alt_re)
+        alt = re.search(telescope.get_sun_alt_re, result)
 
         # extract group and return
         if alt:
             return float(alt.group(0))
         else:
-            self.log.warn(f'Unable to parse get_sun_alt: {result}')
-            return 90.0 # return the safest altitude we can
+            self.log.warning(f'Unable to parse get_sun_alt: {result}')
+            return 90.0  # return the safest altitude we can
 
     def get_moon_alt(self) -> float:
         """ Get the current altitude of the moon. 
@@ -193,13 +206,13 @@ class Telescope(object):
         result = self.run_command(telescope.get_moon_alt)
 
         # run regex
-        alt = re.search(telescope.get_moon_alt_re)
+        alt = re.search(telescope.get_moon_alt_re, result)
 
         # extract group and return
         if alt:
             return float(alt.group(0))
         else:
-            self.log.warn(f'Unable to parse get_moon_alt: {result}')
+            self.log.warning(f'Unable to parse get_moon_alt: {result}')
             return 90.0
 
     def get_weather(self) -> dict:
@@ -208,8 +221,8 @@ class Telescope(object):
         """
         weather = {'rain': self.get_rain(),
                    'cloud': self.get_cloud(),
-                   'dew': self.get_dew(), 
-                   'sun': self.get_sun_alt(), 
+                   'dew': self.get_dew(),
+                   'sun': self.get_sun_alt(),
                    'moon': self.get_moon_alt()}
         return weather
 
@@ -240,18 +253,44 @@ class Telescope(object):
         return True
 
     def goto_target(self, target: str) -> bool:
-        pass
+        """ Point the telescope at a target.
+        
+        Point the telescope at the target given
+        by the catalog name {target} using the pinpoint
+        algorithm to ensure pointing accuracy. Valid 
+        target names include 'M1', 'm1', 'NGC6946', etc.
+        """
+        result = self.run_command(telescope.goto_target.format(target))
+
+        # TODO: Run pinpoint algorithm
+
+        # TODO: Parse results to make sure pointing is correct
+        return True
 
     def goto_point(self, ra: str, dec: str) -> bool:
-        pass
+        """ Point the telescope at a given RA/Dec. 
+        
+        Point the telescope at the given RA/Dec using the pinpoint
+        algorithm to ensure good pointing accuracy. Format
+        for RA/Dec is hh:mm:ss, dd:mm:ss"""
+
+        # Do basic pointing
+        result = self.run_command(telescope.goto.format(ra, dec))
+
+        # TODO: Parse output to check for failures
+
+        # Run pinpoint algorithm - check status of pointing
+        status = pinpoint.point(ra, dec, self)
+
+        return status
 
     def target_visible(self, target: str) -> bool:
         """ Check whether a target is visible using
         the telescope controller commands. 
         """
-        result = self.run_command(altaz_target)
+        result = self.run_command(telescope.altaz_target.format(target))
 
-        alt = re.search(alt_target_re, result)
+        alt = re.search(telescope.alt_target_re, result)
 
         if alt and alt.group(0) >= config.telescope.min_alt:
             return True
@@ -259,6 +298,8 @@ class Telescope(object):
         return False
 
     def point_visible(self, ra: str, dec: str) -> bool:
+        """ Check whether a given RA/Dec pair is visible. 
+        """
         pass
 
     def target_altaz(self, target: str) -> (float, float):
@@ -266,44 +307,78 @@ class Telescope(object):
         the altitude and azimuth of a target - i.e 'M31', 'NGC4779'
         """
         # run the command
-        result = self.run_command(altaz_target)
+        result = self.run_command(telescope.altaz_target.format(target))
 
         # search for altitude and azimuth
-        alt = re.search(alt_target_re, result)
-        az = re.search(az_target_re, result)
+        alt = re.search(telescope.alt_target_re, result)
+        az = re.search(telescope.az_target_re, result)
 
         # check the search was successful and return
         if alt and alt.group(0):
-           if az and az.group(0):
-               return (alt, az)
+            if az and az.group(0):
+                return alt, az
 
         # else we return -1
-        return (-1.0, -1.0)
-
+        return -1.0, -1.0
 
     def point_altaz(self, ra: str, dec: str) -> (float, float):
         pass
 
-    def offset(self, ra: float, dec: float) -> bool:
-        pass
+    def offset(self, dra: float, ddec: float) -> bool:
+        """ Offset the pointing of the telescope by a given
+        dRa and dDec
+        """
+        result = self.run_command(telescope.offset.format(dra, ddec))
+
+        # TODO: Regex output to make sure offset was sucessful
+
+        return True
 
     def enable_tracking(self) -> bool:
-        pass
+        """ Enable the tracking motor for the telescope.
+        """
+        result = self.run_command(telescope.enable_tracking)
 
-    def get_focus(self, focus: float) -> bool:
+        # TODO: Regex output to verify tracking
+
+        return True
+
+    def get_focus(self, focus: float) -> float:
+        """ Return the current focus value of the
+        telescope.
+        """
         pass
 
     def set_focus(self, focus: float) -> bool:
+        """ Set the focus value of the telescope to
+        {focus}. 
+        """
         pass
 
     def auto_focus(self) -> bool:
+        """ Automatically focus the telescope
+        using the focus routine. 
+        """
         pass
 
     def current_filter(self) -> str:
-        pass
+        """ Return the string name of the current filter. 
+        """
+        result = self.run_command(telescope.current_filter)
 
-    def change_filter(self, filter: str) -> bool:
-        pass
+        return result
+
+    def change_filter(self, filtname: str) -> bool:
+        """ Change the current filter specified by {filtname}.
+        """
+        result = self.run_command(telescope.change_filter.format(filtname))
+
+        # get new filter
+        current_filter = self.current_filter()
+
+        # TODO: Verify current filter is requested filter
+
+        return True
 
     def make_dir(self, dirname: str) -> bool:
         pass
@@ -368,7 +443,7 @@ class Telescope(object):
 
             # shut down after max_time hours of continuous waiting
             if elapsed_time >= 60 * 60 * max_wait:
-                self.log.warn(f'Bad weather for {max_wait} hours. Shutting down the queue...', color='magenta')
+                self.log.warning(f'Bad weather for {max_wait} hours. Shutting down the queue...', color='magenta')
                 raise WeatherException
 
             # update weather
@@ -378,7 +453,7 @@ class Telescope(object):
         return True
 
     def take_exposure(self, filename: str, exposure_time: int,
-                       count: int = 1, binning: int = 2, filt: str = 'clear') -> bool:
+                      count: int = 1, binning: int = 2, filt: str = 'clear') -> bool:
         """ Take count exposures, each of length exp_time, with binning, using the filter
         filt, and save it in the file built from basename.
         """
@@ -397,7 +472,7 @@ class Telescope(object):
 
             # if the telescope has randomly closed, open up and repeat the exposure
             if not self.dome_open():
-                self.log.warn('Slit closed during exposure - repeating previous exposure!')
+                self.log.warning('Slit closed during exposure - repeating previous exposure!')
                 self.wait_until_good()
                 self.open_dome()
                 continue
@@ -433,12 +508,27 @@ class Telescope(object):
         return True
 
     def run_command(self, command: str) -> str:
+        """ Run a command on the telescope server. 
+        
+        This is done by sending message via websocket to
+        the TelescopeServer, that then executes the command
+        via SSH, and returns the string via WebSocket.
+         
+        Parameters
+        ----------
+        command: str
+            The command to be run
+        
+        """
 
         # send message on websocket
         self.websocket.send(command)
 
         # receive result of command
         result = self.websocket.recv()
+
+        # TODO: Check that command was not denied
+        # TODO: by TelescopeServer
 
         # print result
         self.log.info(result)
