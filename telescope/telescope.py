@@ -1,4 +1,5 @@
 import re
+import json
 import time
 import logging
 import colorlog
@@ -11,8 +12,8 @@ from telescope.exception import *
 
 class Telescope(object):
     def __init__(self):
-        """ Create a new Telescope object by connectiong to the TelescopeServer
-        and initializing the logging system. 
+        """ Create a new Telescope object by connecting to the TelescopeServer, 
+        authenticating a new control session, and initializing the logging system. 
         """
 
         # initialize logging system
@@ -26,7 +27,15 @@ class Telescope(object):
             # try and connect to telescope server
             connect_str = f'ws://localhost:{config.telescope.wsport}'
             websocket = ws.create_connection(connect_str)
-            self.log.info('Successfully created connect to TelescopeServer')
+
+            # wait for connection message
+            reply = json.loads(websocket.recv())
+
+            if reply.get('connected'):
+                self.log.info('Successfully created connect to TelescopeServer')
+            else:
+                reason = reply.get('result') or 'unknown'
+                self.log.warning(f'Telescope is currently unavailable: {reason}')
         except Exception as e:
             self.log.critical(f'Error occurred in connecting to TelescopeServer: {e}')
             raise ConnectionException(f'Unable to connect to TelescopeServer: {e}')
@@ -37,7 +46,6 @@ class Telescope(object):
         """ Check whether connection to telescope server is alive/working, and whether
         we still have permission to execute commands. 
         """
-
         try:
             self.run_command('echo its alive')
             return True
@@ -521,20 +529,23 @@ class Telescope(object):
         
         """
 
+        # build message
+        msg = {'command': command}
+
         # send message on websocket
-        self.websocket.send(command)
+        self.websocket.send(json.dumps(msg))
 
         # receive result of command
-        result = self.websocket.recv()
+        reply = json.loads(self.websocket.recv())
 
         # TODO: Check that command was not denied
         # TODO: by TelescopeServer
 
         # print result
-        self.log.info(result)
+        self.log.info(reply.get('result'))
 
         # return it for processing by other methods
-        return result
+        return reply.get('result')
 
     def __init_log(self) -> bool:
         """ Initialize the logging system for this module and set
