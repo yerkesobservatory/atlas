@@ -129,11 +129,11 @@ class TelescopeServer(object):
                 delta = datetime.datetime.now() - TelescopeServer.last_exec_time
                 if delta.seconds >= 60*config.telescope.timeout:
                     TelescopeServer.log.info('Current user has timed out. Accepting new connection...')
-                else:
-                    self.log.info('Telescope is in use. Denying new connection...')
 
                     # close existing connection
                     TelescopeServer.websocket.close()
+                else:
+                    self.log.info('Telescope is in use. Denying new connection...')
 
                     # build reply message
                     reply = {'connected': False,
