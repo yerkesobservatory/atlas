@@ -85,6 +85,9 @@
     # minimum altitude for observing
     min_alt = 40
 
+    # timeout (minutes)
+    timeout = 60
+
 # configurations for image queue
 [queue]
     # where to store temporary images on telescope serve

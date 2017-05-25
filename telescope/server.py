@@ -2,6 +2,7 @@ import time
 import json
 import socket
 import logging
+import datetime
 import colorlog
 import asyncio
 import websockets
@@ -12,9 +13,21 @@ from config import config
 
 class TelescopeServer(object):
 
-    # this class attribute is used to store whether a client
-    # is connected to the telescope server
-    connected = False
+    # whether we have a client connected
+    connected: bool = False
+
+    # websocket for current connection
+    websocket: websockets.WebSocketServerProtocol = None
+
+    # the last time that a command was executed for client
+    # used to compute timeouts
+    last_exec_time: datetime.datetime = datetime.datetime(1, 1, 1)
+
+    # ssh connection to telescopee
+    ssh: paramiko.SSHClient = None
+
+    # logger
+    log = None
 
     def __init__(self):
         """ Establishes a long term SSH connection to the telescope
@@ -22,10 +35,12 @@ class TelescopeServer(object):
         on the specified ports. 
         """
         # initialize logging system
-        self.__init_log()
+        if not TelescopeServer.log:
+            TelescopeServer.__init_log()
         
         # create connection to telescope controller
-        self.ssh: paramiko.SSHClient = self.connect()
+        if not TelescopeServer.ssh:
+            TelescopeServer.ssh: paramiko.SSHClient = TelescopeServer.connect()
 
         # set asyncio event loop to use libuv
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -35,13 +50,14 @@ class TelescopeServer(object):
 
         # start the event loop
         self.start()
-        
-    def connect(self) -> paramiko.SSHClient:
+
+    @classmethod
+    def connect(cls) -> paramiko.SSHClient:
         """ Create a SSH connection to the telescope control server. 
 
         Will call exit(1) if there is any error in connection to the telescope.
         """
-        ssh = paramiko.SSHClient()
+        ssh: paramiko.SSHClient = paramiko.SSHClient()
         
         # load host keys for verified connection
         ssh.load_system_host_keys()
@@ -52,13 +68,13 @@ class TelescopeServer(object):
         # connect!
         try:
             ssh.connect(config.telescope.host, username=config.telescope.username)
-            self.log.info('Successfully connected to the telescope control server')
+            cls.log.info('Successfully connected to the telescope control server')
         except paramiko.AuthenticationException:  # unable to authenticate
-            self.log.critical('Unable to authenticate connection to telescope control server')
+            cls.log.critical('Unable to authenticate connection to telescope control server')
             # TODO: Email admin
             exit(1)
         except Exception as e:
-            self.log.critical(f'TelescopeServer has encountered an unknown error in '
+            cls.log.critical(f'TelescopeServer has encountered an unknown error in '
                               f'connecting to the control server {e}')
             exit(1)
 
@@ -74,7 +90,7 @@ class TelescopeServer(object):
                                         'localhost', config.telescope.wsport)
 
         # start the server running in aysncio/libuv
-        self.log.info('Starting websocket server')
+        self.log.info('Starting websocket server...')
         self.loop.run_until_complete(start_server)
         self.loop.run_forever()
 
@@ -87,9 +103,9 @@ class TelescopeServer(object):
         # a list of banned keywords that shouldn't be executed
         # under any circumstances
         banned = ['sudo', 'su ', '&&', '||', 'sh ', 'bash ', 'zsh ',
-                  'ssh ', 'cd ', 'systemctl ', 'logout', 'exit ',
-                  'rm ', 'root ', 'wget ', 'curl ', 'python ', 'pip p',
-                  'telnet', 'chmod ', 'chown ']
+                  'ssh ', 'ssh' 'cd ', 'systemctl ', 'logout', 'exit ',
+                  'rm ', 'root ', 'wget ', 'curl ', 'python ', 'pip ',
+                  'telnet', 'chmod ', 'chown ', './']
 
         # check whether any banned words are in command
         for string in banned:
@@ -107,29 +123,35 @@ class TelescopeServer(object):
 
             self.log.info('Connection request received...')
             # check whether we are connected to someone else
-            if self.connected:
+            if TelescopeServer.connected:
 
-                self.log.info('Telescope is in use. Denying new connection')
+                # check that we haven't timed out
+                delta = datetime.datetime.now() - TelescopeServer.last_exec_time
+                if delta.seconds >= 60*config.telescope.timeout:
+                    TelescopeServer.log.info('Current user has timed out. Accepting new connection...')
+                else:
+                    self.log.info('Telescope is in use. Denying new connection...')
 
-                # build reply message
-                reply = {'success': False,
-                         'result': 'TELESCOPE IN USE',
-                         'connected': False}
+                    # close existing connection
+                    TelescopeServer.websocket.close()
 
-                # send reply saying that are closing connection
-                await websocket.send(json.dumps(reply))
+                    # build reply message
+                    reply = {'connected': False,
+                             'result': 'TELESCOPE IN USE'}
 
-                # we return to close connection
-                return
+                    # send reply saying that are closing connection
+                    await websocket.send(json.dumps(reply))
+
+                    # we return to close connection
+                    return
 
             # set our state as connected
-            self.connected = True
+            TelescopeServer.connect_client(websocket)
             self.log.info(f'Client connected.')
 
             # notify client that they are successfully connected
-            reply = {'success': False,
-                     'result': 'CONNECTED',
-                     'connected': True}
+            reply = {'connected': True,
+                     'result': 'CONNECTED'}
             await websocket.send(json.dumps(reply))
 
             # keep processing messages until client disconnects
@@ -142,7 +164,12 @@ class TelescopeServer(object):
                 msg = json.loads(msg)
 
                 # extract some values
-                command = msg['command']
+                command = msg.get('command') or ''
+
+                # check for empty
+                if command == '':
+                    self.log.warning(f'Received empty command message. Skipping...')
+                    continue
 
                 # check that command is valid
                 valid, errmsg = self.command_valid(command)
@@ -152,6 +179,9 @@ class TelescopeServer(object):
                     reply = {'success': True,
                              'command': command,
                              'result': result}
+
+                    # set last exec time
+                    TelescopeServer.last_exec_time = datetime.datetime.now()
                 else:
                     # this command isn't valid
                     reply = {'success': False,
@@ -167,8 +197,26 @@ class TelescopeServer(object):
         finally:
             self.log.info(f'Client disconnected')
 
-            # make sure we set our state as disconnected
-            TelescopeServer.connected = False
+            # make sure we set the global state as disconnected
+            TelescopeServer.disconnect_client()
+
+    @classmethod
+    def connect_client(cls, websocket: websockets.WebSocketServerProtocol):
+        """ Set the TelescopeServer class to the connected state. """
+        cls.connected = True
+        cls.websocket = websocket
+        cls.last_exec_time = datetime.datetime.now()
+
+    @classmethod
+    def disconnect_client(cls):
+        """ Set the TelescopeServer class to the connected state. """
+        cls.connected = False
+        try:
+            cls.websocket.close()
+        except:
+            pass
+        cls.websocket = None
+        cls.last_exec_time = datetime.datetime.now()
 
     def run_command(self, command: str) -> str:
         """ Executes a shell command either locally, or remotely via ssh.
@@ -186,7 +234,7 @@ class TelescopeServer(object):
             self.ssh = self.connect()
 
             # retry command
-            self.ssh.exec_command('who')
+            self.ssh.exec_command('echo Reconnected')
 
         # try and execute command 5 times if it fails
         numtries = 0; exit_code = 1
@@ -207,12 +255,8 @@ class TelescopeServer(object):
                     time.sleep(3)
                     continue
 
-                # valid result received
-                if len(result) > 0:
-                    result = ' '.join(result)
-
-                # strip trailing and leading whitespace
-                result = result.strip()
+                # join lines and remove leading/trailing whitespace
+                result = ' '.join(result).strip()
 
                 self.log.info(f'Command Result: {result}')
                 return result
@@ -223,7 +267,8 @@ class TelescopeServer(object):
 
         return ''
 
-    def __init_log(self) -> bool:
+    @classmethod
+    def __init_log(cls) -> bool:
         """ Initialize the logging system for this module and set
         a ColoredFormatter. 
         """
@@ -237,8 +282,8 @@ class TelescopeServer(object):
         stream.setFormatter(formatter)
 
         # assign log method and set handler
-        self.log = logging.getLogger('telescope_server')
-        self.log.setLevel(logging.DEBUG)
-        self.log.addHandler(stream)
+        cls.log = logging.getLogger('telescope_server')
+        cls.log.setLevel(logging.DEBUG)
+        cls.log.addHandler(stream)
 
         return True

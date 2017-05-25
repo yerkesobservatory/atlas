@@ -11,18 +11,43 @@ from telescope.exception import *
 
 
 class Telescope(object):
+
+    # logger for class
+    log = None
+
     def __init__(self):
         """ Create a new Telescope object by connecting to the TelescopeServer, 
         authenticating a new control session, and initializing the logging system. 
         """
 
-        # initialize logging system
-        self.__init_log()
+        # initialize logging system if not already done
+        if not Telescope.log:
+            Telescope.__init_log()
 
+        # initialize unconnected websocket
+        self.websocket = None
+        
         # connect to telescope server
-        self.websocket: ws.WebSocket = self.connect()
+        self.connect()
 
-    def connect(self) -> ws.WebSocket:
+    def connect(self) -> bool:
+        """ Try and connect to the TelescopeServer 
+        """
+        # try and create connection
+        websocket: ws.WebSocket = self.__connect()
+
+        # if valid connection
+        if websocket:
+            self.websocket = websocket
+            return True
+
+        # otherwise we failed
+        return False
+
+    def __connect(self) -> ws.WebSocket:
+        """ Try and create a connection to the TelescopeServer and
+        return the connected websocket. 
+        """
         try:
             # try and connect to telescope server
             connect_str = f'ws://localhost:{config.telescope.wsport}'
@@ -32,7 +57,7 @@ class Telescope(object):
             reply = json.loads(websocket.recv())
 
             if reply.get('connected'):
-                self.log.info('Successfully created connect to TelescopeServer')
+                self.log.info('Successfully connected to TelescopeServer')
             else:
                 reason = reply.get('result') or 'unknown'
                 self.log.warning(f'Telescope is currently unavailable: {reason}')
@@ -103,6 +128,14 @@ class Telescope(object):
 
         # TODO: Parse output to make sure dome closed successfully
         return True
+
+    def close_down(self) -> bool:
+        """ Closes the dome and unlocks the telescope. Call
+        this at end of every control session. 
+        """
+        closed = self.close_dome()
+        unlocked = self.unlock()
+        return closed and unlocked
 
     def lock(self, user: str, comment: str = 'observing') -> bool:
         """ Lock the telescope with the given username. 
@@ -457,7 +490,7 @@ class Telescope(object):
             # update weather
             weather: bool = self.weather_ok()
 
-        self.log('Weather is currently good.')
+        self.log.info('Weather is currently good.')
         return True
 
     def take_exposure(self, filename: str, exposure_time: int,
@@ -538,8 +571,10 @@ class Telescope(object):
         # receive result of command
         reply = json.loads(self.websocket.recv())
 
-        # TODO: Check that command was not denied
-        # TODO: by TelescopeServer
+        if not reply.get('success'):
+            reason = reply.get('result') or 'unknown reason'
+            self.log.warning(f'Unable to execute command: {reason}')
+            return reason
 
         # print result
         self.log.info(reply.get('result'))
@@ -547,7 +582,8 @@ class Telescope(object):
         # return it for processing by other methods
         return reply.get('result')
 
-    def __init_log(self) -> bool:
+    @classmethod
+    def __init_log(cls) -> bool:
         """ Initialize the logging system for this module and set
         a ColoredFormatter. 
         """
@@ -561,8 +597,8 @@ class Telescope(object):
         stream.setFormatter(formatter)
 
         # assign log method and set handler
-        self.log = logging.getLogger('telescope')
-        self.log.setLevel(logging.DEBUG)
-        self.log.addHandler(stream)
+        cls.log = logging.getLogger('telescope')
+        cls.log.setLevel(logging.DEBUG)
+        cls.log.addHandler(stream)
 
         return True
