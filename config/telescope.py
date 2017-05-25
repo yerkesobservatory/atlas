@@ -12,7 +12,7 @@ close_dome = 'closedown'
 close_dome_re = r''
 
 # keep the slit open for a given amount of time
-keep_open = f'keepopen maxtime={time} slit'
+keep_open = r'keepopen maxtime={} slit'
 keep_open_re = r''
 
 # close down the telescope at the end of the night
@@ -20,7 +20,7 @@ close_down = 'closedown'
 close_down_re = r''
 
 # lock the telescope for a given user
-lock = f'tx lock email={user} comment={comment}'
+lock = r'tx lock email={} comment={}'
 lock_re = r''
 
 # check who has the telescope locked
