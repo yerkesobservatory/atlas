@@ -1,0 +1,57 @@
+<template name="navigation">
+  
+    <nav class="navbar navbar-default navbar-static-top">
+      <div class="container-fluid">
+	<div class="navbar-header">
+	  <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+	    <span class="sr-only">Toggle navigation</span>
+	    <span class="icon-bar"></span>
+	    <span class="icon-bar"></span>
+	    <span class="icon-bar"></span>
+	  </button>
+	  <a class="navbar-brand" href="{{pathFor route='home'}}">Stone Edge Observatory</a>
+	</div> <!-- navbar header -->
+
+	<div id="navbar" class="navbar-collapse collapse">
+	<!-- navbar LEFT -->
+	<ul class="nav navbar-nav">
+	  <li><a href="{{pathFor route='home'}}">Home</a></li>
+	  {{#if currentUser}}
+	      <li><a href="{{pathFor route='observations'}}">Observations</a></li>
+	      <li><a href="{{pathFor route='sessions'}}">Sessions</a></li>
+  	  <li><a href="{{pathFor route='programs'}}">Programs</a></li>
+	  {{#if isInRole 'beta-tester'}}
+	  <li><a href="{{pathFor route='control'}}">Control</a></li>
+	  {{/if}}
+	   {{/if}}
+	</ul>
+
+	<!-- navbar RIGHT -->
+	<ul class="nav navbar-nav navbar-right">
+          {{#if currentUser}}
+	    {{#if isInRole 'admin'}}
+  	      <li><a href="{{pathFor route='admin'}}" class="button">Admin</a></li>
+	    {{/if}}
+          <li><a href="#" class="logout button">Logout</a></li>
+	  {{else}}
+	  <li><a href="{{pathFor route='forgot'}}">Forgot Password?</a></li>
+	  <li><a href="{{pathFor route='home'}}">Login</a></li>
+	  {{/if}}
+	</ul>
+	</div> <!-- .nav-collapse -->
+      </div> <!-- container fluid -->
+    </nav>
+  
+</template>
+ 
+<template name="notfound">
+  <h1> R2D2, where are you? <small>...this is not the page you're looking for...</small></h1>
+</template>
+
+<template name="loading">
+  <h1> Loading... <small> ...we are teleporting our needed resources through the spacetime continuum...</small></h1>
+</template>
+
+<template name="empty">
+  {{> yield}}
+</template>

@@ -1,0 +1,83 @@
+<template name="programs">
+  <h2> Observing Programs </h2>
+
+
+<!-- form to create a new program -->
+  <div class="row">
+    <div class="col-md-4" style="padding-top: 49px;">
+        <div class="panel panel-default">
+    <div class="panel-heading">New Program</div>
+    <div class="panel-body">
+    <form class="form-horizontal new-program">
+      <fieldset>
+
+	<!-- Program Name -->
+	<div class="form-group" id="form-program">
+	  <label for="program" class="col-lg-3 control-label">Program Name</label>
+	  <div class="col-lg-9">
+	    <input class="form-control" id="program" placeholder="Program Name" name="name" type="text" required>
+	  </div>
+	</div>
+
+	<!-- executor -->
+	<div class="form-group" id="form-executor">
+	  <label for="executor" class="col-lg-3 control-label">Execution Strategy</label>
+	  <div class="col-lg-9">
+	    <select class="form-control" id="executor" name="executor" required>
+  	      <option value="general">General</option>
+	      {{#if isInRole 'beta-tester'}}
+	      <option value="asteroid">Asteroid</option>
+	      <option value="mosaic">Mosaic</option>
+	      {{/if}}
+	    </select>
+	  </div> 
+	</div> <!-- end form-group for executor -->
+
+	<!-- submit buttons -->
+	<div class="form-group" >
+	  <div class="col-lg-12 col-lg-offset-3" style="padding-top: 10px;">
+	    <button type="reset" class="btn btn-warning">Cancel</button>
+	    <button type="submit" class="btn btn-success">Submit</button>
+	  </div>
+	</div>
+
+      </fieldset>
+    </form>
+      </div>
+	</div>
+    </div> <!-- col-md-4 -->
+
+
+  <div class="col-md-8">
+  <!-- display existing sessions -->
+  {{> reactiveTable settings=settings}}
+  </div>
+
+  </div>
+  
+</template>
+
+<template name="noPrograms">
+<div class="alert alert-dismissible alert-info">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <strong>Hey astronomer!</strong> You don't have any programs to show; try creating a new observing program!
+</div>
+</template>
+
+<template name="programAction">
+  {{#if isCurrentUser owner}}
+<div class="btn-group">
+  <a href="#" class="btn btn-info">Actions</a>
+  <a href="#" class="btn btn-info dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></a>
+  <ul class="dropdown-menu">
+    {{#unless completed}}
+    <li><a href="#" class="action-completed">Mark Completed</a></li>
+    {{else}}
+    <li><a href="#" class="action-completed">Mark Uncompleted</a></li>
+    {{/unless}}
+    <li class="divider"></li>
+    <li><a href="#" class="action-delete">Delete</a></li>
+  </ul>
+</div>
+{{/if}}
+</template>

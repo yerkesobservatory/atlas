@@ -1,0 +1,96 @@
+<!-- template for the sessions page -->
+<template name="sessions">
+  <h2> Sessions </h2>
+
+  <!-- form to create a new program -->
+  <div class="row">
+    <div class="col-md-4" style="padding-top: 49px;">
+      <div class="panel panel-default">
+	<div class="panel-heading">New Session</div>
+	<div class="panel-body">
+    <form class="form-horizontal new-session">
+      <fieldset>
+	<!-- program -->
+	<div class="form-group">
+	  <label for="program" class="col-lg-3 control-label ">Observing Program</label>
+	  <div class="col-lg-9">
+	    <select class="form-control" id="program" name="program" required>
+	      {{#each programs}}
+  	      <option value="{{_id}}">{{name}}</option>
+	      {{/each}}
+	    </select>
+	  </div> 
+	</div> <!-- end form-group for program -->
+
+	<!-- Start Date -->
+	<div class="form-group">
+	  <label for="startDate" class="col-lg-3 control-label ">Start Date</label>
+	  <div class="col-lg-9">
+	    <input class="form-control" id="startDate"  name="startDate" type="date" required>
+	  </div>
+	</div>
+
+	<!-- Start Time -->
+	<div class="form-group">
+	  <label for="startTime" class="col-lg-3 control-label ">Start Time</label>
+	  <div class="col-lg-9">
+	    <input class="form-control" id="startTime"  name="startTime" type="time" required>
+	  </div>
+	</div>
+
+	<!-- End Date -->
+	<div class="form-group">
+	  <label for="endDate" class="col-lg-3 control-label ">End Date</label>
+	  <div class="col-lg-9">
+	    <input class="form-control" id="endDate"  name="endDate" type="date" required>
+	  </div>
+	</div>
+
+	<!-- End Time -->
+	<div class="form-group">
+	  <label for="endTime" class="col-lg-3 control-label ">End Time</label>
+	  <div class="col-lg-9">
+	    <input class="form-control" id="endTime"  name="endTime" type="time" required>
+	    	<p> Note: All dates and times are UTC </p>
+	  </div>
+	</div>
+
+	<!-- submit buttons -->
+	<div class="form-group">
+	  <div class="col-lg-12 col-lg-offset-3">
+	    <button type="reset" class="btn btn-warning">Cancel</button>
+	    <button type="submit" class="btn btn-success">Submit</button>
+	  </div>
+	</div>
+
+      </fieldset>
+    </form>
+	</div>
+      </div>
+    </div> <!-- col-md-4 -->
+
+  <div class="col-md-8" style="padding-top: 0px;">
+  <!-- display existing sessions -->
+  {{> reactiveTable settings=settings}}
+  </div>
+
+  </div>
+  
+</template>
+
+<!-- template to display individual session -->
+<template name="session">
+  <span class="text">{{name}} - <strong>{{email}}</strong></span>
+</template>
+
+<!-- name of program to show in select box -->
+<template name="programName">
+  <option value="{{_id}}">{{name}}</option>
+</template>
+
+<template name="noSessions">
+<div class="alert alert-dismissible alert-info">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <strong>Hey you!</strong> You don't have any sessions to show; try scheduling a session!
+</div>
+</template>

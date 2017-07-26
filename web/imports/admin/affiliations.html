@@ -1,0 +1,43 @@
+<template name="adminAffiliations">
+
+  {{#if isInRole 'admin'}}
+
+  <h2> Affiliations </h2>
+  
+<!-- form to create a new affiliation -->
+  <div class="row">
+    <div class="col-md-4">
+    <form class="form-horizontal new-affiliation" style="padding-top:30px;">
+      <fieldset>
+
+	<!-- Program Name -->
+	<div class="form-group">
+	  <label for="affiliation" class="col-lg-3 control-label">Affiliation</label>
+	  <div class="col-lg-9">
+	    <input class="form-control" id="affiliation" placeholder="Affiliation" name="affiliation" type="text" required>
+	  </div>
+	</div>
+	<!-- submit buttons -->
+	<div class="form-group" >
+	  <div class="col-lg-12 col-lg-offset-3" style="padding-top: 10px;">
+	    <button type="reset" class="btn btn-warning">Cancel</button>
+	    <button type="submit" class="btn btn-success">Submit</button>
+	  </div>
+	</div>
+
+      </fieldset>
+    </form>
+    </div> <!-- col-md-4 -->
+
+  <div class="col-md-8" style="padding-top:20px;">
+  <!-- display existing sessions -->
+  {{> reactiveTable settings=settings}}
+  </div>
+
+  </div>
+  {{/if}}
+</template>
+
+<template name="noAffiliations">
+  <h4> Looks like there are no affiliations... </h4>
+</template>

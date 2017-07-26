@@ -1,0 +1,135 @@
+<template name="control">
+  <div class="container-fluid">
+  <div class="row">
+    
+    <!-- left control panel -->
+    <div class="col-md-4">
+      <div class="panel panel-default">
+	<div class="panel-heading">Telescope Control</div>
+	<div class="panel-body">
+	  
+	  <a href="#" class="btn btn-success">Connect to Telescope</a>
+
+	      <form class="form-vertical control" style="padding-top: 30px;">
+		<fieldset>
+
+		  <!-- Target Name -->
+		  <div class="form-group col-lg-12">
+		    <div class="row">
+		      <label for="target" class="control-label">Target</label>
+		    </div>
+		    <div class="row">
+		    <!-- <div class="col-lg-9"> -->
+		    <input class="form-control" id="target" placeholder="Target Name or hh:mm:ss dd:mm:ss" name="target" type="text" required>
+		    </div>
+		    </div>
+		  <!--   </div> -->
+		  <!-- </div> -->
+		</fieldset>
+	      </form>
+	  
+	      <a href="#" class="btn btn-info">New Observation</a>
+	</div>
+      </div>
+      
+          <!-- bottom control panel -->
+      <div class="panel panel-default">
+	<div class="panel-heading">Camera Control</div>
+	<div class="panel-body">
+
+	  <form class="form-horizontal register" style="margin-bottom:30px;">
+	    <fieldset>
+		  
+	<!-- filters -->
+	<div class="col-lg-12 col-xs-offset-1" style="margin-bottom:15px;">
+	  <div class="row">
+	    <div class="radio-inline">
+	  <label>
+	    <input type="radio" name="filter"> Dark
+	  </label>
+	</div>
+	    </div>
+	  <div class="row">
+	<div class="radio-inline">
+	  <label>
+	    <input type="radio" name="filter"> Clear
+	  </label>
+	</div>
+	<div class="radio-inline">
+	  <label>
+	    <input type="radio" name="filter"> H-alpha
+	  </label>
+	</div>
+	  </div> <!-- row -->
+	  <div class="row">
+	<div class="radio-inline">
+	  <label>
+	    <input type="radio" name="filter"> u'
+	  </label>
+	</div>
+	<div class="radio-inline">
+	  <label>
+	    <input type="radio" name="filter"> g'
+	  </label>
+	</div>
+	<div class="radio-inline">
+	  <label>
+	    <input type="radio" name="filter"> r'
+	  </label>
+	</div>
+
+	<div class="radio-inline">
+	  <label>
+	    <input type="radio" name="filter"> i'
+	  </label>
+	</div>
+	<div class="radio-inline">
+	  <label>
+	    <input type="radio" name="filter"> z'
+	  </label>
+	</div>
+	  </div>
+	  </div>
+
+		  <!-- Exposure Time -->
+		  <div class="form-group" style="padding-top:10px;">
+		    <label for="exptime" class="col-lg-3 control-label">Exposure Time</label>
+		    <div class="col-lg-9">
+		      <input class="form-control" id="exptime" placeholder="Exposure Time (s)" name="target" type="text" required>
+		    </div>
+		  </div>
+
+		  <!-- Binning -->
+		  <div class="form-group">
+		    <label for="binning" class="col-lg-3 control-label">Binning</label>
+		    <div class="col-lg-9">
+		      <input class="form-control" id="binning" placeholder="Binning" name="binning" type="number" required value=2 min=1 max=8>
+		    </div>
+		  </div>
+		    <a href="#" class="btn btn-info">Take Exposure</a>
+		</fieldset>
+	      </form>
+
+	  <div class="progress progress-striped">
+	    <div class="progress-bar progress-bar-info" style="width: 70%"></div>
+	    </div>
+
+	</div>
+      </div>
+
+    </div>
+
+    <!-- center image panel -->
+    <div class="col-md-8">
+      <div class="panel panel-default">
+	<div class="panel-heading">Image Viewer</div>
+	<div class="panel-body">
+	</div>
+      </div>
+    </div>
+
+
+    
+  </div>
+  </div>
+</template>
