@@ -4,13 +4,11 @@ object to a given RA/Dec.
 
 import re
 import typing
-
 import astropy.coordinates as coordinates
 import astropy.units as units
-
 from config import config
 
-def point(ra: str, dec: str, telescope: 'Telescope', ) -> bool:
+def point(ra: str, dec: str, telescope: 'Telescope') -> bool:
     """ Pinpoint the telescope to a given RA and Dec. 
 
     Given string representations of RA and Dec, and a connected 
@@ -35,8 +33,8 @@ def point(ra: str, dec: str, telescope: 'Telescope', ) -> bool:
 
     Notes
     ------
-    Author: rprechelt
     Author: mcnowinski
+    Author: rprechelt
 
     """
 
@@ -46,7 +44,7 @@ def point(ra: str, dec: str, telescope: 'Telescope', ) -> bool:
         ra_target = coordinates.Angle(ra, unit=units.hour).degree
         dec_target = coordinates.Angle(dec, unit=units.deg).degree
     except Exception as e:
-        telescope.log('point: Unable to parse ra/dec.', color='red')
+        telescope.log.warning('point: Unable to parse ra/dec.', color='red')
         return False
         
     # location of solve-field binary of astrometry
@@ -82,7 +80,7 @@ def point(ra: str, dec: str, telescope: 'Telescope', ) -> bool:
         telescope.open_dome()
         telescope.keep_open(900)
 
-    telescope.log('Beginning pinpoint iterations...')
+    telescope.log.info('Beginning pinpoint iterations...')
     # we iterate taking images in each iteration and running astrometry
     while ((abs(ra_offset) > min_ra_offset or
             abs(dec_offset) > min_dec_offset) and
@@ -111,7 +109,7 @@ def point(ra: str, dec: str, telescope: 'Telescope', ) -> bool:
             RA_image = match.group(1).strip()
             DEC_image = match.group(2).strip()		
         else:
-            telescope.log('Field center RA/DEC not found in solve-field output!', color='red')
+            telescope.log.warning('Field center RA/DEC not found in solve-field output!', color='red')
             return False
 
         # compute offsets in ra and dec between pointing and image
@@ -122,10 +120,10 @@ def point(ra: str, dec: str, telescope: 'Telescope', ) -> bool:
 
         # if they are valid offsets, apply them to the scope
         if abs(ra_offset) <= max_ra_offset and abs(dec_offset) <=max_dec_offset:
-            telescope.log('dRA={} deg dDEC={} deg'.format(ra_offset, dec_offset))
+            telescope.log.info('dRA={} deg dDEC={} deg'.format(ra_offset, dec_offset))
             telescope.offset(ra_offset, dec_offset)
         else:
-            telescope.log('Calculated offsets too large '
+            telescope.log.warning('Calculated offsets too large '
                           '(tx offset ra={} dec={})'.format(ra_offset, dec_offset))
             
         # everything worked - let's repeat
@@ -135,8 +133,9 @@ def point(ra: str, dec: str, telescope: 'Telescope', ) -> bool:
 
     # if pinpoint was successful
     if (iteration < max_tries):
+        telescope.log.info('Pinpoint was successful!')
         return True
 
     # pinpointing was unsuccessful
-    telescope.log('Pinpoint reached maximum tries and was not successful.')
+    telescope.log.warn('Pinpoint reached maximum tries and was not successful.')
     return False
