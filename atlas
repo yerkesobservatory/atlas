@@ -1,9 +1,8 @@
-#!/usr/bin/env python3
+x#!/usr/bin/env python3
 
 import time
 import argparse
 import websockets
-import paho.mqtt.client as mqtt
 import telescope
 import imqueue
 import logging
@@ -14,41 +13,9 @@ from config import config
 parser = argparse.ArgumentParser(description='Interface and control an Atlas infrastructure')
 subparsers = parser.add_subparsers(title='subcommands', dest='subparser')
 
-### Create subparser for submit ###
-parser_submit = subparsers.add_parser('submit', help='Submit imaging requests to an Atlas queue')
-parser_submit.add_argument('--target', '-t', help="The catalog name or RA/DEC of the target to be imaged",
-                           required=True, type=str)
-parser_submit.add_argument('--exposure_time', '-e', help="The exposure time for each frame",
-                    default=60, type=float)
-parser_submit.add_argument('--exposure_count', '-c', help="The total exposure count for each filter",
-                    default=1, type=int)
-parser_submit.add_argument('--filters', '-f', help="The list of filters to be used for each exposure",
-                    default="clear", type=str, nargs='+')
-parser_submit.add_argument('--binning', '-b', help="The desired CCD binning",
-                    default=2, type=int)
-parser_submit.add_argument('--type', help="The type of observation - general, asteroid, etc.",
-                           default='general', type=str)
-parser_submit.add_argument('--user', '-u', help="The email address of the user to submit as",
-                    default=None)
-
-### Create subparser for listen ###
-parser_listen = subparsers.add_parser('listen', help='Listen to messages on an Atlas topic')
-parser_listen.add_argument('--topics', '-t', help="A list of topics to subscribe to",
-                    type=str, nargs='+', required=True)
-
-### Create subparser for publish ###
-parser_publish = subparsers.add_parser('publish', help='Publish messages to an Atlas topic')
-parser_publish.add_argument('--message', '-m', help="The message to be sent", type=str, required=True)
-parser_publish.add_argument('--topics', '-t', nargs='+', help="The topics for the message",
-                            type=str, required=True)
-
-### Create a sub parser to start server
-server_parser = subparsers.add_parser('server', help="Control Atlas server infrastructure")
-server_subparsers = server_parser.add_subparsers(title='server subcommands', dest='server_subparser')
-
-### Start servers
-start_parser = server_subparsers.add_parser('start', help='Start an Atlas server or module')
-start_parser.add_argument('server', help='The Atlas server or module to start')
+### Create a sub parser to start components
+server_parser = subparsers.add_parser('start', help="Start Atlas server components")
+server_parser.add_argument('server', help='The Atlas server or module to start')
 
 ### Parse!
 args = parser.parse_args()
@@ -72,111 +39,9 @@ def create_log():
     log.addHandler(stream)
 
     return log
-
-    
-def process_message(client, userdata, msg) -> list:
-    """ This function is called whenever a message is received on the broker.
-        
-    This function parses the message data, and passes the topic and decoded
-    dictionary to the user process_message function. 
-    """
-    topic = msg.topic
-    msg = json.loads(msg.payload.decode())
-    log.info('{}: {}'.format(topic, msg))
-
-    
-def connect() -> mqtt.Client:
-    """ Connect to an Atlas infrastructure. 
-    
-    This method establishes a MQTT connection to the broker. Runs
-    exit(-1) if an exception was thrown while connecting to the 
-    broker.
-    """
-
-    # mqtt client to handle connection
-    client = mqtt.Client()
-
-    # server information
-    host = config.server.host 
-    port = config.mosquitto.port
-    name = config.general.name
-    email = config.notification.sysadmin
-    
-    # connect to message broker
-    try:
-        client.connect(host, port, 60)
-        log.info(f'Successfully connected to {name}')
-    except Exception as e:
-        log.critical(f'Unable to connect to {name}. Please try again later. '
-            f'If the problem persists, please contact {email}')
-        log.critical(e)
-        exit(-1)
-
-    return client
-
-# create logger for messages
 log = create_log()
 
-########################################
-#              _     _ _     _
-#  _ __  _   _| |__ | (_)___| |__
-# | '_ \| | | | '_ \| | / __| '_ \ 
-# | |_) | |_| | |_) | | \__ \ | | |
-# | .__/ \__,_|_.__/|_|_|___/_| |_|
-# |_|                              
-# publish
-if args.subparser == 'publish':
-    client = connect()
-    for topic in args.topics:
-        log.info(f'Succesfully published message to {topic}')
-        client.publish(topic, args.message)
-########################################
-
-
-########################################
-#  _ _     _
-# | (_)___| |_ ___ _ __
-# | | / __| __/ _ \ '_ \ 
-# | | \__ \ ||  __/ | | |
-# |_|_|___/\__\___|_| |_|
-# listen                    
-
-if args.subparser == 'listen':
-    client = connect()
-    client.on_message = process_message
-    for topic in args.topics:
-        log.info(f'Succesfully subscribed to {topic}')
-        client.subscribe(topic)
-    client.loop_forever()
-########################################
-
-
-########################################
-#            _               _ _
-#  ___ _   _| |__  _ __ ___ (_) |_
-# / __| | | | '_ \| '_ ` _ \| | __|
-# \__ \ |_| | |_) | | | | | | | |_
-# |___/\__,_|_.__/|_| |_| |_|_|\__|
-# submit
-            
-if args.subparser == 'submit':
-    client = connect()
-    msg = {}
-    msg['type'] = 'request'
-    msg['target'] = args.target
-    msg['exposure_time'] = args.exposure_time
-    msg['exposure_count'] = args.exposure_count
-    msg['filters'] = args.filters
-    msg['binning'] = args.binning
-    msg['user'] = args.user or os.environ['USER']
-    msg['type'] = args.type
-
-    topic = '/'.join(('', config.general.shortname, 'queue'))
-    client.publish(topic, msg)
-    log.info('Succesfully submitted imaging request for {args.target}')
-########################################    
-
-
+    
 ########################################
 #  ___  ___ _ ____   _____ _ __
 # / __|/ _ \ '__\ \ / / _ \ '__|
@@ -184,7 +49,7 @@ if args.subparser == 'submit':
 # |___/\___|_|    \_/ \___|_|
 # server
 
-if args.subparser == 'server':
+if args.subparser == 'start':
 
     # start the telescope server
     if args.server == 'telescope':
