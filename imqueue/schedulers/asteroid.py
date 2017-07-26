@@ -1,9 +1,7 @@
 from typing import List
 from telescope.telescope import Telescope
-from db.observation import Observation
-from db.session import Session
 
-def schedule(observations: List[Observation], session: Session) -> (Observation, int):
+def schedule(observations: List['Observation'], session: 'Session') -> ('Observation', int):
     """ Return the next object to be imaged according to this algorithm, and the
     time that the executor must wait before imaging this observation. 
 
@@ -24,7 +22,7 @@ def schedule(observations: List[Observation], session: Session) -> (Observation,
     return observations[0], 0
 
 
-def execute(observation: Observation, telescope: Telescope, session: Session) -> bool:
+def execute(observation: 'Observation', telescope: Telescope, session: 'Session') -> bool:
     """ Observe the requested observation and save the data according to session. 
 
     This function is provided a connected Telescope() object that should be used

@@ -3,22 +3,16 @@ it loads in the queue file for tonight's imaging and executes each request
 """
 
 import time
-import pymodm
+import pymongo
 import telescope
 import schedule as run
+import telescope.exception as exception
 from config import config
 from typing import List, Dict
 from imqueue import schedule
-from routines import focus
-from routines import flats
-from db.observation import Observation
-from db.session import Session
-from telescope import telescope
-from templates import base
-from telescope.exception import *
 
 
-class Executor(base.AtlasServer):
+class Executor(objects):
     """ This class is responsible for executing and scheduling a
     list of imaging observations stored in the queue constructed by
     the queue server.
@@ -30,19 +24,27 @@ class Executor(base.AtlasServer):
         This creates a new Executor object; it does not start the executor, or load
         the queue from the database.
         """
-
-        # initialize AtlasServer superclass
-        super().__init__('Executor')
+        
+        # initialize logging system
+        if not Executor.log:
+            Executor.__init_log()
 
         # dummy telescope variable
         self.telescope: telescope.Telescope = None
 
-        # connect to mongodb
-        pymodm.connect("mongodb://127.0.0.1:3001/meteor", alias="atlas")
-        self.log.info('Successfully connected to the queue database')
+        # create connection to database - get users collection
+        try:
+            self.db_client = pymongo.MongoClient()
+            self.users = self.db_client.seo.users
+            self.observations = self.db_client.seo.observations
+            self.sessions = self.db_client.seo.sessions
+        except:
+            errmsg = 'Unable to connect or authenticate to database. Exiting...'
+            self.log.critical(errmsg)
+            raise ConnectionException(errmsg)
 
         # schedule the start() function to run every night
-        run.every().day.at("20:00").do(self.start)
+        run.every().day.at("18:00").do(self.start)
 
         # loop while we wait for the right time to start
         while True:
@@ -51,30 +53,12 @@ class Executor(base.AtlasServer):
             run.run_pending()
             time.sleep(wait)
 
-    @staticmethod
-    def topics() -> List[str]:
-        """ Returns the topics the server will be subscribed to.
-                
-        This function must return a list of topics that you wish the server
-        to subscribe to. i.e. ['/atlas/queue'] etc.
-        """
-
-        return ['/'+config.general.shortname+'/executor']
-    
-    def process_message(self, topic: str, msg: Dict):
-        """ This function is given a dictionary message from the broker
-        and must decide how to process the message. 
-        """
-        # TODO: what messages should the queue receive? 
-        self.log.warn('Executor received unknown message')
-
-    def load_observations(self, session: Session) -> List[Observation]:
+    def load_observations(self, session: Dict) -> List[Dict]:
         """ This function returns a list of all observations
         in the database that have not been executed, and that match
         the conditions specified in the session. 
         """
-        # TODO: Add filtering based upon session requirements
-        return Observation.objects.all()
+        return self.observations.find({'session': session['_id']})
 
     def open_up(self):
         """ Open up the telescope, enable tracking, and set
@@ -84,6 +68,12 @@ class Executor(base.AtlasServer):
         self.telescope.enable_tracking()
         self.telescope.keep_open(3600)  # TODO: use shorter keep_open times more regularly
 
+    def calibrate(self):
+        """ Run a series of calibration routines at sunset in order
+        to prepare the telescope for observation. 
+        """
+        pass
+
     def start(self) -> bool:
         """ Start the execution routine. 
 
@@ -92,41 +82,45 @@ class Executor(base.AtlasServer):
         focus the telescope, and then, if their is a scheduled Session, execute
         that session, or if not, unlock the telescope and start a new timer. 
         """
+
         # instantiate telescope object for control
         try:
-            self.telescope = telescope.Telescope()
+            self.telescope = telescope.SSHTelescope()
             self.log.info('Executor has connection to telescope')
+        except exception.ConnectionException as e:
+            self.log.critical(f'Error connecting to telescope: {e}')
+            return
         except Exception as e:
-            self.log.warn(f'Error connecting to telescope: {e}')
+            self.log.critical(f'Unknown error connecting to telescope: {e}')
+            return
 
         # try and acquire the telescope lock; TODO: This could be made smarter
         while not self.telescope.lock(config.telescope.username):
             time.sleep(300) # sleep for 5 minutes
-            
-        # check that weather is acceptable for flats
-        self.telescope.wait_until_good(sun=0)
 
-        # open telescope
-        self.log.info('Opening telescope dome...')
-        self.open_up()
-
-        # take flats
-        flats.take_flats(self.telescope)
+        # wait until sunset
+        self.telescope.wait_until_good()
+        
+        # calibrate the system
+        self.calibrate()
 
         # wait until the weather is good to observe stars
         self.telescope.wait_until_good()
 
         # focus the telescope
-        focus.focus(self.telescope)
+        self.telescope.auto_focus()
 
         # TODO: Check if queue is scheduled
-        session = None # TODO: we need to find the sesion for tonight
-        while self.execute_session(session):
-            pass # we need to find the next session for tonight
+        sessions = self.sessions.find({'start_date': {'$eq': datetime.date.today()}}).sort('start_time', pymongo.ASCENDING)
+        for session in sessions:
+            self.execute_session(session)
 
+        self.log.info('Finished executing the queue! Closing down...')
+        self.close()
+        
         return True
 
-    def execute_session(self, session: Session) -> bool:
+    def execute_session(self, session: Dict) -> bool:
         """ Executes the list of observations.
         
         TODO: Describe docstring
@@ -140,7 +134,7 @@ class Executor(base.AtlasServer):
             observations = self.load_observations(session)
 
             # run the scheduler and get the next observation to complete
-            self.log.info(f'Calling the {session.scheduler} scheduler...')
+            self.log.info(f'Calling the {session.get("scheduler")} scheduler...')
             observation, wait = schedule.schedule(observations, session)
 
             # if the scheduler returns None, we are done
@@ -162,10 +156,6 @@ class Executor(base.AtlasServer):
                 self.log.warn(f'Error while executing {observation}')
                 break
 
-        # close down
-        self.log.info('Finished executing the queue! Closing down...')
-        self.close()
-
         return True
     
     def close(self) -> bool:
@@ -175,5 +165,26 @@ class Executor(base.AtlasServer):
         if self.telescope is not None:
             self.telescope.close_down()
             self.telescope.disconnect()
+
+        return True
+    
+    @classmethod
+    def __init_log(cls) -> bool:
+        """ Initialize the logging system for this module and set
+        a ColoredFormatter. 
+        """
+        # create format string for this module
+        format_str = config.logging.fmt.replace('[name]', 'EXECUTOR')
+        formatter = colorlog.ColoredFormatter(format_str, datefmt=config.logging.datefmt)
+
+        # create stream
+        stream = logging.StreamHandler()
+        stream.setLevel(logging.DEBUG)
+        stream.setFormatter(formatter)
+
+        # assign log method and set handler
+        cls.log = logging.getLogger('telescope_server')
+        cls.log.setLevel(logging.DEBUG)
+        cls.log.addHandler(stream)
 
         return True

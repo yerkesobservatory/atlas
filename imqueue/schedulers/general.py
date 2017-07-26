@@ -1,10 +1,13 @@
+import numpy as np
+import astropy.units as units
+from astropy.time import Time
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun
 from typing import List
+from config import config
 from routines import pinpoint
 from telescope.telescope import Telescope
-from db.observation import Observation
-from db.session import Session
 
-def schedule(observations: List[Observation], session: Session) -> List[Observation]:
+def schedule(observations: List['Observation'], session: 'Session') -> List['Observation']:
         """ Return the next object to be imaged according to this algorithm, and the
     time that the executor must wait before imaging this observation. 
 
@@ -22,32 +25,35 @@ def schedule(observations: List[Observation], session: Session) -> List[Observat
     wait: int
         The number of seconds to wait before imaging this observation
     """
-        
+
+    # build array to hold temporary values
     max_altitude_time = {'target':[], 'altitude':[], 'time':[], 'wait':[]}   
-     
-    seo = EarthLocation(lat=38.2886*u.deg, lon=-122.50400*u.deg, height=60*u.m)    
-    
+
+    # location of observatory
+    observatory = EarthLocation(lat=config.general.latitude*u.deg,
+                        lon=-config.general.longitude*u.deg,
+                        height=config.general.altitude*u.m)    
+
+    # compute time and coordinates
     obs_time = Time.now()
     delta_obs_time = np.linspace(0, 15, 1000)*u.hour
     times = obs_time+delta_obs_time
-    frame = AltAz(obstime=times, location=seo)
+    frame = AltAz(obstime=times, location=observatory)
     
     start_time = str(Time.now())[:10]+" 00:00:00"
     fixed_start = Time(start_time, scale="utc")
     delta_fixed_start = np.linspace(0,15,1000)*u.hour
     fixed = fixed_start+delta_fixed_start
-    altazframe = AltAz(obstime=fixed, location=seo)  
+    altazframe = AltAz(obstime=fixed, location=observatory)  
     sun_altaz = get_sun(fixed).transform_to(altazframe)
+
+    # get times for sunset and sunrise
+    sunset_time = fixed[np.where((sun_altaz.alt < -12*u.deg) == True)[0][0]]
+    sunset_time = fixed[np.where((sun_altaz.alt < -12*u.deg) == True)[0][-1]]
     
-    sundown_time = fixed[np.where((sun_altaz.alt < -12*u.deg) == True)[0][0]]
-    sunup_time = fixed[np.where((sun_altaz.alt < -12*u.deg) == True)[0][-1]]
-    
-    for i,target in enumerate(target_list):
+    for i,target in enumerate([obs['target'] for obs in observations]):
         
-        target_ra = target[1]
-        target_dec = target[2]
-        input_coordinates = target_ra+" "+target_dec
-        
+        input_coordinates = observation.ra" "+observation.dec
         max_altitude_time['target'].append(target[0])
 
         try:
@@ -66,8 +72,8 @@ def schedule(observations: List[Observation], session: Session) -> List[Observat
         
         aux_delta_time = delta_obs_time[np.argmax(target_altaz.alt)]
     
-        if (max_altitude_time['altitude'][i]>0*u.degree) & (times[np.argmax(target_altaz.alt)] > sundown_time)\
-        & (times[np.argmax(target_altaz.alt)] < sunup_time) & (times[np.argmax(target_altaz.alt)] < Time(endtime,scale='utc')):
+        if (max_altitude_time['altitude'][i]>0*u.degree) & (times[np.argmax(target_altaz.alt)] > sunset_time)\
+        & (times[np.argmax(target_altaz.alt)] < sunset_time) & (times[np.argmax(target_altaz.alt)] < Time(endtime,scale='utc')):
             max_altitude_time['wait'].append(aux_delta_time.to(u.second))
         else:
             max_altitude_time['wait'].append(-1*u.s)
@@ -85,12 +91,12 @@ def schedule(observations: List[Observation], session: Session) -> List[Observat
             primary_target = np.array(max_altitude_time['target'])[primary_target_id]
     else:
         self.log("Scheduler couldn't pick an object")
-        return (-1, -1, -1), -1
+        return None, -1
     
     return target, int(max_altitude_time['wait'][primary_target_id].value)
 
 
-def execute(observation: Observation, telescope: Telescope, session: Session) -> bool:
+def execute(observation: 'Observation', telescope: Telescope, session: 'Session') -> bool:
     """ Observe the requested observation and save the data according to session. 
 
     This function is provided a connected Telescope() object that should be used
@@ -127,7 +133,7 @@ def execute(observation: Observation, telescope: Telescope, session: Session) ->
     # we should be pointing roughly at the right place
     # now we pinpoint
     telescope.log.info('Starting telescope pinpointing...')
-    good_pointing = pinpoint.point(ra, dec, telescope)
+    good_pointing = telescope.goto_point(observation.ra, observation.dec)
 
     # let's check that pinpoint did not fail
     if good_pointing is False:
@@ -145,12 +151,12 @@ def execute(observation: Observation, telescope: Telescope, session: Session) ->
         telescope.wait_until_good()
 
         # if the telescope has randomly closed, open up
-        if telescopee.telescope.dome_open is False:
+        if telescope.dome_open is False:
             telescope.open_dome()
 
         # check our pointing with pinpoint again
         telescope.log.info('Re-pinpointing telescope...')
-        pinpoint.point(ra, dec, self.telescope)
+        telescope.goto_point(observation.ra, observation.dec)
 
         # reenable tracking
         telescope.enable_tracking()
@@ -163,7 +169,7 @@ def execute(observation: Observation, telescope: Telescope, session: Session) ->
     telescope.change_filter('clear')
 
     # take exposure_count darks
-    telescop.take_darks(basename, exposure_time, exposure_count, binning)
+    telescope.take_darks(basename, exposure_time, exposure_count, binning)
 
     # take numbias*exposure_count biases
     telescope.take_biases(basename, exposure_time, exposure_count, binning, 3)

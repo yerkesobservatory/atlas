@@ -2,11 +2,9 @@ import importlib
 import imqueue.schedulers as schedulers
 from telescope.telescope import Telescope
 from typing import List
-from db.observation import Observation
-from db.session import Session
 
 
-def schedule(observations: List[Observation], session: Session) -> Observation:
+def schedule(observations: List['Observation'], session: 'Session') -> ('Observation', int):
     """ Call the requested scheduler and return the next requested observation. 
 
     This function is responsible for finding the correct scheduler to use
@@ -51,7 +49,7 @@ def schedule(observations: List[Observation], session: Session) -> Observation:
             return scheduler.general.schedule(observations, session)
         
 
-def execute(observation: Observation, telescope: Telescope, session: Session) -> bool:
+def execute(observation: 'Observation', telescope: Telescope, session: 'Session') -> bool:
     """ Observe the requested observation and save the data according to session. 
 
     This function is provided a connected Telescope() object that should be used
