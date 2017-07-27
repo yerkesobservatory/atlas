@@ -37,7 +37,7 @@ Meteor.methods({
 	
 	// insert the observation
 	const obsId = Observations.insert({
-	    programId: progId, 
+	    program: progId, 
 	    target: target,
 	    exposure_time: Number(exptime),
 	    exposure_count: Number(expcount),
@@ -62,11 +62,11 @@ Meteor.methods({
 	}
 	
 	// remove observation from program
-	const programId = Observations.findOne(obsId).programId;
-	Programs.update(programId, {$pull: {observations: obsId}});
+	const program = Observations.findOne(obsId).program;
+	Programs.update(program, {$pull: {observations: obsId}});
 	    
 	// remove observation
-	Observations.remove({ _id: obsId, owner: Meteor.userId()});
+	Observations.remove({_id: obsId, owner: Meteor.userId()});
 
     },
     

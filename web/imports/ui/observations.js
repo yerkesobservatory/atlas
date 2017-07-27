@@ -27,7 +27,7 @@ Template.observations.helpers({
 	    showNavigationRowsPerPage: false,
 	    noDataTmpl: Template.noObservations, 
 	    fields: [
-		{key: 'programId',
+		{key: 'program',
 		 label: 'Program',
 		 fn: function (value, object, key) {
 		     return Programs.find(value).fetch()[0].name;
