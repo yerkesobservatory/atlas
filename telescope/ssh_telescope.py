@@ -38,7 +38,7 @@ class SSHTelescope(object):
         # SSH connection to telescope server
         self.ssh: paramiko.SSHClient = None
 
-        self.connect(host)
+        self.connect()
 
     def connect(self) -> bool:
         """ Create a SSH connection to the telescope control server. 

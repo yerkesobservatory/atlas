@@ -37,7 +37,7 @@ class TelescopeServer(object):
         # create connection to database - get users collection
         try:
             self.db_client = pymongo.MongoClient()
-            self.users = self.db_client.seo.users
+            self.users = self.db_client.meteor.users
         except:
             errmsg = 'Unable to connect or authenticate to database. Exiting...'
             self.log.critical(errmsg)
@@ -53,6 +53,7 @@ class TelescopeServer(object):
         try:
             self.telescope = SSHTelescope()
         except Exception as e:
+            self.telescope = None
             self.log.critical(f'TelescopeServer unable to connect to telescope controller. Reason: {e}')
             return
 
@@ -113,13 +114,17 @@ class TelescopeServer(object):
                 return
 
             # check username and password against DB
-            user = self.users.find_one({'email': email})
-            if user:
-                if bcrypt.hashpw(password, user['password']) != user['password']:
-                    self.log.info('Invalid password. Disconnecting...')
-                    return
-            else:
-                self.log.info('Invalid username. Disconnecting...')
+            try:
+                user = self.users.find_one({'email': email})
+                if user:
+                    if bcrypt.hashpw(password, user['password']) != user['password']:
+                        self.log.info('Invalid password. Disconnecting...')
+                        return
+                    else:
+                        self.log.info('Invalid username. Disconnecting...')
+                        return
+            except Exception as e:
+                self.log.error('An error occured in authenticating the user. Disconnecting...')
                 return
 
             # we have now authenticated the user

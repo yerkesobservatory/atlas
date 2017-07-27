@@ -49,7 +49,7 @@ class RemoteTelescope(object):
         """
         try:
             # get port spec
-            port = int(os.environ.get('ATLAS_WS_PORT')) or 27404
+            port = os.environ.get('ATLAS_WS_PORT') or 27404
             
             # try and connect to telescope server
             uri = f'ws://{host}:{port}'
