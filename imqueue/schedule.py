@@ -4,20 +4,20 @@ from telescope.telescope import Telescope
 from typing import List
 
 
-def schedule(observations: List['Observation'], session: 'Session') -> ('Observation', int):
+def schedule(observations: List['Observation'], program: 'Program') -> ('Observation', int):
     """ Call the requested scheduler and return the next requested observation. 
 
     This function is responsible for finding the correct scheduler to use
-    for the given session (using session.scheduler), and then calling
+    for the given program (using program.scheduler), and then calling
     that scheduler to determine the next object to observe. This object
     is immediately returned to the caller. 
 
     Parameters
     ----------
     observations: List[Observation]
-        The observations to be observed as part of this session
-    session: Session
-        The Session object containing parameters for the observing session
+        The observations to be observed as part of this program
+    program: Program
+        The Program object containing parameters for the observing program
 
     Returns
     -------
@@ -28,42 +28,42 @@ def schedule(observations: List['Observation'], session: 'Session') -> ('Observa
     """
 
     # the normal scheduler
-    if session.scheduler == 'general':
-        return schedulers.general.schedule(observations, session)
+    if program.get('executor') == 'general':
+        return schedulers.general.schedule(observations, program)
 
     # asteroids
-    elif session.scheduler == 'asteroid':
-        return schedulers.asteroid.schedule(observations, session)
+    elif program.get('executor') == 'asteroid':
+        return schedulers.asteroid.schedule(observations, program)
     
     # try and load the scheduler dynamically 
     else:
         # try and load module with that name
         try:
-            scheduler = importlib.import_module(f'imqueue.schedulers.{session.scheduler}')
+            scheduler = importlib.import_module(f'imqueue.schedulers.{program.get("executor")}')
 
             # check that it provides both schedule and execute commands
             if 'schedule' in dir(scheduler) and 'execute' in dir(scheduler):
-                return scheduler.schedule(observations, session)
+                return scheduler.schedule(observations, program)
         # if the above does not work, use general scheduler
         finally:
-            return scheduler.general.schedule(observations, session)
+            return scheduler.general.schedule(observations, program)
         
 
-def execute(observation: 'Observation', telescope: Telescope, session: 'Session') -> bool:
-    """ Observe the requested observation and save the data according to session. 
+def execute(observation: 'Observation', telescope: Telescope, program: 'Program') -> bool:
+    """ Observe the requested observation and save the data according to program. 
 
     This function is provided a connected Telescope() object that should be used
-    to execute (observe) the target specified by Observation. The Session object 
+    to execute (observe) the target specified by Observation. The Program object 
     that includes this observation is also provided. 
 
     Parameters
     ----------
     observation: Observation
-        The observation to be observed as part of this session
+        The observation to be observed as part of this program
     telescope: Telescope
         A connected telescope object to be used to execute the observation.
-    session: Session
-        The Session object containing parameters for the observing session
+    program: Program
+        The Program object containing parameters for the observing program
 
     Returns
     -------
@@ -72,22 +72,22 @@ def execute(observation: 'Observation', telescope: Telescope, session: 'Session'
     """
 
     # the normal executor
-    if session.scheduler == 'general':
-        return schedulers.general.execute(observation, telescope, session)
+    if program.get('executor') == 'general':
+        return schedulers.general.execute(observation, telescope, program)
 
     # asteroids
-    elif session.scheduler == 'asteroid':
-        return schedulers.asteroid.execute(observation, telescope, session)
+    elif program.get('executor') == 'asteroid':
+        return schedulers.asteroid.execute(observation, telescope, program)
     
     # try and load the scheduler dynamically 
     else:
         # try and load module with that name
         try:
-            scheduler = importlib.import_module(f'imqueue.schedulers.{session.scheduler}')
+            scheduler = importlib.import_module(f'imqueue.schedulers.{program.get("executor")}')
 
             # check that it provides both schedule and execute commands
             if 'schedule' in dir(scheduler) and 'execute' in dir(scheduler):
-                return scheduler.execute(observation, telescope, session)
+                return scheduler.execute(observation, telescope, program)
         # if the above does not work, use general scheduler
         finally:
-            return scheduler.general.schedule(observation, telescope, session)
+            return scheduler.general.schedule(observation, telescope, program)

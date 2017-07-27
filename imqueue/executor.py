@@ -38,13 +38,14 @@ class Executor(objects):
             self.users = self.db_client.seo.users
             self.observations = self.db_client.seo.observations
             self.sessions = self.db_client.seo.sessions
+            self.programs = self.db_client.seo.programs
         except:
             errmsg = 'Unable to connect or authenticate to database. Exiting...'
             self.log.critical(errmsg)
             raise ConnectionException(errmsg)
 
         # schedule the start() function to run every night
-        run.every().day.at("18:00").do(self.start)
+        run.every().day.at("17:00").do(self.start)
 
         # loop while we wait for the right time to start
         while True:
@@ -53,27 +54,108 @@ class Executor(objects):
             run.run_pending()
             time.sleep(wait)
 
-    def load_observations(self, session: Dict) -> List[Dict]:
+    def load_observations(self, session: Dict) -> (List[Dict], Dict):
         """ This function returns a list of all observations
         in the database that have not been executed, and that match
         the conditions specified in the session. 
         """
-        return self.observations.find({'session': session['_id']})
+        # find program that session belongs to
+        # TODO: fix query
+        program = self.programs.findOne({'session': session['_id']})
 
-    def open_up(self):
+        if program:
+            return self.observations.find({'program': program['_id']}), program
+        else:
+            self.log.warning('Unable to find program for this session. Cancelling this session...')
+            return [], ''
+
+    def open_telescope(self):
         """ Open up the telescope, enable tracking, and set
         the dome to stay on. 
         """
         self.telescope.open_dome()
         self.telescope.enable_tracking()
-        self.telescope.keep_open(3600)  # TODO: use shorter keep_open times more regularly
+        self.telescope.keep_open(600)
 
     def calibrate(self):
         """ Run a series of calibration routines at sunset in order
         to prepare the telescope for observation. 
         """
-        pass
 
+        # wait for sun to set
+        self.telescope.wait_until_good(sun=0)
+            
+        try:
+            # tell slack that things are starting
+            msg = f'{config.general.name} is starting its auto-calibration routine. Please do not '
+            msg += f'use the telescope until you have been notified that the telescope is ready for use'
+            self.slack_message('#general', msg)
+
+            # take flats
+            self.telescope.take_flats()
+
+            # should we take darks here? telescope is still cooling down
+            # so dark values will be higher?
+            
+            # wait until sun is at -12
+            self.telescope.wait_until_good(sun=-12)
+
+            # TODO: use routines.lookup to find appropriate star field?
+            ra = 'hh:mm:ss'
+            dec = 'dd:mm:ss'
+
+            # let's enable tracking just to be safe
+            self.telescope.enable_tracking()
+
+            # pinpoint telescope to target (this will fix pointing too!)
+            self.telescope.goto_point(ra, dec)
+        
+            # run auto-focus routine
+            self.telescope.auto_focus()
+
+            # let's try pointing again - save final offsets
+            result, dra, ddec = self.telescope.goto_point(ra, dec)
+
+            # send final dra, ddec values to slack
+            # TODO: convert dra, ddec to arcseconds. Currently in degrees
+            msg = f'{config.general.name} is now ready for use! The final error in pointing is RA: {dra}, Dec: {ddec}'
+            self.slack_message('#general', msg)
+        except Exception as e:
+            msg = f'{An error occured while auto-calibrating {config.general.name}. Please use care when '
+            msg += f'using the telescope'
+            self.slack_message('#general', msg)
+            self.slack_message('#atlas', f'Auto-calibration error: {e}')
+            
+        return True
+
+    def critical(self, msg) -> bool:
+        """ Log the message using self.log.critical and send the message
+        to the atlas channel on slack. 
+        """
+        self.log.critical(msg)
+        return self.slack_message('#atlas', msg)
+
+    def lock_telescope(self): -> bool:
+        """ Attempt to lock the executors telescope 6 times, waiting
+        5 minutes between each attempt.
+        """
+        # try and acquire the telescope lock
+        for attempts in range(0, 6): # we try 5 times (30 minutes)
+            if (attempts == 5):
+                self.critical('Unable to lock the telescope after 30 minutes. Executor is shutting down...')
+                return
+
+            # try and lock telescope
+            result = self.telescope.lock(config.telescope.username)
+            if result: # success!
+                self.log.info('Successfully locked telescope')
+                return True
+
+            # sleep for 5 minutes
+            time.sleep(300)
+
+        return False
+            
     def start(self) -> bool:
         """ Start the execution routine. 
 
@@ -88,30 +170,34 @@ class Executor(objects):
             self.telescope = telescope.SSHTelescope()
             self.log.info('Executor has connection to telescope')
         except exception.ConnectionException as e:
-            self.log.critical(f'Error connecting to telescope: {e}')
+            self.critical(f'Error connecting to telescope: {e}')
             return
         except Exception as e:
-            self.log.critical(f'Unknown error connecting to telescope: {e}')
+            self.critical(f'Unknown error connecting to telescope: {e}')
             return
 
-        # try and acquire the telescope lock; TODO: This could be made smarter
-        while not self.telescope.lock(config.telescope.username):
-            time.sleep(300) # sleep for 5 minutes
-
-        # wait until sunset
-        self.telescope.wait_until_good()
-        
-        # calibrate the system
+        # attempt lock the telescope
+        if not (self.lock_telescope()):
+            return
+            
+        # attempt to auto-calibrate the system
         self.calibrate()
 
-        # wait until the weather is good to observe stars
+        # TODO: Find all sessions that start within the next 12 hours
+        # sessions = self.sessions.find({'start_date': {'$eq': datetime.date.today()}}).sort('start_time', pymongo.ASCENDING)
+        sessions = None
+
+        # TODO: sort sessions by start datetime
+
+        # if there are no sessions, we return so other people can use the telescope
+        if not sessions:
+            self.log.info('Executor has no sessions. Quitting...')
+            return
+            
+        # wait until the weather is good to observe
         self.telescope.wait_until_good()
 
-        # focus the telescope
-        self.telescope.auto_focus()
-
-        # TODO: Check if queue is scheduled
-        sessions = self.sessions.find({'start_date': {'$eq': datetime.date.today()}}).sort('start_time', pymongo.ASCENDING)
+        # for each session scheduled to start tonight
         for session in sessions:
             self.execute_session(session)
 
@@ -121,20 +207,38 @@ class Executor(objects):
         return True
 
     def execute_session(self, session: Dict) -> bool:
-        """ Executes the list of observations.
+        """ Executes the observations of the program that
+        the session is attached.
         
-        TODO: Describe docstring
+        Wait until the session is due to start, and load all uncompleted
+        observations for the corresponding observing program. Schedule the observations, 
+        and execute the first observation. We then repeat the scheduling in order
+        to optimize target position.
         """
+        # get times from session
+        start = session['start']
+        end = session['end']
+
+        # wait until the session is meant to start
+        self.telescope.wait((start - datetime.datetime.now()).seconds)
+
+        # try to open the telescope just to be sure
+        self.open_telescope()
 
         # continually execute observations from the queue
         while True:
 
             # load observations from the database
             # we load it in the loop so that database changes can be made after the queue has started
-            observations = self.load_observations(session)
+            observations, program = self.load_observations(session)
+
+            # if there are no observations left in the program, we return
+            if not len(observations):
+                self.log.info('No uncompleted observations left in program... Closing down')
+                return
 
             # run the scheduler and get the next observation to complete
-            self.log.info(f'Calling the {session.get("scheduler")} scheduler...')
+            self.log.info(f'Calling the {program.get("executor")} scheduler...')
             observation, wait = schedule.schedule(observations, session)
 
             # if the scheduler returns None, we are done
@@ -148,13 +252,16 @@ class Executor(objects):
             # make sure that the weather is still good
             self.telescope.wait_until_good()
 
+            # TODO: find username of observation
+            
             self.log.info(f'Executing session for {observation.user}')
             try:
                 # execute session
-                schedule.execute(observation, self.telescope, session, self.db)
+                # TODO: Look at call signature
+                schedule.execute(observation, program, self.telescope, self.db)
             except Exception as e:
                 self.log.warn(f'Error while executing {observation}')
-                break
+                continue
 
         return True
     
