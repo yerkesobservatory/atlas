@@ -4,19 +4,25 @@ it loads in the queue file for tonight's imaging and executes each request
 
 import time
 import pymongo
+import logging
+import colorlog
 import telescope
 import schedule as run
 import telescope.exception as exception
 from config import config
 from typing import List, Dict
 from imqueue import schedule
+from slacker_log_handler import SlackerLogHandler
 
 
-class Executor(objects):
+class Executor(object):
     """ This class is responsible for executing and scheduling a
     list of imaging observations stored in the queue constructed by
     the queue server.
     """
+
+    # default logger
+    log = None
 
     def __init__(self):
         """ This creates a new executor to execute a single nights observations. 
@@ -60,13 +66,12 @@ class Executor(objects):
         the conditions specified in the session. 
         """
         # find program that session belongs to
-        # TODO: fix query
-        program = self.programs.findOne({'session': session['_id']})
+        program = self.programs.findOne({'sessions': session['_id']})
 
         if program:
             return self.observations.find({'program': program['_id']}), program
         else:
-            self.log.warning('Unable to find program for this session. Cancelling this session...')
+            self.log.debug('Unable to find program for this session. Cancelling this session...')
             return [], ''
 
     def open_telescope(self):
@@ -121,7 +126,7 @@ class Executor(objects):
             msg = f'{config.general.name} is now ready for use! The final error in pointing is RA: {dra}, Dec: {ddec}'
             self.slack_message('#general', msg)
         except Exception as e:
-            msg = f'{An error occured while auto-calibrating {config.general.name}. Please use care when '
+            msg = f'An error occured while auto-calibrating {config.general.name}. Please use care when '
             msg += f'using the telescope'
             self.slack_message('#general', msg)
             self.slack_message('#atlas', f'Auto-calibration error: {e}')
@@ -135,7 +140,7 @@ class Executor(objects):
         self.log.critical(msg)
         return self.slack_message('#atlas', msg)
 
-    def lock_telescope(self): -> bool:
+    def lock_telescope(self) -> bool:
         """ Attempt to lock the executors telescope 6 times, waiting
         5 minutes between each attempt.
         """
@@ -148,7 +153,7 @@ class Executor(objects):
             # try and lock telescope
             result = self.telescope.lock(config.telescope.username)
             if result: # success!
-                self.log.info('Successfully locked telescope')
+                self.log.debug('Successfully locked telescope')
                 return True
 
             # sleep for 5 minutes
@@ -168,7 +173,7 @@ class Executor(objects):
         # instantiate telescope object for control
         try:
             self.telescope = telescope.SSHTelescope()
-            self.log.info('Executor has connection to telescope')
+            self.log.debug('Executor has connection to telescope')
         except exception.ConnectionException as e:
             self.critical(f'Error connecting to telescope: {e}')
             return
@@ -191,7 +196,7 @@ class Executor(objects):
 
         # if there are no sessions, we return so other people can use the telescope
         if not sessions:
-            self.log.info('Executor has no sessions. Quitting...')
+            self.log.debug('Executor has no sessions. Quitting...')
             return
             
         # wait until the weather is good to observe
@@ -234,16 +239,16 @@ class Executor(objects):
 
             # if there are no observations left in the program, we return
             if not len(observations):
-                self.log.info('No uncompleted observations left in program... Closing down')
+                self.log.debug('No uncompleted observations left in program...')
                 return
 
             # run the scheduler and get the next observation to complete
-            self.log.info(f'Calling the {program.get("executor")} scheduler...')
+            self.log.debug(f'Calling the {program.get("executor")} scheduler...')
             observation, wait = schedule.schedule(observations, session)
 
             # if the scheduler returns None, we are done
             if not observation:
-                self.log.info('Scheduler reports no observations left for tonight... Closing down')
+                self.log.debug('Scheduler reports no observations left for tonight... Closing down')
                 break
 
             # if we need to wait for this observation, we wait
@@ -254,7 +259,7 @@ class Executor(objects):
 
             # TODO: find username of observation
             
-            self.log.info(f'Executing session for {observation.user}')
+            self.log.info(f'Executing session for {observation.user}') # TODO: fix user email
             try:
                 # execute session
                 # TODO: Look at call signature
@@ -290,8 +295,24 @@ class Executor(objects):
         stream.setFormatter(formatter)
 
         # assign log method and set handler
-        cls.log = logging.getLogger('telescope_server')
+        cls.log = logging.getLogger('executor')
         cls.log.setLevel(logging.DEBUG)
         cls.log.addHandler(stream)
+
+        # if requested, enable slack notifications
+        if config.notification.slack:
+
+            # channel
+            channel = config.notification.slack_channel
+            
+            # create slack handler
+            slack_handler = SlackerLogHandler(config.notification.slack_token, channel, stack_trace=True,
+                                              username='sirius', icon_emoji=':dizzy', fail_silent=True)
+
+            # add slack handler to logger
+            cls.log.addHandler(slack_handler)
+
+            # define the minimum level of log messages
+            slack_handler.setLevel(logging.INFO)
 
         return True

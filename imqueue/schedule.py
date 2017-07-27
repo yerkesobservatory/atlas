@@ -1,6 +1,6 @@
 import importlib
 import imqueue.schedulers as schedulers
-from telescope.telescope import Telescope
+from telescope import Telescope
 from typing import List
 
 
