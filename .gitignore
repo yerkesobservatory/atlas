@@ -1,5 +1,6 @@
 .env
 local
+*#*
 
 web/package-lock.json
 config/config.toml
