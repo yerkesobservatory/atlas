@@ -1,6 +1,4 @@
 import './admin.html';
-import './affiliations.html';
-
 import './users.js';
 import './affiliations.js';
 
@@ -80,4 +78,28 @@ Template.adminObservations.events({
 	    Meteor.call('observations.setCompleted', this._id, ! this.completed);
 	}
     }
+});
+
+Template.newAnnouncement.events({
+    // on press of Announce button
+    'submit .new-announcement'(event) {
+	
+	// prevent browser action
+	event.preventDefault();
+
+	// clear 'success' formatting from form
+	// TODO: Add formatting to form
+	$('.new-announcement').find('.form-group').removeClass('has-success');
+
+	// extract arguments
+	const target = event.target;
+	const title = target.title.value;
+	const text = target.text.value;
+
+	// submit new announcement
+	Meteor.call('announcements.insert', title, text);
+
+	// reset form
+	$('.new-announcement')[0].reset();
+    },
 });

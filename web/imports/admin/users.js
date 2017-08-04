@@ -50,10 +50,6 @@ Template.adminUsers.helpers({
 		},
 		{label: 'Role',
 		 fn: function (value, object, key) {
-		     console.log(object);
-		     console.log('Object: '+object._id);
-		     console.log('Me: '+Meteor.userId());
-		     console.log(Roles.userIsInRole(object, 'admin'));
 		     if (Roles.userIsInRole(object, 'admin')) {
 			 return 'Admin';
 		     } else {

@@ -53,5 +53,3 @@ Router.onBeforeAction('dataNotFound');
 
 // require sign in for every page except registration/reset
 Router.plugin('ensureSignedIn', {except: ['forgot', 'reset']});
-
-

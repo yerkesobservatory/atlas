@@ -9,6 +9,7 @@ import '../imports/api/observations.js';
 import '../imports/api/sessions.js';
 import '../imports/api/programs.js';
 import '../imports/api/users.js';
+import '../imports/api/announcements.js';
 
 Meteor.startup(() => {
     // code to run on server at startup
