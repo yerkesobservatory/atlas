@@ -1,5 +1,7 @@
 import './login.html';
 
+import $ from 'jquery';
+
 Template.login.events({
     'submit .login'(event) {
 	// prevent default submission
