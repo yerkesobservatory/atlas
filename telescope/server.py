@@ -101,7 +101,7 @@ class TelescopeServer(object):
         the connection by a Telescope class. 
         """
         try:
-            self.log.info('Connection request received...')
+            self.log.info('Connection request received. Awaiting authentication...')
 
             # we authenticate the username and password
             msg = await websocket.recv()
@@ -113,15 +113,19 @@ class TelescopeServer(object):
                 self.log.info('Connection request does not contain authentication info. Disconnecting...')
                 return
 
+            self.log.info(f'Attempting to authenticate {email}')
+
             # check username and password against DB
             try:
-                user = self.users.find_one({'email': email})
+                user = self.users.find_one({'emails.address': email})
                 if user:
-                    if bcrypt.hashpw(password, user['password']) != user['password']:
-                        self.log.info('Invalid password. Disconnecting...')
-                        return
+                    # meteor hashes password with sha256 before passing to bcrypt
+                    # passwords sent to us are already sha256 encrypted by Telescope
+                    stored_password = user['services']['password'].get('bcrypt')
+                    if bcrypt.checkpw(password.encode('utf8'), stored_password.encode('utf8')):
+                        self.log.info('User successfully authenticated.')
                     else:
-                        self.log.info('Invalid username. Disconnecting...')
+                        self.log.info('Invalid password. Disconnecting...')
                         return
                 else:
                     self.log.warning('User not found. Disconnecting...')
