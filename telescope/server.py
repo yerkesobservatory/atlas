@@ -36,8 +36,8 @@ class TelescopeServer(object):
 
         # create connection to database - get users collection
         try:
-            self.db_client = pymongo.MongoClient()
-            self.users = self.db_client.meteor.users
+            self.db_client = pymongo.MongoClient(host='localhost', port=27017)
+            self.users = self.db_client.seo.users
         except:
             errmsg = 'Unable to connect or authenticate to database. Exiting...'
             self.log.critical(errmsg)
