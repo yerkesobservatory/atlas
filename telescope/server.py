@@ -123,8 +123,12 @@ class TelescopeServer(object):
                     else:
                         self.log.info('Invalid username. Disconnecting...')
                         return
+                else:
+                    self.log.warning('User not found. Disconnecting...')
+                    return
             except Exception as e:
                 self.log.error('An error occured in authenticating the user. Disconnecting...')
+                self.log.error(e)
                 return
 
             # we have now authenticated the user
