@@ -24,7 +24,7 @@ class TelescopeServer(object):
     # logger
     log = None
 
-    def __init__(self):
+    def __init__(self, authentication=True):
         """ Establishes a long term SSH connection to the telescope
         control server and starts the processing of websocket handlers
         on the specified ports. 
@@ -34,15 +34,20 @@ class TelescopeServer(object):
         if not TelescopeServer.log:
             TelescopeServer.__init_log()
 
-        # create connection to database - get users collection
-        try:
-            self.db_client = pymongo.MongoClient(host='localhost', port=27017)
-            self.users = self.db_client.seo.users
-        except:
-            errmsg = 'Unable to connect or authenticate to database. Exiting...'
-            self.log.critical(errmsg)
-            raise ConnectionException(errmsg)
-            
+        # do not connect to database if authentication is disabled
+        if authentication:
+            # create connection to database - get users collection
+            try:
+                self.db_client = pymongo.MongoClient(host='localhost', port=27017)
+                self.users = self.db_client.seo.users
+            except:
+                errmsg = 'Unable to connect or authenticate to database. Exiting...'
+                self.log.critical(errmsg)
+                raise ConnectionException(errmsg)
+
+        # whether we should authenticate
+        self.authentication = authentication
+        
         # websocket for current connection
         websocket: websockets.WebSocketServerProtocol = None
 
@@ -100,10 +105,16 @@ class TelescopeServer(object):
         
         Returns True if OK, False if NOT AUTHORIZED. 
         """
+
+        # if authentication is disabled, every command is OK
+        if not self.authentication:
+            return True
+
+        # get the roles of the current user
         roles = user['roles']
         role = ""
 
-        # find cli-* role
+        # find cli-* role; TODO: This could be made nicer
         for r in roles:
             if r[0:4] == 'cli-':
                 role = r 
@@ -113,11 +124,14 @@ class TelescopeServer(object):
             self.log.debug('No command-line roles found.')
             return False
 
+        # check commands that anyone can run
+        if command in ['is_alive', 'disconnect', 'get_cloud', 'get_dew', 'get_rain',
+                       'get_sun_alt', 'get_moon_alt', 'get_weather', 'connect']:
+            return True
+
         # check command for roles
         if role == 'cli-imaging':
-            return command in ['is_alive', 'disconnect', 'lock', 'unlock', 'locked',
-                               'keep_open', 'get_cloud', 'get_dew', 'get_rain',
-                               'get_sun_alt', 'get_moon_alt', 'get_weather', 'goto_target',
+            return command in ['lock', 'unlock', 'locked', 'keep_open', 'goto_target',
                                'goto_point', 'target_visible', 'point_visible',
                                'target_altaz', 'point_altaz', 'enable_tracking',
                                'current_filter', 'change_filter', 'wait', 'wait_until_good',
@@ -125,7 +139,8 @@ class TelescopeServer(object):
         elif role == 'cli-full':
             return True
         else:
-            return command in ['is_alive']
+            # this is an unknown role, default to no exec rights
+            return False
 
     async def process(self, websocket, path):
         """ This is the handler for new websocket
@@ -147,25 +162,26 @@ class TelescopeServer(object):
 
             self.log.info(f'Attempting to authenticate {email}')
 
-            # check username and password against DB
-            try:
-                user = self.users.find_one({'emails.address': email})
-                if user:
-                    # meteor hashes password with sha256 before passing to bcrypt
-                    # passwords sent to us are already sha256 encrypted by Telescope
-                    stored_password = user['services']['password'].get('bcrypt')
-                    if bcrypt.checkpw(password.encode('utf8'), stored_password.encode('utf8')):
-                        self.log.info('User successfully authenticated.')
+            if authentication:
+                # check username and password against DB
+                try:
+                    user = self.users.find_one({'emails.address': email})
+                    if user:
+                        # meteor hashes password with sha256 before passing to bcrypt
+                        # passwords sent to us are already sha256 encrypted by Telescope
+                        stored_password = user['services']['password'].get('bcrypt')
+                        if bcrypt.checkpw(password.encode('utf8'), stored_password.encode('utf8')):
+                            self.log.info('User successfully authenticated.')
+                        else:
+                            self.log.info('Invalid password. Disconnecting...')
+                            return
                     else:
-                        self.log.info('Invalid password. Disconnecting...')
+                        self.log.warning('User not found. Disconnecting...')
                         return
-                else:
-                    self.log.warning('User not found. Disconnecting...')
+                except Exception as e:
+                    self.log.error('An error occured in authenticating the user. Disconnecting...')
+                    self.log.error(e)
                     return
-            except Exception as e:
-                self.log.error('An error occured in authenticating the user. Disconnecting...')
-                self.log.error(e)
-                return
 
             # we have now authenticated the user
             
@@ -206,8 +222,11 @@ class TelescopeServer(object):
                      'token': token}
             await websocket.send(json.dumps(reply))
 
-            # explicity save user
-            user = self.users.find_one({'emails.address': email})
+            if authentication:
+                # explicity save user
+                user = self.users.find_one({'emails.address': email})
+            else:
+                user = None
 
             # keep processing messages until client disconnects
             while True:
