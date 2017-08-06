@@ -95,6 +95,38 @@ class TelescopeServer(object):
         self.loop.run_until_complete(start_server)
         self.loop.run_forever()
 
+    def command_authorized(self, user: dict, command: str):
+        """ Check that 'user' is authorized to run 'command'. 
+        
+        Returns True if OK, False if NOT AUTHORIZED. 
+        """
+        roles = user['roles']
+        role = ""
+
+        # find cli-* role
+        for r in roles:
+            if r[0:4] == 'cli-':
+                role = r 
+
+        # check error
+        if role == "":
+            self.log.debug('No command-line roles found.')
+            return False
+
+        # check command for roles
+        if role == 'cli-imaging':
+            return command in ['is_alive', 'disconnect', 'lock', 'unlock', 'locked',
+                               'keep_open', 'get_cloud', 'get_dew', 'get_rain',
+                               'get_sun_alt', 'get_moon_alt', 'get_weather', 'goto_target',
+                               'goto_point', 'target_visible', 'point_visible',
+                               'target_altaz', 'point_altaz', 'enable_tracking',
+                               'current_filter', 'change_filter', 'wait', 'wait_until_good',
+                               'take_exposure', 'take_dark', 'take_bias']
+        elif role == 'cli-full':
+            return True
+        else:
+            return command in ['is_alive']
+
     async def process(self, websocket, path):
         """ This is the handler for new websocket
         connections. This exists for the lifetime of 
@@ -174,6 +206,9 @@ class TelescopeServer(object):
                      'token': token}
             await websocket.send(json.dumps(reply))
 
+            # explicity save user
+            user = self.users.find_one({'emails.address': email})
+
             # keep processing messages until client disconnects
             while True:
                 # wait for arrival of a message
@@ -190,6 +225,16 @@ class TelescopeServer(object):
                 if command == '':
                     self.log.warning(f'Received empty command message. Skipping...')
                     continue
+
+                # check if command is authorized
+                if not self.command_authorized(user, command):
+                    self.log.warning(f'User attempted to execute {command} for which they are not authorized.')
+                    reply = {'success': False,
+                             'command': command,
+                             'result': 'NOT AUTHORIZED'}
+                    await websocket.send(json.dumps(reply))
+
+                print("Yay!")
 
                 # set last exec time
                 self.last_exec_time = datetime.datetime.now()
