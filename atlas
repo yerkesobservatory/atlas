@@ -16,6 +16,7 @@ subparsers = parser.add_subparsers(title='subcommands', dest='subparser')
 ### Create a sub parser to start components
 server_parser = subparsers.add_parser('start', help="Start Atlas server components")
 server_parser.add_argument('server', help='The Atlas server or module to start')
+server_parser.add_argument('--no-authentication', help='Disable authentication for server components', action='store_false')
 
 ### Parse!
 args = parser.parse_args()
@@ -53,7 +54,7 @@ if args.subparser == 'start':
 
     # start the telescope server
     if args.server == 'telescope':
-        t = telescope.TelescopeServer()
+        t = telescope.TelescopeServer(authentication=args.no_authentication)
     elif args.server == 'executor':
         e = imqueue.Executor()
     else:
