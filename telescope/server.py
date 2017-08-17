@@ -142,6 +142,11 @@ class TelescopeServer(object):
             # this is an unknown role, default to no exec rights
             return False
 
+    async def send_message(self, websocket, **kwargs):
+        # send reply saying that are closing connection
+        await websocket.send(json.dumps(kwargs))
+        return
+
     async def process(self, websocket, path):
         """ This is the handler for new websocket
         connections. This exists for the lifetime of 
@@ -162,7 +167,7 @@ class TelescopeServer(object):
 
             self.log.info(f'Attempting to authenticate {email}')
 
-            if authentication:
+            if self.authentication:
                 # check username and password against DB
                 try:
                     user = self.users.find_one({'emails.address': email})
@@ -174,13 +179,16 @@ class TelescopeServer(object):
                             self.log.info('User successfully authenticated.')
                         else:
                             self.log.info('Invalid password. Disconnecting...')
+                            await self.send_message(websocket, connected=False, result='INVALID PASSWORD')
                             return
                     else:
                         self.log.warning('User not found. Disconnecting...')
+                        await self.send_message(websocket, connected=False, result='USERNAME NOT FOUND')
                         return
                 except Exception as e:
                     self.log.error('An error occured in authenticating the user. Disconnecting...')
                     self.log.error(e)
+                    await self.send_message(websocket, connected=False, result='AN UNEXPECTED ERROR OCCURED')
                     return
 
             # we have now authenticated the user
@@ -197,15 +205,7 @@ class TelescopeServer(object):
                     self.websocket.close()
                 else:
                     self.log.info('Telescope is in use. Denying new connection...')
-
-                    # build reply message
-                    reply = {'connected': False,
-                             'result': 'TELESCOPE IN USE'}
-
-                    # send reply saying that are closing connection
-                    await websocket.send(json.dumps(reply))
-
-                    # we return to close connection
+                    await self.send_message(websocket, connected=False, result='TELESCOPE IN USE')
                     return
 
             # set our state as connected
@@ -216,13 +216,10 @@ class TelescopeServer(object):
             token = ''.join(random.choices(string.ascii_uppercase+string.ascii_lowercase+string.digits,
                                            k=32))
 
-            # notify client that they are successfully connected
-            reply = {'connected': True,
-                     'result': 'CONNECTED',
-                     'token': token}
-            await websocket.send(json.dumps(reply))
+            # send token
+            await self.send_message(websocket, connected=True, result='CONNECTED', token=token)
 
-            if authentication:
+            if self.authentication:
                 # explicity save user
                 user = self.users.find_one({'emails.address': email})
             else:
@@ -248,12 +245,7 @@ class TelescopeServer(object):
                 # check if command is authorized
                 if not self.command_authorized(user, command):
                     self.log.warning(f'User attempted to execute {command} for which they are not authorized.')
-                    reply = {'success': False,
-                             'command': command,
-                             'result': 'NOT AUTHORIZED'}
-                    await websocket.send(json.dumps(reply))
-
-                print("Yay!")
+                    await self.send_message(websocket, success=False, command=command, result='NOT AUTHORIZED')
 
                 # set last exec time
                 self.last_exec_time = datetime.datetime.now()
@@ -267,12 +259,7 @@ class TelescopeServer(object):
 
                     # run command on the telescope
                     result = self.run_command(command, **args)
-                    reply = {'success': True,
-                         'command': command,
-                         'result': result}
-
-                # send result back on websocket
-                await websocket.send(json.dumps(reply))
+                    await self.send_message(websocket, success=True, command=command, result=result)
 
         except websockets.exceptions.ConnectionClosed as _:
             pass
