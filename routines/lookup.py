@@ -1,4 +1,5 @@
 # This function provides utilities to convert a target name to a given RA/Dec at the telescope location
+from config import config
 import astropy.units as units
 import astropy.time as time
 import astropy.coordinates as coordinates
@@ -32,7 +33,7 @@ def lookup(target: str) -> (str, str):
     obs_location = coordinates.EarthLocation(lat=config.general.latitude*units.deg,
                                              lon=config.general.longitude*units.deg,
                                              height=config.general.altitude*units.m)
-    obs_time = time.Time.now(scale='utc')
+    obs_time = time.Time.now()
     frame = coordinates.AltAz(obstime=obs_time, location=obs_location)
 
     # planetary bodies - TODO: Add moons
@@ -45,10 +46,10 @@ def lookup(target: str) -> (str, str):
     # we have a planetary body
     if target in solar_system:
         celestial_body = coordinates.get_body(target, obs_time, obs_location)
-        return (celestial_body.ra.to_string(unit=u.hour, sep=':'), celestial_body.dec.to_string(unit=u.degree,sep=':'))
+        return (celestial_body.ra.to_string(unit=units.hour, sep=':'), celestial_body.dec.to_string(unit=units.degree,sep=':'))
     else: # stellar body
         target_coordinates = coordinates.SkyCoord.from_name(target)
-        return (target_coordinates.ra.to_string(unit=u.hour,sep=':'), target_coordinates.dec.to_string(unit=u.degree,sep=':')) 
+        return (target_coordinates.ra.to_string(unit=units.hour,sep=':'), target_coordinates.dec.to_string(unit=units.degree,sep=':')) 
 
 
 def target_visible(target: str) -> bool:
