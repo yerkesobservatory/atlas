@@ -4,7 +4,7 @@ import { check } from 'meteor/check';
 
 import { Programs } from './programs.js';
 
-export const Sessions = new Mongo.Collection('session');
+export const Sessions = new Mongo.Collection('sessions');
 
 // publish the sessions
 if (Meteor.isServer) {
