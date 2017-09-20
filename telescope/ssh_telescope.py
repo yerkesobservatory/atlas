@@ -187,7 +187,7 @@ class SSHTelescope(object):
         """ Keep the telescope dome open for {time} seconds. 
         Returns True if it was successful. 
         """
-        result = self.run_command(telescope.keep_open.format(time))
+        result = self.run_command(telescope.keep_open.format(time=time))
 
         # TODO: Parse output to extract username and lock status
         return True
