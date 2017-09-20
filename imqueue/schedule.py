@@ -1,5 +1,6 @@
 import importlib
-import imqueue.schedulers as schedulers
+import imqueue.schedulers.general as general
+import imqueue.schedulers.asteroid as asteroid
 from telescope import Telescope
 from typing import List
 
@@ -29,11 +30,11 @@ def schedule(observations: List['Observation'], program: 'Program') -> ('Observa
 
     # the normal scheduler
     if program.get('executor') == 'general':
-        return schedulers.general.schedule(observations, program)
+        return general.schedule(observations, program)
 
     # asteroids
     elif program.get('executor') == 'asteroid':
-        return schedulers.asteroid.schedule(observations, program)
+        return asteroid.schedule(observations, program)
     
     # try and load the scheduler dynamically 
     else:

@@ -3,6 +3,7 @@ it loads in the queue file for tonight's imaging and executes each request
 """
 
 import time
+import datetime
 import pymongo
 import logging
 import colorlog
@@ -10,6 +11,7 @@ import telescope
 import schedule as run
 import telescope.exception as exception
 from config import config
+from routines import lookup
 from typing import List, Dict
 from imqueue import schedule
 from slacker_log_handler import SlackerLogHandler
@@ -40,18 +42,19 @@ class Executor(object):
 
         # create connection to database - get users collection
         try:
-            self.db_client = pymongo.MongoClient()
-            self.users = self.db_client.seo.users
-            self.observations = self.db_client.seo.observations
-            self.sessions = self.db_client.seo.sessions
-            self.programs = self.db_client.seo.programs
+            self.db_client = pymongo.MongoClient(host=config.queue.database_host)
+            self.users = self.db_client[config.queue.database].users
+            self.observations = self.db_client[config.queue.database].observations
+            self.sessions = self.db_client[config.queue.database].sessions
+            self.programs = self.db_client[config.queue.database].programs
         except:
             errmsg = 'Unable to connect or authenticate to database. Exiting...'
             self.log.critical(errmsg)
             raise ConnectionException(errmsg)
 
-        # schedule the start() function to run every night
-        run.every().day.at("17:00").do(self.start)
+        # schedule the start() function to run every night; this function uses local time not UTC time
+        self.start()
+        # run.every().day.at("17:00").do(self.start)
 
         # loop while we wait for the right time to start
         while True:
@@ -66,10 +69,11 @@ class Executor(object):
         the conditions specified in the session. 
         """
         # find program that session belongs to
-        program = self.programs.findOne({'sessions': session['_id']})
+        program = self.programs.find_one({'sessions': session['_id']})
 
         if program:
-            return self.observations.find({'program': program['_id']}), program
+            return self.observations.find({'program': program['_id'],
+                                           'completed': False}), program
         else:
             self.log.debug('Unable to find program for this session. Cancelling this session...')
             return [], ''
@@ -94,8 +98,9 @@ class Executor(object):
             # tell slack that things are starting
             msg = f'{config.general.name} is starting its auto-calibration routine. Please do not '
             msg += f'use the telescope until you have been notified that the telescope is ready for use'
+            self.log.info(msg)
             self.slack_message('#general', msg)
-
+            
             # take flats
             self.telescope.take_flats()
 
@@ -122,24 +127,19 @@ class Executor(object):
             result, dra, ddec = self.telescope.goto_point(ra, dec)
 
             # send final dra, ddec values to slack
-            # TODO: convert dra, ddec to arcseconds. Currently in degrees
-            msg = f'{config.general.name} is now ready for use! The final error in pointing is RA: {dra}, Dec: {ddec}'
+            msg = f'{config.general.name} is now ready for use! The final error in pointing is RA: {3600*dra}, Dec: {3600*ddec}'
+            self.log(msg)
             self.slack_message('#general', msg)
         except Exception as e:
             msg = f'An error occured while auto-calibrating {config.general.name}. Please use care when '
             msg += f'using the telescope'
+            self.log(msg)
             self.slack_message('#general', msg)
             self.slack_message('#atlas', f'Auto-calibration error: {e}')
             
         return True
 
-    def critical(self, msg) -> bool:
-        """ Log the message using self.log.critical and send the message
-        to the atlas channel on slack. 
-        """
-        self.log.critical(msg)
-        return self.slack_message('#atlas', msg)
-
+    
     def lock_telescope(self) -> bool:
         """ Attempt to lock the executors telescope 6 times, waiting
         5 minutes between each attempt.
@@ -186,21 +186,19 @@ class Executor(object):
             return
             
         # attempt to auto-calibrate the system
-        self.calibrate()
+        # self.calibrate()
 
-        # TODO: Find all sessions that start within the next 12 hours
-        # sessions = self.sessions.find({'start_date': {'$eq': datetime.date.today()}}).sort('start_time', pymongo.ASCENDING)
-        sessions = None
-
-        # TODO: sort sessions by start datetime
+        # Find all sessions that start within the next 12 hours
+        sessions = self.sessions.find({'end': {'$gte' : datetime.datetime.now()},
+                                       'start': {'$lte': datetime.datetime.now()}}).sort('start_time', pymongo.ASCENDING)
 
         # if there are no sessions, we return so other people can use the telescope
-        if not sessions:
+        if not sessions.count():
             self.log.debug('Executor has no sessions. Quitting...')
             return
             
         # wait until the weather is good to observe
-        self.telescope.wait_until_good()
+        # self.telescope.wait_until_good()
 
         # for each session scheduled to start tonight
         for session in sessions:
@@ -220,15 +218,16 @@ class Executor(object):
         and execute the first observation. We then repeat the scheduling in order
         to optimize target position.
         """
-        # get times from session
-        start = session['start']
-        end = session['end']
 
-        # wait until the session is meant to start
-        self.telescope.wait((start - datetime.datetime.now()).seconds)
+        self.log.info(f'Starting execution of session {session["_id"]} for {session["email"]}')
+        
+        # check that the session hasn't started already
+        if session['start'] > datetime.datetime.now():
+            # wait until the session is meant to start
+            self.telescope.wait((session['start'] - datetime.datetime.now()).seconds)
 
         # try to open the telescope just to be sure
-        self.open_telescope()
+        # self.open_telescope()
 
         # continually execute observations from the queue
         while True:
@@ -238,13 +237,29 @@ class Executor(object):
             observations, program = self.load_observations(session)
 
             # if there are no observations left in the program, we return
-            if not len(observations):
+            if not observations.count():
                 self.log.debug('No uncompleted observations left in program...')
                 return
 
+            # check if observations have RA/Dec
+            for observation in observations:
+                if not observation.get('RA') or not observation.get('Dec'):
+                    # the observation is missing RA/Dec
+                    ra, dec = lookup.lookup(observation.get('target'))
+                    if not ra or not dec:
+                        self.log.warning(f"Unable to compute RA/Dec for {observation.get('target')}.")
+                        continue
+
+                    # save the RA/Dec
+                    self.log.info(f'Adding RA/Dec information to observation {observation["_id"]}')
+                    self.observations.update({'_id': observation['_id']},
+                                         {'$set':
+                                          {'RA': ra,
+                                           'Dec': dec}})
+
             # run the scheduler and get the next observation to complete
             self.log.debug(f'Calling the {program.get("executor")} scheduler...')
-            observation, wait = schedule.schedule(observations, session)
+            observation, wait = schedule.schedule(observations, program)
 
             # if the scheduler returns None, we are done
             if not observation:
@@ -255,15 +270,13 @@ class Executor(object):
             self.telescope.wait(wait)
 
             # make sure that the weather is still good
-            self.telescope.wait_until_good()
+            # self.telescope.wait_until_good()
 
-            # TODO: find username of observation
-            
-            self.log.info(f'Executing session for {observation.user}') # TODO: fix user email
+            # execute these observations']i[o;./>I?><,
+            self.log.info(f"Executing session for {observation['emails[0].address']}") # TODO: fix user email
             try:
                 # execute session
-                # TODO: Look at call signature
-                schedule.execute(observation, program, self.telescope, self.db)
+                schedule.execute(observation, program, self.telescope, self.db_client)
             except Exception as e:
                 self.log.warn(f'Error while executing {observation}')
                 continue
@@ -279,6 +292,20 @@ class Executor(object):
             self.telescope.disconnect()
 
         return True
+
+    # TODO
+    def slack_message(channel: str, msg: str) -> bool:
+        """ Log the given 'msg' to the Slack channel 'channel'. 
+        Returns True if successful, False otherwise. 
+        """
+        return True
+
+    def critical(self, msg) -> bool:
+        """ Log the message using self.log.critical and send the message
+        to the atlas channel on slack. 
+        """
+        self.log.critical(msg)
+        return self.slack_message('#atlas', msg)
     
     @classmethod
     def __init_log(cls) -> bool:
