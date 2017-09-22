@@ -7,9 +7,7 @@ import colorlog
 import websocket as ws
 import paramiko
 import config.telescope as telescope
-import routines.pinpoint as pinpoint
-import routines.focus as focus
-import routines.flats as flats
+from routines import pinpoint, focus, flats, lookup
 from config import config
 from telescope.exception import *
 
@@ -103,7 +101,7 @@ class SSHTelescope(object):
         Returns True if the dome was opened, False otherwise.
         """
         # check if dome is already open
-        if self.dome_open:
+        if self.dome_open():
             return True
 
         # check that weather is OK to open
@@ -187,6 +185,10 @@ class SSHTelescope(object):
         """ Keep the telescope dome open for {time} seconds. 
         Returns True if it was successful. 
         """
+        if self.dome_open() is False:
+            self.log.warn('Slit must be opened before calling keep_open()')
+            return False
+        
         result = self.run_command(telescope.keep_open.format(time=time))
 
         # TODO: Parse output to extract username and lock status
@@ -394,7 +396,7 @@ class SSHTelescope(object):
 
         alt = re.search(telescope.alt_target_re, result)
 
-        if alt and alt.group(0) >= config.telescope.min_alt:
+        if alt and (float(alt.group(0)) >= config.telescope.min_alt):
             return True
 
         return False
@@ -406,7 +408,7 @@ class SSHTelescope(object):
 
         alt = re.search(telescope.alt_re, result)
 
-        if alt and alt.group(0) >= config.telescope.min_alt:
+        if alt and (float(alt.group(0)) >= config.telescope.min_alt):
             return True
 
         return False
@@ -728,6 +730,8 @@ class SSHTelescope(object):
                 # check exit code
                 exit_code = stdout.channel.recv_exit_status()
                 if exit_code != 0:
+                    if command[0:8] == 'keepopen':
+                        return None
                     self.log.warn(f'Command returned {exit_code}. Retrying in 3 seconds...')
                     time.sleep(3)
                     continue
