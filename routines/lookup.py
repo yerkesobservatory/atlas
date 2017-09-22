@@ -102,18 +102,18 @@ def point_visible(ra: str, dec: str) -> bool:
     obs_location = coordinates.EarthLocation(lat=config.general.latitude*units.deg,
                                              lon=config.general.longitude*units.deg,
                                              height=config.general.altitude*units.m)
-    obs_time = time.Time.now(scale='utc')
+    obs_time = time.Time.now()
     frame = coordinates.AltAz(obstime=obs_time, location=obs_location)
 
     # convert from (ra, dec) to (alt, az)
-    point = coordinates.SkyCoord(ra, dec)
+    point = coordinates.SkyCoord(ra, dec, unit=units.degree)
     altaz = point.transform_to(frame)
 
     # extract values
     alt = altaz.alt; az = altaz.az
 
     # check that the altitude is above the minimum
-    if alt >= config.telescope.min_alt:
+    if alt >= config.telescope.min_alt*units.degree:
         return True
 
     return False

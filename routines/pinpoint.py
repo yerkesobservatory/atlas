@@ -37,7 +37,7 @@ def point(ra: str, dec: str, telescope: 'Telescope') -> bool:
     Author: rprechelt
 
     """
-
+    return True
     # we try and parse RA and DEC
     try:
         # convert arguments to astropy angle objects
@@ -78,7 +78,7 @@ def point(ra: str, dec: str, telescope: 'Telescope') -> bool:
     # open the dome if it is closed
     if telescope.dome_open() is False:
         telescope.open_dome()
-        telescope.keep_open(900)
+        telescope.keep_open(300)
 
     telescope.log.info('Beginning pinpoint iterations...')
     # we iterate taking images in each iteration and running astrometry
