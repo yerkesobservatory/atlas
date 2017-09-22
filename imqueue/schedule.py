@@ -1,11 +1,11 @@
+import pymongo
 import importlib
 import imqueue.schedulers.general as general
-import imqueue.schedulers.asteroid as asteroid
 from telescope import Telescope
-from typing import List
+from typing import List, Dict
 
 
-def schedule(observations: List['Observation'], program: 'Program') -> ('Observation', int):
+def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, int):
     """ Call the requested scheduler and return the next requested observation. 
 
     This function is responsible for finding the correct scheduler to use
@@ -30,11 +30,11 @@ def schedule(observations: List['Observation'], program: 'Program') -> ('Observa
 
     # the normal scheduler
     if program.get('executor') == 'general':
-        return general.schedule(observations, program)
+        return general.schedule(observations, session, program)
 
     # asteroids
-    elif program.get('executor') == 'asteroid':
-        return asteroid.schedule(observations, program)
+    # elif program.get('executor') == 'asteroid':
+    #     return asteroid.schedule(observations, program)
     
     # try and load the scheduler dynamically 
     else:
@@ -44,13 +44,13 @@ def schedule(observations: List['Observation'], program: 'Program') -> ('Observa
 
             # check that it provides both schedule and execute commands
             if 'schedule' in dir(scheduler) and 'execute' in dir(scheduler):
-                return scheduler.schedule(observations, program)
+                return scheduler.schedule(observations, session, program)
         # if the above does not work, use general scheduler
         finally:
-            return scheduler.general.schedule(observations, program)
+            return scheduler.general.schedule(observations, session, program)
         
 
-def execute(observation: 'Observation', telescope: Telescope, program: 'Program') -> bool:
+def execute(observation: Dict, program: Dict, telescope: Telescope, db_client: pymongo.MongoClient) -> bool:
     """ Observe the requested observation and save the data according to program. 
 
     This function is provided a connected Telescope() object that should be used
@@ -74,12 +74,12 @@ def execute(observation: 'Observation', telescope: Telescope, program: 'Program'
 
     # the normal executor
     if program.get('executor') == 'general':
-        return schedulers.general.execute(observation, telescope, program)
+        return general.execute(observation, program, telescope, db_client)
 
     # asteroids
-    elif program.get('executor') == 'asteroid':
-        return schedulers.asteroid.execute(observation, telescope, program)
-    
+    # elif program.get('executor') == 'asteroid':
+    #     return schedulers.asteroid.execute(observation, telescope, program)
+
     # try and load the scheduler dynamically 
     else:
         # try and load module with that name
@@ -88,7 +88,7 @@ def execute(observation: 'Observation', telescope: Telescope, program: 'Program'
 
             # check that it provides both schedule and execute commands
             if 'schedule' in dir(scheduler) and 'execute' in dir(scheduler):
-                return scheduler.execute(observation, telescope, program)
+                return scheduler.execute(observation, program, telescope, db_client)
         # if the above does not work, use general scheduler
         finally:
-            return scheduler.general.schedule(observation, telescope, program)
+            return general.execute(observation, program, telescope, db_client)

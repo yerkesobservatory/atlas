@@ -72,8 +72,8 @@ class Executor(object):
         program = self.programs.find_one({'sessions': session['_id']})
 
         if program:
-            return self.observations.find({'program': program['_id'],
-                                           'completed': False}), program
+            return list(self.observations.find({'program': program['_id'],
+                                           'completed': False})), program
         else:
             self.log.debug('Unable to find program for this session. Cancelling this session...')
             return [], ''
@@ -237,7 +237,7 @@ class Executor(object):
             observations, program = self.load_observations(session)
 
             # if there are no observations left in the program, we return
-            if not observations.count():
+            if not len(observations):
                 self.log.debug('No uncompleted observations left in program...')
                 return
 
@@ -259,7 +259,7 @@ class Executor(object):
 
             # run the scheduler and get the next observation to complete
             self.log.debug(f'Calling the {program.get("executor")} scheduler...')
-            observation, wait = schedule.schedule(observations, program)
+            observation, wait = schedule.schedule(observations, session, program)
 
             # if the scheduler returns None, we are done
             if not observation:
@@ -267,19 +267,20 @@ class Executor(object):
                 break
 
             # if we need to wait for this observation, we wait
-            self.telescope.wait(wait)
+            # self.telescope.wait(wait)
 
             # make sure that the weather is still good
             # self.telescope.wait_until_good()
 
-            # execute these observations']i[o;./>I?><,
-            self.log.info(f"Executing session for {observation['emails[0].address']}") # TODO: fix user email
-            try:
+            # execute these observations
+            self.log.info(f"Executing session for {observation['email']}")
+            # try:
                 # execute session
-                schedule.execute(observation, program, self.telescope, self.db_client)
-            except Exception as e:
-                self.log.warn(f'Error while executing {observation}')
-                continue
+            schedule.execute(observation, program, self.telescope, self.db_client[config.queue.database])
+            # except Exception as e:
+            #     self.log.warn(f'Error while executing {observation}')
+            #     self.log.warn(f'{e}')
+            #     continue
 
         return True
     
