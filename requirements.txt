@@ -1,4 +1,5 @@
 asn1crypto==0.22.0
+astroplan==0.3
 astropy==2.0.2
 astroscrappy==1.0.5
 bcrypt==3.1.3
