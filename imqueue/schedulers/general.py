@@ -1,7 +1,11 @@
 import pymongo
 import datetime
+import astroplan
 import numpy as np
 import astropy.units as units
+import astroplan.constraints as constraints
+import astroplan.scheduling as scheduling
+from astroplan import ObservingBlock, FixedTarget
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun
 from typing import List, Dict
@@ -27,82 +31,67 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     wait: int
          The time (in seconds) to wait before imaging this observation. 
 
-    Authors: apagul, rprechelt
+    Authors: rprechelt
     """
+    # create observer
+    observatory = astroplan.Observer(latitude=config.general.latitude*units.deg,
+                                     longitude=config.general.longitude*units.deg,
+                                     elevation=config.general.altitude*units.m,
+                                     name="Atlas", timezone="UTC")
+
+    # build default constraints
+    global_constraints = [constraints.AltitudeConstraint(min=40*units.deg), # set minimum altitude
+                   constraints.AtNightConstraint.twilight_astronomical(), # sun below -18
+                   constraints.MoonSeparationConstraint(min=25*units.deg), # 25 degrees from moon
+                   constraints.AirmassConstraint(max=5, boolean_constraint = False)] # rank by airmass
+
+    # list to store observing blocks
+    blocks = []
     
-    # build aray to hold temporary values
-    max_altitude_time = {'target': [], 'altitude': [], 'time': [], 'wait': []}
+    # create targets
+    for observation in observations:
+        # target coordinates
+        coord = SkyCoord(observation['RA']+' '+observation['Dec'], unit=(units.hourangle, units.deg))
 
-    # location of observatory
-    observatory = EarthLocation(lat=config.general.latitude*units.deg,
-                                lon=-config.general.longitude*units.deg,
-                                height=config.general.altitude*units.m)    
+        # create astroplan traget
+        target = FixedTarget(coord=coord, name=observation['target'])
 
-    # compute necessary time variables
-    start_time = str(Time.now())[:10]+" 00:00:00"
-    fixed_start = Time(start_time, scale="utc")
-    delta_fixed_start = np.linspace(0,15,1000)*units.hour
-    fixed = fixed_start+delta_fixed_start
-    altazframe = AltAz(obstime=fixed, location=observatory)  
-    sun_altaz = get_sun(fixed).transform_to(altazframe)
+        # create time constraint
+        ltc = constraints.LocalTimeConstraint(min=datetime.datetime.now().time(),
+                                              max=session['end'].time())
+
+        # priority - currently constant for all observations
+        # TODO: enable user to set user-by-user priority
+        priority = 1
+
+        # create observing block for this target
+        blocks.append(ObservingBlock.from_exposures(target, priority, observation['exposure_time']*units.second,
+                                                    observation['exposure_count']*len(observation['filters']),
+                                                    1*units.second,
+                                                    configuration = {'filters': observation['filters']}, 
+                                                    constraints = [ltc]))
+
+    # we need to create a transitioner to go between blocks
+    transitioner = astroplan.Transitioner(0.8*units.deg/units.second,
+                                          {'filter': {'default': 3*units.second}})
+
+    # create priority scheduler
+    priority_scheduler = scheduling.PriorityScheduler(constraints = global_constraints,
+                                                      observer = observatory,
+                                                      transitioner = transitioner)
+
+    # initialize the schedule
+    schedule = scheduling.Schedule(Time(session['start']), Time(session['end']))
+
+    # schedule!
+    schedule = priority_scheduler(blocks, schedule)
+
+    # print(schedule.to_table())
+    print(f'observing_blocks: {schedule.observing_blocks}')
+    print(f'open_slots: {schedule.open_slots}')
+    print(f'scheduled_blocks: {schedule.scheduled_blocks}')
     
-    # get times for sunset and sunrise
-    sunset_time = fixed[np.where((sun_altaz.alt < -12*units.deg) == True)[0][0]]
-    sunrise_time = fixed[np.where((sun_altaz.alt < -12*units.deg) == True)[0][-1]]
-
-    # compute time and coordinates
-    delta_obs_time = np.linspace(0, 15, 1000)*units.hour
-    times = Time.now()+delta_obs_time
-    times = times[np.where((times > sunset_time) & (times < sunrise_time))]
-    frame = AltAz(obstime=times, location=observatory)
-
-    # iterate over all the observations
-    for i,observation in enumerate(observations):
-
-        # extract values
-        target = observation['target']
-        input_coordinates = observation['RA']+" "+observation['Dec']
-        endtime = session['end']
-        
-        max_altitude_time['target'].append(target[0])
-
-        try:
-            target_coordinates = SkyCoord(input_coordinates, unit=(units.hourangle, units.deg))
-        except:
-            continue
-        
-        target_altaz = target_coordinates.transform_to(frame)
-        if (np.max(target_altaz.alt)) > 40*units.degree:
-            max_altitude_time['altitude'].append(np.max(target_altaz.alt))
-        else:
-            max_altitude_time['altitude'].append(0*units.degree)
-            
-        aux_time = times[np.argmax(target_altaz.alt)]
-        max_altitude_time['time'].append(aux_time)
-        
-        aux_delta_time = delta_obs_time[np.argmax(target_altaz.alt)]
-
-        if (max_altitude_time['altitude'][i]>0*units.degree) and (times[np.argmax(target_altaz.alt)] > sunset_time)\
-           and (times[np.argmax(target_altaz.alt)] < sunrise_time) and (times[np.argmax(target_altaz.alt)] < Time(endtime)):
-            max_altitude_time['wait'].append(aux_delta_time.to(units.second))
-        else:
-            max_altitude_time['wait'].append(-1*units.s)
-            
-    max_altitude_time['time']=np.array(max_altitude_time['time'])
-    good_object = np.array([max_altitude_time['wait'][itgt]>-1*units.s for itgt in range(len(max_altitude_time['wait']))])
-    
-    if np.count_nonzero(good_object)>0:
-        if np.count_nonzero(good_object)>1:
-            aux_id = np.argmin(Time(max_altitude_time['time'][good_object])-Time.now())
-            primary_target_id = np.where(good_object)[0][aux_id]
-            primary_target = np.array(max_altitude_time['target'])[primary_target_id]
-        else:
-            primary_target_id = np.where(good_object)[0][0] 
-            primary_target = np.array(max_altitude_time['target'])[primary_target_id]
-    else:
-        return None, -1
-    
-    return observations[primary_target_id], int(max_altitude_time['wait'][primary_target_id].value)
+    exit()
 
 def execute(observation: Dict, program: Dict, telescope: Telescope, db) -> bool:
     """ Observe the request observation and save the data according to the parameters of the program. 

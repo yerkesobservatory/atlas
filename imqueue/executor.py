@@ -54,14 +54,21 @@ class Executor(object):
 
         # schedule the start() function to run every night; this function uses local time not UTC time
         self.start()
-        # run.every().day.at("17:00").do(self.start)
+        # run.every().day.at("02:19").do(self.start)
 
         # loop while we wait for the right time to start
+        # TODO: check when the first session is and start executing then
+        # TODO: make this a function
         while True:
             wait = run.idle_seconds()
-            self.log.info(f'Executor is sleeping {wait/60/60:.{2}} hours until startup...')
+            if wait < 0:
+                self.log.info(f'Executor is sleeping 12 hours hours until startup...')
+                time.sleep(12*60*60 + 30) # wait 12 hours until we check again
+                continue
+            else:
+                self.log.info(f'Executor is sleeping {wait/60/60:.{2}} hours until startup...')
+                time.sleep(wait)
             run.run_pending()
-            time.sleep(wait)
 
     def load_observations(self, session: Dict) -> (List[Dict], Dict):
         """ This function returns a list of all observations
@@ -256,6 +263,9 @@ class Executor(object):
                                          {'$set':
                                           {'RA': ra,
                                            'Dec': dec}})
+
+            # we need to refresh observations since we updated the RA/Dec
+            observations, program = self.load_observations(session)            
 
             # run the scheduler and get the next observation to complete
             self.log.debug(f'Calling the {program.get("executor")} scheduler...')
