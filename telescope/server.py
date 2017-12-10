@@ -1,3 +1,4 @@
+import re
 import time
 import json
 import string
@@ -34,18 +35,7 @@ class TelescopeServer(object):
         if not TelescopeServer.log:
             TelescopeServer.__init_log()
 
-        # do not connect to database if authentication is disabled
-        if authentication:
-            # create connection to database - get users collection
-            try:
-                self.db_client = pymongo.MongoClient(host='localhost', port=27017)
-                self.users = self.db_client.seo.users
-            except:
-                errmsg = 'Unable to connect or authenticate to database. Exiting...'
-                self.log.critical(errmsg)
-                raise ConnectionException(errmsg)
-
-        # whether we should authenticate
+            # whether we should authenticate
         self.authentication = authentication
         
         # websocket for current connection
@@ -53,6 +43,19 @@ class TelescopeServer(object):
 
         # the last time that a command was executed for client used to compute timeouts
         last_exec_time: datetime.datetime = datetime.datetime(1, 1, 1)
+
+        # do not connect to database if authentication is disabled
+        if authentication:
+            # create connection to database - get users collection
+            try:
+                self.db_client = pymongo.MongoClient(host='localhost', port=config.queue.db_port)
+                self.users = self.db_client[config.queue.database].users
+            except:
+                errmsg = 'Unable to connect or authenticate to database. Exiting...'
+                self.log.critical(errmsg)
+                raise ConnectionException(errmsg)
+        else:
+            self.log.warning('AUTHENTICATION DISABLED!! INSECURE!!')
         
         # telescope to execute commands
         try:
@@ -60,12 +63,11 @@ class TelescopeServer(object):
         except Exception as e:
             self.telescope = None
             self.log.critical(f'TelescopeServer unable to connect to telescope controller. Reason: {e}')
-            return
+            exit(-1)
 
         # get list of telescope methods
         self.telescope_methods = [func for func in dir(SSHTelescope) if callable(getattr(SSHTelescope, func))
                    and not func.startswith("_")]
-
 
         # set asyncio event loop to use libuv
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -73,7 +75,7 @@ class TelescopeServer(object):
         # event loop to execute commands asynchronously
         self.loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
 
-        # start the event loop
+        # start the event loop - we are now waiting for connections
         self.start()
 
     def __del__(self):
@@ -96,7 +98,7 @@ class TelescopeServer(object):
                                         'localhost', config.telescope.wsport)
 
         # start the server running in aysncio/libuv
-        self.log.info('Starting websocket server...')
+        self.log.info('Started websocket server...')
         self.loop.run_until_complete(start_server)
         self.loop.run_forever()
 
@@ -108,39 +110,40 @@ class TelescopeServer(object):
 
         # if authentication is disabled, every command is OK
         if not self.authentication:
+            self.log.warning('AUTHENTICATION DISABLED!! Allowing command...')
             return True
 
-        # get the roles of the current user
-        roles = user['roles']
-        role = ""
-
-        # find cli-* role; TODO: This could be made nicer
-        for r in roles:
-            if r[0:4] == 'cli-':
-                role = r 
+        # find cli-* roles for current user
+        regex = re.compile('cli-*')
+        roles = list(filter(regex.search, user['roles']))
 
         # check error
-        if role == "":
+        if not roles:
             self.log.debug('No command-line roles found.')
             return False
 
         # check commands that anyone can run
         if command in ['is_alive', 'disconnect', 'get_cloud', 'get_dew', 'get_rain',
-                       'get_sun_alt', 'get_moon_alt', 'get_weather', 'connect']:
+                       'get_sun_alt', 'get_moon_alt', 'get_weather', 'connect', 'locked',
+                       'point_altaz', 'target_altaz', 'target_visible', 'point_visible']:
             return True
 
         # check command for roles
-        if role == 'cli-imaging':
-            return command in ['lock', 'unlock', 'locked', 'keep_open', 'goto_target',
-                               'goto_point', 'target_visible', 'point_visible',
-                               'target_altaz', 'point_altaz', 'enable_tracking',
-                               'current_filter', 'change_filter', 'wait', 'wait_until_good',
+        if 'cli-imaging' in roles:
+            return command in ['lock', 'unlock', 'keep_open', 'goto_target',
+                               'goto_point', 'enable_tracking', 'wait_until_good',
+                               'current_filter', 'change_filter', 'wait', 
                                'take_exposure', 'take_dark', 'take_bias']
-        elif role == 'cli-full':
+        elif 'cli-full' in roles:
             return True
         else:
             # this is an unknown role, default to no exec rights
+            self.log.warning(f'UNKNOWN cli-role: {roles}. Denying authorization...')
             return False
+
+        # if something weird happens, deny rights
+        self.log.warning('Command DENIED for UNKNOWN reason.')
+        return False
 
     async def send_message(self, websocket, **kwargs):
         # send reply saying that are closing connection
@@ -155,7 +158,7 @@ class TelescopeServer(object):
         try:
             self.log.info('Connection request received. Awaiting authentication...')
 
-            # we authenticate the username and password
+            # we attempt to authenticate using the username and password
             msg = await websocket.recv()
             msg = json.loads(msg)
             email = msg.get('email')
@@ -163,6 +166,7 @@ class TelescopeServer(object):
 
             if not email or not password:
                 self.log.info('Connection request does not contain authentication info. Disconnecting...')
+                await self.send_message(websocket, connected=False, result='INVALID AUTHENTICATION MESSAGE')
                 return
 
             self.log.info(f'Attempting to authenticate {email}')
@@ -201,6 +205,9 @@ class TelescopeServer(object):
                 if delta.seconds >= 60*config.telescope.timeout:
                     self.log.info('Current user has timed out. Accepting new connection...')
 
+                    # inform user of time out
+                    await self.send_message(self.websocket, connected=False, result='SESSION TIMED OUT')
+
                     # close existing connection
                     self.websocket.close()
                 else:
@@ -212,12 +219,12 @@ class TelescopeServer(object):
             self.connect_client(websocket)
             self.log.info(f'Client connected.')
 
-            # generate a token
-            token = ''.join(random.choices(string.ascii_uppercase+string.ascii_lowercase+string.digits,
-                                           k=32))
+            # # generate a token
+            # token = ''.join(random.choices(string.ascii_uppercase+string.ascii_lowercase+string.digits,
+            #                                k=32))
 
             # send token
-            await self.send_message(websocket, connected=True, result='CONNECTED', token=token)
+            await self.send_message(websocket, connected=True, result='CONNECTED')
 
             if self.authentication:
                 # explicity save user
@@ -261,6 +268,12 @@ class TelescopeServer(object):
                     result = self.run_command(command, **args)
                     await self.send_message(websocket, success=True, command=command, result=result)
 
+                # command does not exist
+                else:
+                    self.log.warning(f'Command does not exist: {command}')
+                    await self.send_message(websocket, success=False, command=command, result='COMMAND DOES NOT EXIST')
+
+        # if the connection was closed
         except websockets.exceptions.ConnectionClosed as _:
             pass
         finally:
@@ -286,7 +299,7 @@ class TelescopeServer(object):
         self.last_exec_time = datetime.datetime.now()
 
     def run_command(self, command: str, *_, **kwargs) -> str:
-        """ Executes a shell command either locally, or remotely via ssh.
+        """ Executes a telescope shell command either locally, or remotely via ssh.
         Returns the byte string representing the captured STDOUT
         """
         result = getattr(SSHTelescope, command)(self.telescope, **kwargs)
