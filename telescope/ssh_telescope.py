@@ -4,9 +4,10 @@ import json
 import time
 import logging
 import colorlog
-import websocket as ws
 import paramiko
+import websocket as ws
 import config.telescope as telescope
+import paho.mqtt.client as mqtt
 from routines import pinpoint, focus, flats, lookup
 from config import config
 from telescope.exception import *
@@ -36,7 +37,33 @@ class SSHTelescope(object):
         # SSH connection to telescope server
         self.ssh: paramiko.SSHClient = None
 
+        # connect to telescope
         self.connect()
+
+        # check whether MQTT publication is enabled
+        if config.mqtt.enabled:
+
+            # create MQTT client
+            self.client = mqtt.Client()
+
+            # MQTT topic
+            topic = '/'.join(['', config.mqtt.root, 'queue'])
+
+            # broker info
+            host = config.mqtt.host or 'localhost'
+            port = config.mqtt.port or 1883
+
+            # connect to message broker
+            try:
+                self.client.connect(host, port, 60)
+                self.log.info(f'Successfully connected to MQTT broker')
+
+                # create publish function
+                self.publish = lambda msg: client.publish(topic, json.dumps(msg))
+                self.publish({'EVENT': 'START'})
+            except Exception as e:
+                self.log.warning(f'Unable to connect to MQTT broker: {e}')
+                self.publish = lambda msg: True
 
     def connect(self) -> bool:
         """ Create a SSH connection to the telescope control server. 
@@ -622,7 +649,9 @@ class SSHTelescope(object):
                 self.open_dome()
                 continue
             else:  # this was a successful exposure - take the next one
-                i += 1
+                i += 1 # increment counter
+                # notify (or not) the MQTT broker
+                self.publish({'EVENT': 'EXPOSURE'}, {'FILENAME': fname})
 
         return True
 
@@ -716,7 +745,7 @@ class SSHTelescope(object):
         # if it has, reconnect
         try:
             self.ssh.exec_command('echo its alive')
-        except socket.error as e:
+        except Exception as e:
             self.ssh = self.connect()
             
         # try and execute command 5 times if it fails
