@@ -27,8 +27,8 @@ class TelescopeServer(object):
 
     def __init__(self, authentication=True):
         """ Establishes a long term SSH connection to the telescope
-        control server and starts the processing of websocket handlers
-        on the specified ports. 
+        control server; this does not start the processing of websocket handlers
+        on the specified ports. start() must be explicitly called. 
         """
 
         # initialize logging system
@@ -48,7 +48,7 @@ class TelescopeServer(object):
         if authentication:
             # create connection to database - get users collection
             try:
-                self.db_client = pymongo.MongoClient(host='localhost', port=config.queue.db_port)
+                self.db_client = pymongo.MongoClient(host='localhost', port=config.queue.database_port)
                 self.users = self.db_client[config.queue.database].users
             except:
                 errmsg = 'Unable to connect or authenticate to database. Exiting...'
@@ -74,9 +74,6 @@ class TelescopeServer(object):
 
         # event loop to execute commands asynchronously
         self.loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
-
-        # start the event loop - we are now waiting for connections
-        self.start()
 
     def __del__(self):
         """ Disconnect the telescope upon garbage collection.
