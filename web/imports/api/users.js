@@ -35,6 +35,9 @@ Meteor.methods({
 		email: email,
 		profile: profile})
 
+	    // add to user
+	    Roles.addUsersToRoles(id, ['users']);
+
 	    if (id) {	    
 		// send enrollment email
 		Accounts.sendEnrollmentEmail(id);
@@ -77,10 +80,12 @@ Meteor.methods({
 	}
 
 	// toggle the users admin state
-	if (Roles.userIsInRole(userId, 'admin')) {
-	    Roles.removeUsersFromRoles(userId, 'admin');
-	} else {
-	    Roles.addUsersToRoles(userId, 'admin');
+	if (Roles.userIsInRole(userId, 'admins')) {
+	    Roles.removeUsersFromRoles(userId, 'admins');
+	    Roles.addUsersToRoles(userId, 'users');
+	} else if (Roles.userIsInRole(userId, 'users')) {
+	    Roles.addUsersToRoles(userId, 'admins');
+	    Roles.removeUsersFromRoles(userId, 'users');
 	}
     },
     

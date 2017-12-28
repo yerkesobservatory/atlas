@@ -48,13 +48,22 @@ Template.adminUsers.helpers({
 		     }
 		 }
 		},
-		{label: 'Role',
+            {key: '_id',
+             label: 'ID', 
+            }, 
+		{key: '_id',
+		 label: 'Role',
 		 fn: function (value, object, key) {
-		     if (Roles.userIsInRole(object, 'admin')) {
-			 return 'Admin';
-		     } else {
-			 return 'User';
-		     }
+		     // console.log(value);
+		     // console.log(Roles.userIsInRole(value, 'users'))
+		     // if (Roles.userIsInRole(value, 'admins')) {
+		     // 	 return 'Admin';
+		     // }
+		     // else if (Roles.userIsInRole(value, 'users')) {
+		     // 	 return 'User';
+		     // } else {
+		     // 	     return 'Unknown';
+		     // }
 		 }
 		}, 
 		{label: '',
