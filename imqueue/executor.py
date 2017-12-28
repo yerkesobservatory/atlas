@@ -56,24 +56,9 @@ class Executor(object):
             self.log.critical(errmsg)
             raise ConnectionException(errmsg)
 
-        # schedule the start() function to run every night; this function uses local time not UTC time
-        self.start()
-        # run.every().day.at("02:19").do(self.start)
-
-        # loop while we wait for the right time to start
-        # TODO: check when the first session is and start executing then
-        # TODO: make this a function
-        # while True:
-        #     wait = run.idle_seconds()
-        #     if wait < 0:
-        #         self.log.info(f'Executor is sleeping 12 hours hours until startup...')
-        #         time.sleep(12*60*60 + 30) # wait 12 hours until we check again
-        #         continue
-        #     else:
-        #         self.log.info(f'Executor is sleeping {wait/60/60:.{2}} hours until startup...')
-        #         time.sleep(wait)
-        #     run.run_pending()
-
+        # schedule the start function to run each night at the
+        # designated start time (in the servers timezone)
+        run.every().day.at(config.queue.start_time).do(self.start)
         
     def load_observations(self, session: Dict) -> (List[Dict], Dict):
         """ This function returns a list of all observations
@@ -154,7 +139,6 @@ class Executor(object):
             self.slack_message('#atlas', f'Auto-calibration error: {e}')
             
         return True
-
     
     def lock_telescope(self) -> bool:
         """ Attempt to lock the executors telescope 6 times, waiting
