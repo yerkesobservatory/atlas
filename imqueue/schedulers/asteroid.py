@@ -34,8 +34,6 @@ def execute(observation: 'Observation', telescope: Telescope, session: 'Session'
     1. At reasonable intervals, execute() must check the current time (Telescope.current_time), 
     and compare it to session.end_time. If the current time is later than the end time
     of the session, execute() must return. 
-    2. Do not modify the session object; the session object should be constant and any
-    changes made to it may affect queue execution. 
 
     Parameters
     ----------

@@ -13,7 +13,7 @@ from config import config
 from routines import pinpoint, lookup
 from telescope import Telescope
 
-def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, int):
+def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[ObservingBlock]:
     """ Return the next object to be imaged according to the 'general' scheduling 
     algorithm, and the time that the executor must wait before imaging this observation. 
 
@@ -41,9 +41,10 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
     # build default constraints
     global_constraints = [constraints.AltitudeConstraint(min=40*units.deg), # set minimum altitude
-                   constraints.AtNightConstraint.twilight_astronomical(), # sun below -18
-                   constraints.MoonSeparationConstraint(min=25*units.deg), # 25 degrees from moon
-                   constraints.AirmassConstraint(max=5, boolean_constraint = False)] # rank by airmass
+                          constraints.MoonSeparationConstraint(min=25*units.deg), # 25 degrees from moon
+                          constraints.AirmassConstraint(max=5, boolean_constraint = False)]  # rank by airmass
+                          # constraints.AtNightConstraint.twilight_nautical()] # sun below -18
+
 
     # list to store observing blocks
     blocks = []
@@ -61,14 +62,14 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
                                               max=session['end'].time())
 
         # priority - currently constant for all observations
-        # TODO: enable user to set user-by-user priority
+        # TODO: enable user to set obs-by-obs priority
         priority = 1
 
         # create observing block for this target
         blocks.append(ObservingBlock.from_exposures(target, priority, observation['exposure_time']*units.second,
                                                     observation['exposure_count']*len(observation['filters']),
-                                                    1*units.second,
-                                                    configuration = {'filters': observation['filters']}, 
+                                                    config.telescope.readout_time*units.second,
+                                                    configuration = observation, 
                                                     constraints = [ltc]))
 
     # we need to create a transitioner to go between blocks
@@ -83,17 +84,23 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     # initialize the schedule
     schedule = scheduling.Schedule(Time(session['start']), Time(session['end']))
 
+    # print(astroplan.is_observable(global_constraints, observatory, targets=target, time_range=(Time.now(), Time(session['end'])), time_grid_resolution=60*units.second))
+
     # schedule!
     schedule = priority_scheduler(blocks, schedule)
 
-    # print(schedule.to_table())
-    print(f'observing_blocks: {schedule.observing_blocks}')
-    print(f'open_slots: {schedule.open_slots}')
-    print(f'scheduled_blocks: {schedule.scheduled_blocks}')
-    
-    exit()
+    if len(schedule.scheduled_blocks) == 0:
+        return []
 
-def execute(observation: Dict, program: Dict, telescope: Telescope, db) -> bool:
+    print(schedule.to_table())
+    # print(f'observing_blocks: {schedule.observing_blocks}')
+    # print(f'open_slots: {schedule.open_slots}')
+    # print(f'scheduled_blocks: {schedule.scheduled_blocks}')
+
+    # return the scheduled blocks
+    return schedule.scheduled_blocks
+
+def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Telescope, db) -> bool:
     """ Observe the request observation and save the data according to the parameters of the program. 
 
     This function is provided a connected Telescope() object that should be used to execute
@@ -102,9 +109,9 @@ def execute(observation: Dict, program: Dict, telescope: Telescope, db) -> bool:
 
     Parameters
     ----------
-    observation: Dict
+    observation: Dict[str, str]
         The observation to be observed
-    program: Dict
+    program: Dict[str, str]
         The observing program that this observation belongs to
     telescope: Telescope
         A connected Telescope object
@@ -117,9 +124,9 @@ def execute(observation: Dict, program: Dict, telescope: Telescope, db) -> bool:
         Returns True if successfully executed, False otherwise
 
     Authors: rprechelt
-    """
+    """                
     # point telescope at target
-    telescope.log.info(f"Slewing to {observation['target']}")
+    telescope.log.info(f'Slewing to {observation["target"]}')
 
     # we must enable tracking before we start slewing
     telescope.enable_tracking()
@@ -132,7 +139,7 @@ def execute(observation: Dict, program: Dict, telescope: Telescope, db) -> bool:
     # create basename for observations
     # TODO: support observations which only have RA/Dec
     # TODO: replace _id[0:3] with number from program
-    dirname = '/home/rprechelt/data'+'/'+'_'.join([str(datetime.date.today()),
+    dirname = '/home/'+config.telescope.username+'/data'+'/'+'_'.join([str(datetime.date.today()),
                                                     observation['email'].split('@')[0],
                                                     observation['target'],
                                                     observation['_id'][0:3]])
