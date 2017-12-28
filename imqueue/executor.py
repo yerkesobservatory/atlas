@@ -58,7 +58,13 @@ class Executor(object):
 
         # schedule the start function to run each night at the
         # designated start time (in the servers timezone)
+        self.log.info('Executor is initialized and waiting to the designated start time...')
         run.every().day.at(config.queue.start_time).do(self.start)
+
+        while True:
+            run.run_pending()
+            time.sleep(1)
+        
         
     def load_observations(self, session: Dict) -> (List[Dict], Dict):
         """ This function returns a list of all observations
