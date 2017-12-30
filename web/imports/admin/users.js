@@ -2,6 +2,7 @@ import './users.html';
 
 import { Programs } from '../api/programs.js';
 import { Affiliations } from '../api/users.js';
+import $ from 'jquery';
 
 // subscribe to users
 Template.adminUsers.onCreated(function onCreated() {
@@ -111,10 +112,16 @@ Template.adminUsers.events({
 	if (event.target.className.includes('action-delete')) {
 	    // delete user
 	    Meteor.call('users.remove', this._id);
-	} else if (event.target.className.includes('action-admin')) {
+	} else if (event.target.className.includes('make-admin')) {
+
 	    // toggle admin state
-	    Meteor.call('users.toggleAdmin', this._id);
-	}
+	    Meteor.call('users.addToRole', this._id, 'admin');
+	} else if (event.target.className.includes('remove-admin')) {
+
+	    // toggle admin state
+	    Meteor.call('users.removeFromRole', this._id, 'admin');
+	} 
+	
     }
 });
 
