@@ -29,11 +29,12 @@ Meteor.methods({
 	}
 
 	// get all programs of the current user
-	const myPrograms = Programs.find({ owner: Meteor.userId() }).fetch();
+	const userPrograms = Programs.find({ owner: Meteor.userId() }).fetch();
+	const programNames = userPrograms.map(function(item)
+					      { return item.name; });
 
 	// check that user doesn't have program with same name
-	if (Programs.findOne({owner: Meteor.userId()}, {name: {$in: myPrograms}})) {
-	    CoffeeAlerts.warning('A program with that name already exists...');
+	if (programNames.indexOf(name) != -1) {
 	    return;
 	}
 	
@@ -60,7 +61,15 @@ Meteor.methods({
 
 	// check that the user owns the observation
 	prog = Programs.find(progId).fetch();
+
+	// found the program
 	if (prog) {
+	    	// cannot delete 'General' program
+	    if (prog.name == "General") {
+		return;
+	    }
+
+	    // check that user is the owner
 	    if (Meteor.userId() === prog[0].owner) {
 
 		// delete all sessions
