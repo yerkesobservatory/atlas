@@ -17,9 +17,9 @@
 	<ul class="nav navbar-nav">
 	  <li><a href="{{pathFor route='home'}}">Home</a></li>
 	  {{#if currentUser}}
+	      <li><a href="{{pathFor route='programs'}}">Programs</a></li>
+   	      <li><a href="{{pathFor route='sessions'}}">Sessions</a></li>
 	      <li><a href="{{pathFor route='observations'}}">Observations</a></li>
-	      <li><a href="{{pathFor route='sessions'}}">Sessions</a></li>
-  	  <li><a href="{{pathFor route='programs'}}">Programs</a></li>
 	  {{#if isInRole 'beta-tester'}}
 	  <li><a href="{{pathFor route='control'}}">Control</a></li>
 	  {{/if}}
