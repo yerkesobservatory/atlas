@@ -16,6 +16,8 @@ Template.login.events({
 	Meteor.loginWithPassword(email, password, function(error) {
 	    if (error) {
 		if (error.reason == 'error.accounts.Login forbidden') {
+		    // clear the existing login messages
+		    CoffeeAlerts.clearSeen()
 		    CoffeeAlerts.error('Incorrect username or password');
 		} else {
 		    CoffeeAlerts.error('An unknown error occurred');
