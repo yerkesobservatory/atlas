@@ -651,7 +651,7 @@ class SSHTelescope(object):
             else:  # this was a successful exposure - take the next one
                 i += 1 # increment counter
                 # notify (or not) the MQTT broker
-                self.publish({'EVENT': 'EXPOSURE'}, {'FILENAME': fname})
+                self.publish({'EVENT': 'EXPOSURE', 'FILENAME': fname})
 
         return True
 
@@ -662,12 +662,14 @@ class SSHTelescope(object):
         for n in range(0, count):
 
             # create filename
-            fname = filename + f'_{n}.fits'
+            fname = filename + f'_dark_{n}.fits'
             
             self.log.info(f'Taking dark {n+1}/{count} with name: {fname}')
 
             self.run_command(telescope.take_dark.format(time=exposure_time, binning=binning,
                                                         filename=fname))
+            # notify (or not) the MQTT broker
+            self.publish({'EVENT': 'EXPOSURE', 'FILENAME': fname})
 
         return True
 
@@ -677,16 +679,18 @@ class SSHTelescope(object):
         """
 
         # create file name for biases
-        self.log.info('Taking {count} biases with name: {filename}_N.fits')
+        self.log.info(f'Taking {count} biases with name: {filename}_N.fits')
         
         # take biases
         for n in range(0, count):
             
             # create filename
-            fname = filename + f'_{n}.fits'
+            fname = filename + f'_bias_{n}.fits'
 
             self.run_command(telescope.take_dark.format(time=0.1, binning=binning,
                                                         filename=fname))
+            # notify (or not) the MQTT broker
+            self.publish({'EVENT': 'EXPOSURE', 'FILENAME': fname})
         return True
 
     def copy_remote_to_local(self, remotepath: str, localpath: str = '') -> bool:
@@ -764,12 +768,13 @@ class SSHTelescope(object):
                     self.log.warn(f'Command returned {exit_code}. Retrying in 3 seconds...')
                     time.sleep(3)
                     continue
-                    
-                # valid result received
-                if len(result) > 0:
-                    result = ' '.join(result).strip()
-                    self.log.info(f'Result: {result}')
-                    return result
+
+                if result:
+                    # valid result received
+                    if len(result) > 0:
+                        result = ' '.join(result).strip()
+                        self.log.info(f'Result: {result}')
+                        return result
                 
             except Exception as e:
                 self.log.critical(f'run_command: {e}')
