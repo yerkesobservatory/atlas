@@ -32,8 +32,12 @@
 	  <label for="program" class="col-lg-3 control-label">Observing Program</label>
 	  <div class="col-lg-9">
 	    <select class="form-control" id="program" name="program" required>
-	      {{#each programs}}
-  	        <option value="{{_id}}">{{name}}</option>
+	      {{#each program in programs}}
+	          {{#if isGeneral program}}
+    	             <option value="{{program._id}}" selected="selected">{{program.name}}</option>
+	          {{else}}
+	      <option value="{{program._id}}">{{program.name}}</option>
+  	          {{/if}}
 	      {{/each}}
 	    </select>
 	  </div> 

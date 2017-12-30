@@ -19,7 +19,7 @@ Template.newObservation.onCreated(function onCreated() {
 Template.observations.helpers({
     observations() {
 	return Observations.find({ owner: Meteor.userId()});
-    }, 
+    },
     settings() {
 	return {
 	    collection: Observations,
@@ -84,7 +84,10 @@ Template.observations.events({
 Template.newObservation.helpers({
     programs() {
 	return Programs.find({ owner: Meteor.userId() });
-    }
+    },
+    isGeneral(program) {
+	return (program.name == "General");
+    }, 
 });
 
 // event handlers
@@ -112,7 +115,15 @@ Template.observations.events({
 	var filters = [];
 	for (var i = 0; i < filterNames.length; i++) {
 	    if (target[filterNames[i]].checked) {
-		filters.push(filterNames[i].split('_')[1]);
+		if (filterNames[i].split('_')[1] == 'ha') {
+		    filters.push('h-alpha');
+		}
+		else if (filterNames[i].split('_')[1] == 'clear') {
+		    filters.push('clear');
+		}
+		else {
+		    filters.push(filterNames[i].split('_')[1]+'-band');
+		}
 	    }
 	}
 	
