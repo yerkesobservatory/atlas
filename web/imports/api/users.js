@@ -30,17 +30,26 @@ if (Meteor.isServer) {
 
 Meteor.methods({
     'users.insert'(email, profile) {
-	if (Meteor.isServer) { 
+	if (Meteor.isServer) {
+
+	    // create a new user
 	    const id = Accounts.createUser({
 		email: email,
 		profile: profile})
 
-	    // add to user
-	    Roles.addUsersToRoles(id, ['users']);
+	    // user was sucessfully created
+	    if (id) {
 
-	    if (id) {	    
+		// add to user to users group
+		Roles.addUsersToRoles(id, ['users']);
+
+		// create 'general' program for that user
+		Meteor.call('programs.insert', 'General', 'general');
+		
 		// send enrollment email
 		Accounts.sendEnrollmentEmail(id);
+
+		
 	    } else {
 		CoffeeAlerts.error('Unable to create user...');
 	    }
@@ -69,7 +78,7 @@ Meteor.methods({
 	}
     },
 
-    'users.toggleAdmin'(userId) {
+    'users.addToRole'(userId, role) {
 
 	// verify
 	check(userId, String);
@@ -79,15 +88,31 @@ Meteor.methods({
 	    throw new Meteor.Error('not-authorized');
 	}
 
-	// toggle the users admin state
-	if (Roles.userIsInRole(userId, 'admins')) {
-	    Roles.removeUsersFromRoles(userId, 'admins');
-	    Roles.addUsersToRoles(userId, 'users');
-	} else if (Roles.userIsInRole(userId, 'users')) {
-	    Roles.addUsersToRoles(userId, 'admins');
-	    Roles.removeUsersFromRoles(userId, 'users');
+	// check that the current-logged in user is admin
+	if (Roles.userIsInRole(Meteor.userId(), 'admins')) {
+
+	    // add the user to the role
+	    Roles.addUsersToRoles(userId, role);
 	}
     },
+
+    'users.removeFromRole'(userId, role) {
+	
+	// verify
+	check(userId, String);
+
+	// check that the user is logged in
+	if (! Meteor.userId()) {
+	    throw new Meteor.Error('not-authorized');
+	}
+
+	// check that the current-logged in user is admin
+	if (Roles.userIsInRole(Meteor.userId(), 'admins')) {
+
+	    // add the user to the role
+	    Roles.removeUsersFromRoles(userId, role);
+	}
+    }, 
     
     'affiliations.insert'(name) {
 
