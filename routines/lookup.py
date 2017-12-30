@@ -46,10 +46,15 @@ def lookup(target: str) -> (str, str):
     # we have a planetary body
     if target in solar_system:
         celestial_body = coordinates.get_body(target, obs_time, obs_location)
-        return (celestial_body.ra.to_string(unit=units.hour, sep=':'), celestial_body.dec.to_string(unit=units.degree,sep=':'))
+        return (celestial_body.ra.to_string(unit=units.hour, sep=':'),
+                celestial_body.dec.to_string(unit=units.degree,sep=':'))
     else: # stellar body
-        target_coordinates = coordinates.SkyCoord.from_name(target)
-        return (target_coordinates.ra.to_string(unit=units.hour,sep=':'), target_coordinates.dec.to_string(unit=units.degree,sep=':')) 
+        try:
+            target_coordinates = coordinates.SkyCoord.from_name(target)
+            return (target_coordinates.ra.to_string(unit=units.hour,sep=':'),
+                    target_coordinates.dec.to_string(unit=units.degree,sep=':'))
+        except Exception as e:
+            return None, None
 
 
 def target_visible(target: str) -> bool:
