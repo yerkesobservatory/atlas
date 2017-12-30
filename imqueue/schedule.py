@@ -1,5 +1,6 @@
 import pymongo
 import importlib
+import imqueue
 import imqueue.schedulers.general as general
 from telescope import Telescope
 from typing import List, Dict
@@ -29,25 +30,26 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     """
 
     # the normal scheduler
-    if program.get('executor') == 'general':
-        return general.schedule(observations, session, program)
+    # if program.get('executor') == 'general':
+    #     return general.schedule(observations, session, program)
 
     # asteroids
     # elif program.get('executor') == 'asteroid':
     #     return asteroid.schedule(observations, program)
     
     # try and load the scheduler dynamically 
-    else:
+    # else:
         # try and load module with that name
-        try:
-            scheduler = importlib.import_module(f'imqueue.schedulers.{program.get("executor")}')
+    try:
+        scheduler = importlib.import_module(f'imqueue.schedulers.{program.get("executor")}')
 
-            # check that it provides both schedule and execute commands
-            if 'schedule' in dir(scheduler) and 'execute' in dir(scheduler):
-                return scheduler.schedule(observations, session, program)
+        # check that it provides both schedule and execute commands
+        if 'schedule' in dir(scheduler) and 'execute' in dir(scheduler):
+            return scheduler.schedule(observations, session, program)
         # if the above does not work, use general scheduler
-        finally:
-            return scheduler.general.schedule(observations, session, program)
+    except Exception as e:
+        imqueue.Executor.log.warning('Unable to load desired scheduler. Using "general" scheduler...')
+        return scheduler.general.schedule(observations, session, program)
         
 
 def execute(observation: Dict, program: Dict, telescope: Telescope, db_client: pymongo.MongoClient) -> bool:

@@ -41,8 +41,8 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
 
     # build default constraints
     global_constraints = [constraints.AltitudeConstraint(min=40*units.deg), # set minimum altitude
-                          constraints.MoonSeparationConstraint(min=25*units.deg), # 25 degrees from moon
-                          constraints.AirmassConstraint(max=5, boolean_constraint = False)]  # rank by airmass
+                          constraints.MoonSeparationConstraint(min=10*units.deg)] # 25 degrees from moon
+                          # constraints.AirmassConstraint(max=5, boolean_constraint = False)]  # rank by airmass
                           # constraints.AtNightConstraint.twilight_nautical()] # sun below -18
 
 
@@ -89,16 +89,13 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
     # schedule!
     schedule = priority_scheduler(blocks, schedule)
 
-    if len(schedule.scheduled_blocks) == 0:
-        return []
-
-    print(schedule.to_table())
+    # print(schedule.to_table())
     # print(f'observing_blocks: {schedule.observing_blocks}')
     # print(f'open_slots: {schedule.open_slots}')
     # print(f'scheduled_blocks: {schedule.scheduled_blocks}')
 
     # return the scheduled blocks
-    return schedule.scheduled_blocks
+    return schedule
 
 def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Telescope, db) -> bool:
     """ Observe the request observation and save the data according to the parameters of the program. 
@@ -139,17 +136,18 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Tel
     # create basename for observations
     # TODO: support observations which only have RA/Dec
     # TODO: replace _id[0:3] with number from program
-    dirname = '/home/'+config.telescope.username+'/data'+'/'+'_'.join([str(datetime.date.today()),
-                                                    observation['email'].split('@')[0],
-                                                    observation['target'],
-                                                    observation['_id'][0:3]])
+    fname = '_'.join([str(datetime.date.today()), 
+                      observation['email'].split('@')[0], observation['target'],
+                      observation['_id'][0:3]])
+    dirname = '/'.join(['', 'home', config.telescope.username, 'data',
+                        observation['email'].split('@')[0], fname])
 
     # create directory
     telescope.log.info('Making directory to store observations on telescope server...')
     telescope.make_dir(dirname)
 
     # generate basename
-    basename = dirname+'/'+'_'.join([str(datetime.date.today()),
+    basename = f'{dirname}/'+'_'.join([str(datetime.date.today()),
                                                     observation['email'].split('@')[0],
                                                     observation['target']])
 
@@ -187,7 +185,7 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Tel
         telescope.enable_tracking()
 
         # take exposures!
-        telescope.take_exposure(basename, exposure_time, exposure_count, binning, filt)
+        telescope.take_exposure(basename+f'_{filt}', exposure_time, exposure_count, binning, filt)
 
     # reset filter back to clear
     telescope.log.info('Switching back to clear filter')
@@ -204,6 +202,6 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Tel
     db.observations.update({'_id': observation['_id']},
                                   {'$set':
                                    {'completed': True,
-                                    'execDate': datetime.date.today()}})
+                                    'execDate': datetime.datetime.now()}})
 
     return True

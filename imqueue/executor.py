@@ -2,6 +2,7 @@
 it loads in the queue file for tonight's imaging and executes each request
 """
 
+import re
 import time
 import json
 import datetime
@@ -13,9 +14,11 @@ import schedule as run
 import telescope.exception as exception
 from config import config
 from routines import lookup
+from imqueue import calendar
 from typing import List, Dict
 from imqueue import schedule
 from slacker_log_handler import SlackerLogHandler
+from dateutil import parser, tz
 from telescope.exception import *
 
 
@@ -42,44 +45,198 @@ class Executor(object):
         # dummy telescope variable
         self.telescope: telescope.Telescope = None
 
-        # create connection to database - get users collection
-        try:
-            host: str = ':'.join([config.queue.database_host,
-                                  str(config.queue.database_port)])
-            self.db_client = pymongo.MongoClient(host=host)
-            self.users = self.db_client[config.queue.database].users
-            self.observations = self.db_client[config.queue.database].observations
-            self.sessions = self.db_client[config.queue.database].sessions
-            self.programs = self.db_client[config.queue.database].programs
-        except Exception as e:
-            errmsg = 'Unable to connect or authenticate to database. Exiting...'
-            self.log.critical(errmsg)
-            raise ConnectionException(errmsg)
+        # create connection to database; this raises a fatal
+        # exception if it fails
+        self.connect_to_database()
+
+        # create calendar
+        self.log.info('Connecting to Google Calendar...')
+        self.calendar = calendar.Calendar()
+
+        self.start()
 
         # schedule the start function to run each night at the
         # designated start time (in the servers timezone)
         self.log.info('Executor is initialized and waiting to the designated start time...')
         run.every().day.at(config.queue.start_time).do(self.start)
 
+        # the execution loop; this waits until the appropriate time
+        # and then runs self.start()
         while True:
+            # wait until we are meant to start
+            time.sleep(int((1/24)*run.idle_seconds())) # check in roughly every hour
+            self.log.info('Executor is awake; checking if any jobs need to be run...')
             run.run_pending()
-            time.sleep(1)
+
+    def connect_to_database(self) -> bool:
+        """ Attempt to connect to MongoDB database and extract
+        appropriate collections. Raises a fatal exception if
+        an error occurs. 
+        """
+        try:
+            self.db_client = pymongo.MongoClient(host=config.queue.database_host,
+                                                 port=config.queue.database_port)
+            self.users = self.db_client[config.queue.database].users
+            self.observations = self.db_client[config.queue.database].observations
+            self.sessions = self.db_client[config.queue.database].sessions
+            self.programs = self.db_client[config.queue.database].programs
+            return True
+        except Exception as e:
+            errmsg = 'Unable to connect or authenticate to database. Exiting...'
+            self.log.critical(errmsg)
+            raise ConnectionException(errmsg)
+
+    def start(self) -> bool:
+        """ Start the execution routine. 
+
+        This method is called by the timer when the executor
+        is scheduled to start. This attempts to lock the telescope, take flats, 
+        focus the telescope, and then, if there is a scheduled Session, execute
+        that session, or if not, unlock the telescope and start a new timer. 
+        """
         
+        # check if telescope is available tonight
+        available, endtime = self.telescope_available()
+        if not available:
+            self.log.info('Telescope is not available tonight. Shutting down...')
+            return
+        
+        # instantiate telescope object for control
+        try:
+            self.log.info('Connecting to telescope controller...')
+            self.telescope = telescope.SSHTelescope()
+            self.log.info('Executor has successfully connected to the telescope')
+        except exception.ConnectionException as e:
+            self.critical(f'Error connecting to telescope: {e}')
+            return
+        except Exception as e:
+            self.critical(f'Unknown error connecting to telescope: {e}')
+            return
+
+        # attempt to lock the telescope
+        self.log.info('Attempting to lock telescope...')
+        if not (self.lock_telescope()):
+            self.log.error('Unable to lock the telescope. Quitting...')
+            return
+            
+        # attempt to auto-calibrate the system
+        self.log.info('Starting calibration routines...')
+        # self.calibrate()
+
+        # we attempt to load any sessions that are scheduled and end
+        # by the end of the telescope availability
+        now = datetime.datetime.now()
+        sessions = self.sessions.find({'end': {'$gte' : now,
+                                               '$lt' : endtime},
+                                       'start': {'$gt' : now - datetime.timedelta(hours=2)}})
+        # sort the sessions
+        if sessions:
+            # sort in ascending order
+            sessions.sort('start_time', pymongo.ASCENDING)
+
+        # if there are no scheduled sessions, we create a session to execute
+        # general observations
+        if not sessions.count():
+            self.log.info('No scheduled sessions. Creating general session...')
+            sessions = [{'_id': None, 'programId': None, 'start': datetime.datetime.now(),
+                       'end': endtime, 'owner': None, 'email': None, 'completed': False}]
+        else:
+            self.log.info(f'Executor has found {sessions.count()} sessions.')
+            
+        # wait until the weather is good to observe
+        self.telescope.wait_until_good()
+
+        # for each session scheduled to start tonight
+        for session in sessions:
+            self.execute_session(session)
+
+        self.log.info('Finished executing the queue! Closing down...')
+        self.close()
+        self.log.info('Executor has stopped for the night.')
+        
+        return True
+
+    def telescope_available(self) -> (bool, datetime.datetime):
+        """ We check whether the telescope is available for
+        queue usage. 
+        """
+
+        # quick utility to convert times to UTC
+        def to_utc(dt: datetime.datetime) -> datetime.datetime:
+            return (dt - dt.utcoffset()).replace(tzinfo=tz.tzutc())
+        
+        # we check whether the telescope is booked in the next 12 hours
+        start = datetime.datetime.now() - datetime.timedelta(hours=12)
+        end = datetime.datetime.now() + datetime.timedelta(hours=12)
+        events = self.calendar.get_events(start, end)
+
+        # there are events booked tonight
+        if len(events) != 0:
+            # we sort the events by start time
+            events = sorted(events,
+                            key=lambda k: parser.parse(k['start'].get('dateTime')))
+            
+            # we find the times when the telescope isn't booked
+            start = datetime.datetime.now()
+            end = datetime.datetime.now()
+
+            # if there is already an event started, we assume that
+            # the telescope is not available for the rest of the night
+            # we can use events[0] here since we sorted earlier
+            first_start = to_utc(parser.parse(events[0].get('start').get('dateTime')))
+            if first_start <= start:
+                return False, None
+
+            # we now check each event to find the first non-queue event
+            # the queue will run up until the first non-queue event
+            for event in events:
+                # if the event starts with QUEUE, we consider it available time
+                if re.match('QUEUE', event.get('summary', '')):
+                    end = to_utc(parser.parse(event.get('end').get('dateTime')))
+                else:
+                    break
+
+            # assume that we need at least 2 hours for calibration
+            if (end - datetime.datetime.now()) <= datetime.timedelta(hours=2):
+                return False, None
+            else:
+                return True, end
+            
+        else: # there are no events booked tonight, we go!
+            return True, end
         
     def load_observations(self, session: Dict) -> (List[Dict], Dict):
         """ This function returns a list of all observations
         in the database that have not been executed, and that match
         the conditions specified in the session. 
         """
-        # find program that session belongs to
-        program = self.programs.find_one({'sessions': session['_id']})
+        # check if this is a regular session
+        if session['_id']:
+            # find program that session belongs to
+            program = self.programs.find_one({'sessions': session['_id']})
 
-        if program:
-            return list(self.observations.find({'program': program['_id'],
-                                           'completed': False})), program
-        else:
-            self.log.debug('Unable to find program for this session. Cancelling this session...')
-            return [], ''
+            if program:
+                return list(self.observations.find({'program': program['_id'],
+                                                    'completed': False})), program
+            else:
+                self.log.debug('Unable to find program for this session. Cancelling this session...')
+                return None, None
+        else: # we load all 'General' sessions
+            # get all general programs
+            programs = list(self.programs.find({'name': 'General'}))
+
+            # find all observations that are in these programs
+            observations = sum([list(self.observations.find({'program': program['_id'],
+                                                        'completed': False}))
+                                for program in programs], [])
+
+            # construct a general program
+            program = {'_id': None, 'name': 'General', 'executor': 'general',
+                       'owner': None, 'email': None, 'completed': False,
+                       'sessions': [], 'observations': [obs['_id'] for obs in observations],
+                       'createdAt': datetime.datetime.now()}
+
+            return observations, program
 
     def open_telescope(self):
         """ Open up the telescope, enable tracking, and set
@@ -159,7 +316,7 @@ class Executor(object):
             # try and lock telescope
             result = self.telescope.lock(config.telescope.username, comment=config.queue.comment)
             if result: # success!
-                self.log.debug('Successfully locked telescope')
+                self.log.info('Successfully locked telescope.')
                 return True
 
             # sleep for 5 minutes
@@ -167,63 +324,6 @@ class Executor(object):
 
         return False
             
-    def start(self) -> bool:
-        """ Start the execution routine. 
-
-        This method is called by the Threading timer when the executor
-        is scheduled to start. This attempts to lock the telescope, take flats, 
-        focus the telescope, and then, if their is a scheduled Session, execute
-        that session, or if not, unlock the telescope and start a new timer. 
-        """
-
-        # instantiate telescope object for control
-        try:
-            self.log.info('Connecting to telescope controller...')
-            self.telescope = telescope.SSHTelescope()
-            self.log.debug('Executor has connection to telescope')
-        except exception.ConnectionException as e:
-            self.critical(f'Error connecting to telescope: {e}')
-            return
-        except Exception as e:
-            self.critical(f'Unknown error connecting to telescope: {e}')
-            return
-
-        # attempt lock the telescope
-        self.log.info('Attempting to lock telescope...')
-        if not (self.lock_telescope()):
-            return
-            
-        # attempt to auto-calibrate the system
-        self.log.info('Starting calibration routines...')
-        # self.calibrate()
-
-        # Find all sessions that started within the last 12 hours,
-        # and end within the next 12 hours
-        now = datetime.datetime.now()
-        sessions = self.sessions.find({'end': {'$gte' : now,
-                                               '$lt' : now + datetime.timedelta(hours=12)},
-                                       'start': {'$gt' : now - datetime.timedelta(hours=12)}})
-        # sort in ascending order
-        sessions.sort('start_time', pymongo.ASCENDING)
-
-        # if there are no sessions, we return so other people can use the telescope
-        if not sessions.count():
-            self.log.debug('Executor has no sessions. Quitting...')
-            return
-        self.log.info(f'Executor has found {sessions.count()} sessions.')
-            
-        # wait until the weather is good to observe
-        self.telescope.wait_until_good()
-
-        # for each session scheduled to start tonight
-        for session in sessions:
-            self.execute_session(session)
-
-        self.log.info('Finished executing the queue! Closing down...')
-        self.close()
-        
-        return True
-
     def execute_session(self, session: Dict[str, str]) -> bool:
         """ Executes the observations of the program that
         the session is attached.
@@ -234,8 +334,11 @@ class Executor(object):
         to optimize target position.
         """
 
-        self.log.info(f'Starting execution of session {session["_id"]} for {session["email"]}')
-        
+        if session.get('_id'):
+            self.log.info(f'Starting execution of session {session["_id"]} for {session["email"]}')
+        else:
+            self.log.info('Executing a general session...')
+            
         # check that the session hasn't started already
         if session['start'] > datetime.datetime.now():
             # wait until the session is meant to start
@@ -260,6 +363,7 @@ class Executor(object):
                     ra, dec = lookup.lookup(observation.get('target'))
                     if not ra or not dec:
                         self.log.warning(f'Unable to compute RA/Dec for {observation.get("target")}.')
+                        # TODO: set error field on observations to prevent code from running again
                         continue
 
                     # save the RA/Dec
@@ -274,30 +378,39 @@ class Executor(object):
 
             # run the scheduler and get the next observation to complete
             self.log.debug(f'Calling the {program.get("executor")} scheduler...')
-            schedule = schedule.schedule(observations, session, program)
+            observing_schedule = schedule.schedule(observations, session, program)
 
             # if the scheduler returns None, we are done
-            if len(schedule) == 0:
+            if len(observing_schedule.scheduled_blocks) == 0:
                 self.log.debug('Scheduler reports no observations left for this session...')
                 break
             
-            self.log.info(f'Executing session for {observation["email"]}...')
+            self.log.info(f'Executing observation for {observation["email"]}...')
 
             # we wait until this observation needs to start
-            start_time = schedule.slots[0].start
-            self.telescope.wait((start_time - datetime.datetime.now()).to_seconds())
+            start_time = observing_schedule.slots[0].start.datetime
+            wait_time = (start_time - datetime.datetime.now()).seconds
+            # some time elapses between scheduling and execution, must
+            # account for wait times that are only a few seconds past
+            # the current time
+            if (wait_time >= 23.5) and (wait_time <= 24):
+                pass # we start immedatiately
+            else:
+                self.telescope.wait(wait_time)
 
             # make sure that the weather is still good
             self.telescope.wait_until_good()
 
             # we execute
-            # try:
-            observation = schedule.scheduled_blocks[0]
-            schedule.execute(observation, program, self.telescope, self.db_client[config.queue.database])
-            # except Exception as e:
-            #     self.log.warn(f'Error while executing {observation}')
-            #     self.log.warn(f'{e}')
-            #     continue
+            try:
+                # extract observation from ObservingBlock
+                observation = observing_schedule.scheduled_blocks[0].configuration
+                schedule.execute(observation, program, self.telescope, self.db_client[config.queue.database])
+                self.log(f'Finished observing {observation["target"]} for {observation["email"]}')
+            except Exception as e:
+                self.log.warn(f'Error while executing {observation}')
+                self.log.warn(f'{e}')
+                continue
 
         return True
     
