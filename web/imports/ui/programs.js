@@ -1,6 +1,7 @@
 import './programs.html';
 
 import { Programs } from '../api/programs.js';
+import $ from 'jquery';
 
 // subscribe to programs stream
 Template.programs.onCreated(function onCreated() {
@@ -77,8 +78,19 @@ Template.programs.events({
 	event.preventDefault();
 	// checks if the actual clicked element has the class `delete`
 	if (event.target.className.includes('action-delete')) {
-	    // delete program
-	    Meteor.call('programs.remove', this._id);
+
+	    // find the program
+	    const program = Programs.findOne(this._id);
+
+	    // we do not allow deleting the General program
+	    if (program.name == 'General') {
+		CoffeeAlerts.error('You cannot delete the "General" program');
+		return;
+	    }
+	    else {
+		// delete program
+		Meteor.call('programs.remove', this._id);
+	    }
 	} else if (event.target.className.includes('action-completed')) {
 	    // mark program completed
 	    Meteor.call('programs.setCompleted', this._id, ! this.completed);
