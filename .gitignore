@@ -1,6 +1,8 @@
 .env
 local
 *#*
+*secret*
+config/*secret*
 
 web/package-lock.json
 config/config.toml
