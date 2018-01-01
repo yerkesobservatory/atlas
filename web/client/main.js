@@ -20,6 +20,9 @@ import '../imports/ui/sessions.js';
 // programs
 import '../imports/ui/programs.js';
 
+// telescope
+import '../imports/ui/telescopes.js';
+
 // auth
 import '../imports/auth/login.js';
 import '../imports/auth/reset-password.js';
