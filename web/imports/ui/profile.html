@@ -1,0 +1,14 @@
+<!-- template for user profile on home page -->
+<template name="profile">
+  <p><b>Name:</b> {{user.name}}</p>
+  <p><b>Affiliation:</b> {{user.profile.affiliation}}</p>
+  <p><b>Pending Observations:</b> {{numPending user}}</p>
+  <p><b>Completed Observations:</b> {{numCompleted user}}</p>
+  <p><b>Badges:</b> {{badges user}}</p>
+  <p><b>Roles:</b> {{user.roles}}</p>
+  <!-- <p class="{{isWeatherGood telescope}}"><b>Weather:</b> {{telescope.weather}}</p> -->
+  <!-- <p><b>Slit:</b> {{telescope.slit}}</p> -->
+  <!-- <p><b>Current Observation:</b> {{telescope.observation}}</p> -->
+  <!-- <p><b>Location:</b> {{telescope.location}}</p> -->
+		 
+</template>

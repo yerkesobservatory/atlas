@@ -11,6 +11,12 @@ import '../imports/ui/navigation.js';
 // home
 import '../imports/ui/home.js';
 
+// telescope
+import '../imports/ui/telescopes.js';
+
+// profile
+import '../imports/ui/profile.js';
+
 // observation list
 import '../imports/ui/observations.js';
 
@@ -19,9 +25,6 @@ import '../imports/ui/sessions.js';
 
 // programs
 import '../imports/ui/programs.js';
-
-// telescope
-import '../imports/ui/telescopes.js';
 
 // auth
 import '../imports/auth/login.js';
