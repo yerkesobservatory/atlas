@@ -7,7 +7,7 @@ import { Sessions } from './sessions.js';
 
 export const Programs = new Mongo.Collection('programs');
 
-// publish the sessions
+// publish the programs
 if (Meteor.isServer) {
     // create the publication
     Meteor.publish('programs', function() {
