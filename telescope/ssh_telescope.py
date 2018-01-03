@@ -15,7 +15,7 @@ from telescope.exception import *
 
 class SSHTelescope(object):
     """ This class allows for a telescope to be remotely controlled
-    via SSH using high-level python functions. 
+    via SSH using high-level python functions.
 
     All methods of this class can be used to control and alter the
     state of the telescope. Requires that the user have a SSH key
@@ -27,7 +27,7 @@ class SSHTelescope(object):
 
     def __init__(self):
         """ Create a new SSHTelescope object by connecting to the telescope server
-        via SSH and initializing the logging system. 
+        via SSH and initializing the logging system.
         """
 
         # initialize logging system if not already done
@@ -47,7 +47,7 @@ class SSHTelescope(object):
             self.client = mqtt.Client()
 
             # MQTT topic
-            topic = '/'.join(['', config.mqtt.root, 'queue'])
+            topic = '/'.join(['', config.mqtt.root, 'telescope'])
 
             # broker info
             host = config.mqtt.host or 'localhost'
@@ -60,28 +60,27 @@ class SSHTelescope(object):
 
                 # create publish function
                 self.publish = lambda msg: client.publish(topic, json.dumps(msg))
-                self.publish({'EVENT': 'START'})
             except Exception as e:
                 self.log.warning(f'Unable to connect to MQTT broker: {e}')
                 self.publish = lambda msg: True
 
     def connect(self) -> bool:
-        """ Create a SSH connection to the telescope control server. 
+        """ Create a SSH connection to the telescope control server.
 
         Will raise ConnectionException if there is any error in connection to the telescope.
         """
         self.ssh: paramiko.SSHClient = self.__connect()
 
         return True
-    
+
     @staticmethod
     def __connect() -> paramiko.SSHClient:
-        """ Create a SSH connection to the telescope control server. 
+        """ Create a SSH connection to the telescope control server.
 
         Will raise ConnectionException if there is any error in connection to the telescope.
         """
         ssh: paramiko.SSHClient = paramiko.SSHClient()
-        
+
         # load host keys for verified connection
         ssh.load_system_host_keys()
 
@@ -103,7 +102,7 @@ class SSHTelescope(object):
         return ssh
 
     def disconnect(self) -> bool:
-        """ Disconnect the Telescope from the TelescopeServer. 
+        """ Disconnect the Telescope from the TelescopeServer.
         """
         self.ssh.close()
         self.ssh = None
@@ -112,7 +111,7 @@ class SSHTelescope(object):
 
     def is_alive(self) -> bool:
         """ Check whether connection to telescope server is alive/working, and whether
-        we still have permission to execute commands. 
+        we still have permission to execute commands.
         """
         try:
             self.run_command('echo its alive')
@@ -122,8 +121,8 @@ class SSHTelescope(object):
             return False
 
     def open_dome(self) -> bool:
-        """ Checks that the weather is acceptable using `weather_ok`, 
-        and if the dome is not already open. opens the dome. 
+        """ Checks that the weather is acceptable using `weather_ok`,
+        and if the dome is not already open. opens the dome.
 
         Returns True if the dome was opened, False otherwise.
         """
@@ -134,17 +133,19 @@ class SSHTelescope(object):
         # check that weather is OK to open
         if self.weather_ok():
             result = self.run_command(telescope.open_dome)
-            
+
             if re.search(telescope.open_dome_re, result):
+                self.publish({'EVENT': 'OPENUP',
+                              'TIME': datetime.datetime.now().isoformat()})
                 return True
 
         # in any other scenario, return False
         return False
 
     def dome_open(self) -> bool:
-        """ Checks whether the telescope slit is open or closed. 
+        """ Checks whether the telescope slit is open or closed.
 
-        Returns True if open, False if closed. 
+        Returns True if open, False if closed.
         """
         result = self.run_command(telescope.dome_open)
         slit = re.search(telescope.dome_open_re, result)
@@ -161,61 +162,73 @@ class SSHTelescope(object):
         True if successful in closing down, False otherwise.
         """
         result = self.run_command(telescope.close_dome)
-        
-        return (re.search(telescope.close_dome_re, result) and True) or False
+
+        if re.search(telescope.close_dome_re, result):
+            self.publish({'EVENT': 'CLOSEDOWN',
+                          'TIME': datetime.datetime.now().isoformat()})
+            return True
+        else:
+            return False
 
     def close_down(self) -> bool:
         """ Closes the dome and unlocks the telescope. Call
-        this at end of every control session. 
+        this at end of every control session.
         """
         closed = self.close_dome()
         unlocked = self.unlock()
         return closed and unlocked
 
     def lock(self, user: str, comment: str = 'observing') -> bool:
-        """ Lock the telescope with the given username. 
+        """ Lock the telescope with the given username.
         """
         # try and substitute the user and comment values
         try:
             command = telescope.lock.format(user=user, comment=comment)
         except Exception as e:
             command = telescope.lock
-            
+
         result = self.run_command(telescope.lock.format(user=user, comment=comment))
 
         # check that we were successful
-        return (re.search(telescope.lock_re, result) and True) or False
+        if re.search(telescope.lock_re, result):
+            self.publish({'EVENT': 'LOCK',
+                          'TIME': datetime.datetime.now().isoformat()})
+            return True
+        return False
 
     def unlock(self) -> bool:
-        """ Unlock the telescope if you have the lock. 
+        """ Unlock the telescope if you have the lock.
         """
         result = self.run_command(telescope.unlock)
 
-        return (re.search(telescope.unlock_re, result) and True) or False
+        if re.search(telescope.unlock_re, result):
+            self.publish({'EVENT': 'UNLOCK',
+                          'TIME': datetime.datetime.now().isoformat()})
+            return True
         return False
 
     def locked(self) -> (bool, str):
-        """ Check whether the telescope is locked. If it is, 
-        return the username of the lock holder. 
+        """ Check whether the telescope is locked. If it is,
+        return the username of the lock holder.
         """
         result = self.run_command(telescope.check_lock)
 
         if result == 'done lock':
             return False, ''
-        
+
         if re.search(telescope.check_lock_re, result):
             return True, 'unknown'
 
         return False, ''
 
     def keep_open(self, time: int) -> bool:
-        """ Keep the telescope dome open for {time} seconds. 
-        Returns True if it was successful. 
+        """ Keep the telescope dome open for {time} seconds.
+        Returns True if it was successful.
         """
         if self.dome_open() is False:
             self.log.warn('Slit must be opened before calling keep_open()')
             return False
-        
+
         result = self.run_command(telescope.keep_open.format(time=time))
 
         # TODO: Parse output to extract username and lock status
@@ -270,7 +283,7 @@ class SSHTelescope(object):
             return 1.0  # return the safest value
 
     def get_sun_alt(self) -> float:
-        """ Get the current altitude of the sun. 
+        """ Get the current altitude of the sun.
         """
         # run the command
         result = self.run_command(telescope.get_sun_alt)
@@ -286,7 +299,7 @@ class SSHTelescope(object):
             return 90.0  # return the safest altitude we can
 
     def get_moon_alt(self) -> float:
-        """ Get the current altitude of the moon. 
+        """ Get the current altitude of the moon.
         """
         # run the command
         result = self.run_command(telescope.get_moon_alt)
@@ -303,8 +316,8 @@ class SSHTelescope(object):
 
     # TODO - make one 'tx taux' call instead of 5
     def get_weather(self) -> dict:
-        """ Extract all the values for the current weather 
-        and return it as a python dictionary. 
+        """ Extract all the values for the current weather
+        and return it as a python dictionary.
         """
         weather = {'rain': self.get_rain(),
                    'cloud': self.get_cloud(),
@@ -320,7 +333,14 @@ class SSHTelescope(object):
         """
         # get the current weather
         weather = self.get_weather()
-        
+        self.publish({'EVENT': 'WEATHER',
+                      'SUN': weather.get('sun'),
+                      'MOON': weather.get('moon'),
+                      'CLOUD': weather.get('cloud'),
+                      'RAIN': weather.get('rain'),
+                      'DEW': weather.get('dew'),
+                      'TIME': datetime.datetime.now().isoformat()})
+
         # check sun is at proper altitude
         desired_sun_alt = sun or config.telescope.max_sun_alt
         if weather.get('sun') > desired_sun_alt:
@@ -345,10 +365,10 @@ class SSHTelescope(object):
 
     def goto_target(self, target: str) -> (bool, float, float):
         """ Point the telescope at a target.
-        
+
         Point the telescope at the target given
         by the catalog name {target} using the pinpoint
-        algorithm to ensure pointing accuracy. Valid 
+        algorithm to ensure pointing accuracy. Valid
         target names include 'M1', 'm1', 'NGC6946', etc.
 
         Parameters
@@ -368,20 +388,24 @@ class SSHTelescope(object):
 
         # check that the object is visible
         if lookup.target_visible(target) and self.target_visible(target):
-            
+
             # do a rough pointing of the telescope
             if self.run_command(telescope.goto_target.format(target=target)):
 
                 # convert name to ra/dec
                 ra, dec = lookup.lookup(target)
 
-                return pinpoint.pinpoint(ra, dec, self)
-            
+                if pinpoint.pinpoint(ra, dec, self):
+                    self.publish({'EVENT': 'SLEW',
+                                  'LOCATION': ra+' '+dec,
+                                  'TIME': datetime.datetime.now().isoformat()})
+                    return True
+
         return False
 
     def goto_point(self, ra: str, dec: str) -> (bool, float, float):
-        """ Point the telescope at a given RA/Dec. 
-        
+        """ Point the telescope at a given RA/Dec.
+
         Point the telescope at the given RA/Dec using the pinpoint
         algorithm to ensure good pointing accuracy. Format
         for RA/Dec is hh:mm:ss, dd:mm:ss
@@ -405,18 +429,22 @@ class SSHTelescope(object):
 
         # check that the target is visible
         if lookup.point_visible(ra, dec) and self.point_visible(ra, dec):
-        
+
             # Do basic pointing
             if self.run_command(telescope.goto.format(ra=ra, dec=dec)):
 
                 # Run pinpoint algorithm - check status of pointing
-                return pinpoint.point(ra, dec, self)
+                if pinpoint.point(ra, dec, self):
+                    self.publish({'EVENT': 'SLEW',
+                                  'LOCATION': ra+' '+dec,
+                                  'TIME': datetime.datetime.now().isoformat()})
+                    return True
 
         return False, -1, -1
 
     def target_visible(self, target: str) -> bool:
         """ Check whether a target is visible using
-        the telescope controller commands. 
+        the telescope controller commands.
         """
 
         result = self.run_command(telescope.altaz_target.format(target=target))
@@ -429,7 +457,7 @@ class SSHTelescope(object):
         return False
 
     def point_visible(self, ra: str, dec: str) -> bool:
-        """ Check whether a given RA/Dec pair is visible. 
+        """ Check whether a given RA/Dec pair is visible.
         """
         result = self.run_command(telescope.altaz.format(ra=ra, dec=dec))
 
@@ -490,11 +518,11 @@ class SSHTelescope(object):
         """ Enable the tracking motor for the telescope.
         """
         result = self.run_command(telescope.enable_tracking)
-       
+
         return (re.search(telescope.enable_tracking_re, result) and True) or False
 
     def calibrate_motors(self) -> bool:
-        """ Run the motor calibration routine. 
+        """ Run the motor calibration routine.
         """
         return False
 
@@ -519,12 +547,12 @@ class SSHTelescope(object):
 
     def auto_focus(self) -> (bool, int):
         """ Automatically focus the telescope
-        using the focus routine. 
+        using the focus routine.
         """
         return focus.focus(self)
 
     def current_filter(self) -> str:
-        """ Return the string name of the current filter. 
+        """ Return the string name of the current filter.
         """
         result = self.run_command(telescope.current_filter)
 
@@ -538,24 +566,28 @@ class SSHTelescope(object):
         # get new filter
         current_filter = self.current_filter()
 
-        return (current_filter == name)
+        if (current_filter == name):
+            self.publish({'EVENT': 'FILTER',
+                          'FILTER': current_filter,
+                          'TIME': datetime.datetime.now().isoformat()})
+        return False
 
     def make_dir(self, dirname: str) -> bool:
-        """ Make a directory on the telescope control server. 
+        """ Make a directory on the telescope control server.
         """
         return self.run_command('mkdir -p {dirname}'.format(dirname=dirname))
 
     def take_flats(self) -> bool:
         """ Wait until the weather is good for flats, and then take a series of
-        flats before returning. 
+        flats before returning.
         """
         return flats.take_flats(self)
 
     def wait(self, wait: int) -> None:
-        """ Sleep the telescope for 'wait' seconds. 
+        """ Sleep the telescope for 'wait' seconds.
 
         If the time is over telescope.wait_time, shutdown the telescope
-        while we wait, and then reopen before returning. 
+        while we wait, and then reopen before returning.
         """
 
         # return immediately if we don't need to wait
@@ -651,7 +683,14 @@ class SSHTelescope(object):
             else:  # this was a successful exposure - take the next one
                 i += 1 # increment counter
                 # notify (or not) the MQTT broker
-                self.publish({'EVENT': 'EXPOSURE', 'FILENAME': fname})
+                self.publish({'EVENT': 'EXPOSURE',
+                              'TYPE': 'SCIENCE',
+                              'TIME': exposure_time,
+                              'FILTER': filt,
+                              'BINNING': binning,
+                              'REMOTE': config.telescope.host,
+                              'PATH': fname,
+                              'TIME': datetime.datetime.now().isoformat()})
 
         return True
 
@@ -663,13 +702,19 @@ class SSHTelescope(object):
 
             # create filename
             fname = filename + f'_dark_{n}.fits'
-            
+
             self.log.info(f'Taking dark {n+1}/{count} with name: {fname}')
 
             self.run_command(telescope.take_dark.format(time=exposure_time, binning=binning,
                                                         filename=fname))
-            # notify (or not) the MQTT broker
-            self.publish({'EVENT': 'EXPOSURE', 'FILENAME': fname})
+            # publish to MQTT
+            self.publish({'EVENT': 'EXPOSURE',
+                          'TYPE': 'DARK',
+                          'TIME': exposure_time,
+                          'BINNING': binning,
+                          'REMOTE': config.telescope.host,
+                          'PATH': fname,
+                          'TIME': datetime.datetime.now().isoformat()})
 
         return True
 
@@ -680,22 +725,29 @@ class SSHTelescope(object):
 
         # create file name for biases
         self.log.info(f'Taking {count} biases with name: {filename}_N.fits')
-        
+
         # take biases
         for n in range(0, count):
-            
+
             # create filename
             fname = filename + f'_bias_{n}.fits'
 
             self.run_command(telescope.take_dark.format(time=0.1, binning=binning,
                                                         filename=fname))
-            # notify (or not) the MQTT broker
-            self.publish({'EVENT': 'EXPOSURE', 'FILENAME': fname})
+            # publish to MQTT (or not)
+            self.publish({'EVENT': 'EXPOSURE',
+                          'TYPE': 'BIAS',
+                          'TIME': 0.1,
+                          'BINNING': binning,
+                          'REMOTE': config.telescope.host,
+                          'PATH': fname,
+                          'TIME': datetime.datetime.now().isoformat()})
+
         return True
 
     def copy_remote_to_local(self, remotepath: str, localpath: str = '') -> bool:
-        """ Copy a file at `remotepath` on the telescope control server to `localpath` 
-        on localhost. 
+        """ Copy a file at `remotepath` on the telescope control server to `localpath`
+        on localhost.
         """
         # create sftp context
         sftp = paramiko.SFTPClient.from_transport(self.ssh.get_transport())
@@ -711,10 +763,10 @@ class SSHTelescope(object):
             return False
 
     def copy_local_to_remote(self, localpath: str, remotepath: str = '') -> bool:
-        """ Copy a file at `localpath` on localhost to `remotepath` 
+        """ Copy a file at `localpath` on localhost to `remotepath`
         on the telescope control server.
         """
-                # create sftp context
+        # create sftp context
         sftp = paramiko.SFTPClient.from_transport(self.ssh.get_transport())
 
         try:
@@ -728,21 +780,21 @@ class SSHTelescope(object):
             return False
 
     def run_command(self, command: str) -> str:
-        """ Run a command on the telescope server. 
-        
+        """ Run a command on the telescope server.
+
         This remotely executes the string command in a shell on
-        the telescope server via SSH. 
+        the telescope server via SSH.
 
         Parameters
         ----------
         command: str
             The command to be run
-        
+
         """
         if self.ssh == None:
             self.log.warn('SSH is not connected. Please reconnect to the telescope server.')
             return None
-            
+
         self.log.info(f'Executing: {command}')
 
         # make sure the connection hasn't timed out due to sleep
@@ -751,7 +803,7 @@ class SSHTelescope(object):
             self.ssh.exec_command('echo its alive')
         except Exception as e:
             self.ssh = self.connect()
-            
+
         # try and execute command 5 times if it fails
         numtries = 0; exit_code = 1
         while numtries < 5 and exit_code != 0:
@@ -759,7 +811,7 @@ class SSHTelescope(object):
                 stdin, stdout, stderr = self.ssh.exec_command(command)
                 numtries += 1
                 result = stdout.readlines()
-                    
+
                 # check exit code
                 exit_code = stdout.channel.recv_exit_status()
                 if exit_code != 0:
@@ -775,21 +827,21 @@ class SSHTelescope(object):
                         result = ' '.join(result).strip()
                         self.log.info(f'Result: {result}')
                         return result
-                
+
             except Exception as e:
                 self.log.critical(f'run_command: {e}')
                 self.log.critical(f'Failed while executing {command}')
                 self.log.critical('Please manually close the dome by running'
                                   ' `closedown` and `logout`.')
-                
+
                 raise UnknownErrorException
 
         return None
-                
+
     @classmethod
     def __init_log(cls) -> bool:
         """ Initialize the logging system for this module and set
-        a ColoredFormatter. 
+        a ColoredFormatter.
         """
         # create format string for this module
         format_str = config.logging.fmt.replace('[name]', 'TELESCOPE')
@@ -806,3 +858,5 @@ class SSHTelescope(object):
         cls.log.addHandler(stream)
 
         return True
+
+    
