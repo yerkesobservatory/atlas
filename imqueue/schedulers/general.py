@@ -97,7 +97,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
     # return the scheduled blocks
     return schedule
 
-def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Telescope, db) -> bool:
+def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Telescope) -> bool:
     """ Observe the request observation and save the data according to the parameters of the program. 
 
     This function is provided a connected Telescope() object that should be used to execute
@@ -112,8 +112,6 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Tel
         The observing program that this observation belongs to
     telescope: Telescope
         A connected Telescope object
-    db_client: pymongo.MongoClient
-        A MongoClient connected to the database to allow for updating info
 
     Returns
     -------

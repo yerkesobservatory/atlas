@@ -7,12 +7,12 @@ from typing import List, Dict
 
 
 def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, int):
-    """ Call the requested scheduler and return the next requested observation. 
+    """ Call the requested scheduler and return the next requested observation.
 
     This function is responsible for finding the correct scheduler to use
     for the given program (using program.scheduler), and then calling
     that scheduler to determine the next object to observe. This object
-    is immediately returned to the caller. 
+    is immediately returned to the caller.
 
     Parameters
     ----------
@@ -24,7 +24,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     Returns
     -------
     obs: Observation
-        The next observation that should be executed. 
+        The next observation that should be executed.
     wait: int
         The number of seconds to wait before imaging this observation
     """
@@ -36,8 +36,8 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     # asteroids
     # elif program.get('executor') == 'asteroid':
     #     return asteroid.schedule(observations, program)
-    
-    # try and load the scheduler dynamically 
+
+    # try and load the scheduler dynamically
     # else:
         # try and load module with that name
     try:
@@ -50,9 +50,9 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     except Exception as e:
         imqueue.Executor.log.warning('Unable to load desired scheduler. Using "general" scheduler...')
         return scheduler.general.schedule(observations, session, program)
-        
 
-def execute(observation: Dict, program: Dict, telescope: Telescope, db_client: pymongo.MongoClient) -> bool:
+
+def execute(observation: Dict, program: Dict, telescope: Telescope) -> bool:
     """ Observe the requested observation and save the data according to program. 
 
     This function is provided a connected Telescope() object that should be used
