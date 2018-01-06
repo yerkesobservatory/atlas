@@ -1,14 +1,71 @@
 <!-- template for user profile on home page -->
 <template name="profile">
-  <p><b>Name:</b> {{user.name}}</p>
+  <p><b>Name:</b> {{user.profile.firstName}} {{user.profile.lastName}}</p>
   <p><b>Affiliation:</b> {{user.profile.affiliation}}</p>
   <p><b>Pending Observations:</b> {{numPending user}}</p>
   <p><b>Completed Observations:</b> {{numCompleted user}}</p>
   <p><b>Badges:</b> {{badges user}}</p>
   <p><b>Roles:</b> {{user.roles}}</p>
-  <!-- <p class="{{isWeatherGood telescope}}"><b>Weather:</b> {{telescope.weather}}</p> -->
-  <!-- <p><b>Slit:</b> {{telescope.slit}}</p> -->
-  <!-- <p><b>Current Observation:</b> {{telescope.observation}}</p> -->
-  <!-- <p><b>Location:</b> {{telescope.location}}</p> -->
-		 
+  <!-- this could be made into a button or something prettier? -->
+  <a href="#" id="editProfile">Edit</a>
+  <!-- modal for editing profile -->
+  {{> editProfile}}
+
+</template>
+
+<template name="editProfile">
+  <div class="modal fade" id="editProfileModal">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Profile</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+	  {{#with profile}}
+	  <p><b>First Name: </b> {{> editableText collection="users" field="firstName"}}</p>
+	  <p><b>Last Name: </b> {{> editableText collection="users" field="lastName"}}</p>
+	  {{/with}}
+	  {{#if isInRole 'admin'}}
+	  <!-- TODO: roles throws exception when document is none -->
+	  <p><b>Roles: </b> {{> editableText collection="users" field="roles"}}</p>
+	  {{#with profile}}
+	  <p><b> Change {{firstName}}'s Password </b></p>
+	  {{> changePassword}}
+	  {{/with}}
+	  {{/if}}
+        </div>
+        <div class="modal-footer">
+          <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
+          <!-- <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button> -->
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template name="changePassword">
+  <div class="container-fluid">
+    <form class="changePassword form-reset">
+
+      <div class="form-group" id="change-password">
+    <label for="currentPassword" class="sr-only">Current Password</label>
+    <input type="password" id="currentPassword" class="form-control" placeholder="Current Password" required name="currentPassword" style="margin-bottom:0px;">
+      </div>
+
+      <div class="form-group" id="change-password">
+    <label for="password" class="sr-only">New Password</label>
+    <input type="password" id="password" class="form-control" placeholder="New Password" required name="password">
+      </div>
+
+      <div class="form-group" id="form-passwordRepeat">
+    <label for="passwordRepeat" class="sr-only">Repeat New Password</label>
+    <input type="password" id="passwordRepeat" class="form-control" placeholder="Repeat New Password" required name="passwordRepeat">
+      </div>
+
+    <button class="btn btn-lg btn-success btn-block" type="submit">Change Password</button>
+  </form>
+  </div>
 </template>
