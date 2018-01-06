@@ -2,39 +2,39 @@
   {{#if isInRole 'admin'}}
 
   <!-- start navigation -->
-<ul class="nav nav-tabs">
-  <li class="active"><a href="#home" data-toggle="tab" aria-expanded="true">Home</a></li>
-  <li class=""><a href="#observations" data-toggle="tab" aria-expanded="true">Observations</a></li>
-  <li class=""><a href="#users" data-toggle="tab" aria-expanded="true">User Management</a></li>
-  <li class=""><a href="#affiliations" data-toggle="tab" aria-expanded="true">Affiliations</a></li>
-</ul>
-<!-- end navigation -->
+  <ul class="nav nav-tabs">
+    <li class="active"><a href="#home" data-toggle="tab" aria-expanded="true">Home</a></li>
+    <li class=""><a href="#observations" data-toggle="tab" aria-expanded="true">Observations</a></li>
+    <li class=""><a href="#users" data-toggle="tab" aria-expanded="true">User Management</a></li>
+    <li class=""><a href="#affiliations" data-toggle="tab" aria-expanded="true">Affiliations</a></li>
+  </ul>
+  <!-- end navigation -->
 
-<div class="tab-content">
+  <div class="tab-content">
 
-  <!-- home -->
-  <div class="tab-pane fade active in" id="home">
-    {{> adminHome}}
-  </div>
-  
-  <!-- observations -->
-  <div class="tab-pane fade in" id="observations">
-    {{> adminObservations}}
-  </div>
-  
-  <!-- users -->
-  <div class="tab-pane fade in" id="users">
-    {{> adminUsers}}
+    <!-- home -->
+    <div class="tab-pane fade active in" id="home">
+      {{> adminHome}}
+    </div>
+
+    <!-- observations -->
+    <div class="tab-pane fade in" id="observations">
+      {{> adminObservations}}
+    </div>
+
+    <!-- users -->
+    <div class="tab-pane fade in" id="users">
+      {{> adminUsers}}
+    </div>
+
+    <!-- users -->
+    <div class="tab-pane fade in" id="affiliations">
+      {{> adminAffiliations}}
+    </div>
+
   </div>
 
-  <!-- users -->
-  <div class="tab-pane fade in" id="affiliations">
-    {{> adminAffiliations}}
-  </div>
-  
-</div>
-
-{{/if}}
+  {{/if}}
 </template>
 
 <template name="adminObservations">
@@ -52,39 +52,39 @@
   <div class="col-lg-6"  style="padding-top:20px;">
     {{> newAnnouncement}}
   </div> <!-- right column -->
-  
+
 </template>
 
 <template name="newAnnouncement">
   <div class="panel panel-default">
     <div class="panel-heading">Announcements</div>
     <div class="panel-body">
-      
+
       <form class="form-horizontal new-announcement">
-	<fieldset>
-	  <legend>New Announcement</legend>
+        <fieldset>
+          <legend>New Announcement</legend>
 
-	  <!-- title -->
-	  <div class="form-group">
-	    <label for="title" class="col-lg-2 control-label">Title</label>
-	    <div class="col-lg-6">
-	      <input class="form-control" id="title" placeholder="Title" type="text">
-	    </div>
+          <!-- title -->
+          <div class="form-group">
+            <label for="title" class="col-lg-2 control-label">Title</label>
+            <div class="col-lg-6">
+              <input class="form-control" id="title" placeholder="Title" type="text">
+            </div>
 
-	    <!-- button -->
-	    <div class="col-lg-4">
-	      <button type="submit" class="btn btn-success">Announce</button>
-	    </div>
-	  </div>
-	  
-	  <div class="form-group">
-	    <label for="text" class="col-lg-2 control-label">Text</label>
-	    <div class="col-lg-10">
-	      <textarea class="form-control" rows="3" id="text" placeholder="Enter the announcement text here..."></textarea>
-	    </div>
-	  </div>
-	  
-	</fieldset>
+            <!-- button -->
+            <div class="col-lg-4">
+              <button type="submit" class="btn btn-success">Announce</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="text" class="col-lg-2 control-label">Text</label>
+            <div class="col-lg-10">
+              <textarea class="form-control" rows="3" id="text" placeholder="Enter the announcement text here..."></textarea>
+            </div>
+          </div>
+
+        </fieldset>
       </form>
     </div> <!-- panel-body -->
   </div> <!-- panel -->
