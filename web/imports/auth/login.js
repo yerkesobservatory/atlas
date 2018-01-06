@@ -20,7 +20,7 @@ Template.login.events({
 		    CoffeeAlerts.clearSeen()
 		    CoffeeAlerts.error('Incorrect username or password');
 		} else {
-		    CoffeeAlerts.error('An unknown error occurred');
+		    CoffeeAlerts.error(error.message);
 		}
 	    }
 	});
