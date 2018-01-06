@@ -22,7 +22,7 @@ Template.sessions.helpers({
 	    collection: Sessions,
 	    showRowCount: true,
 	    showNavigationRowsPerPage: false,
-	    noDataTmpl: Template.noSessions, 
+	    noDataTmpl: Template.noSessions,
 	    fields: [
 		{key: 'start',
 		 label: 'Start'},
@@ -31,7 +31,10 @@ Template.sessions.helpers({
 		{key: 'programId',
 		 label: 'Program',
 		 fn: function (value, object, key) {
-		     	 return Programs.findOne(value).name;
+		     const program = Programs.findOne(value);
+		     if (program) {
+			 return program.name;
+		     }
 		 }
 		},
 		{key: 'email',
