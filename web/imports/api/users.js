@@ -61,7 +61,7 @@ Meteor.methods({
             if (id) {
 
                 // add to user to users group
-                Roles.addUsersToRoles(id, ['users']);
+                Roles.addUsersToRoles(id, ['user']);
 
                 // create 'general' program for that user
                 Meteor.call('programs.insert', 'General', 'general');
@@ -105,15 +105,19 @@ Meteor.methods({
 
         // check that the user is logged in
         if (! Meteor.userId()) {
-            throw new Meteor.Error('not-authorized');
+	    console.log('not-authorized');
+	    throw new Meteor.Error('not-authorized');
         }
 
-        // check that the current-logged in user is admin
-        if (Roles.userIsInRole(Meteor.userId(), 'admins')) {
+	// check that the current-logged in user is admin
+	if (Roles.userIsInRole(Meteor.userId(), 'admin')) {
 
-            // add the user to the role
-            Roles.addUsersToRoles(userId, role);
-        }
+	    // add the user to the role
+	    Roles.addUsersToRoles(userId, role);
+
+	    // remove user from user roles
+	    Roles.removeUsersFromRoles(userId, 'user');
+	}
     },
 
     'users.removeFromRole'(userId, role) {
@@ -127,11 +131,14 @@ Meteor.methods({
         }
 
         // check that the current-logged in user is admin
-        if (Roles.userIsInRole(Meteor.userId(), 'admins')) {
+        if (Roles.userIsInRole(Meteor.userId(), 'admin')) {
 
             // add the user to the role
             Roles.removeUsersFromRoles(userId, role);
-        }
+
+	    // add user to 'users'
+	    Roles.addUsersToRoles(userId, 'user');
+	}
     },
 
     'users.checkPassword'(userId, digest) {
