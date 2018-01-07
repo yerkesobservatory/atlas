@@ -30,12 +30,13 @@
 	  {{/with}}
 	  {{#if isInRole 'admin'}}
 	  <!-- TODO: roles throws exception when document is none -->
-	  <p><b>Roles: </b> {{> editableText collection="users" field="roles"}}</p>
+	  <p><b>Roles: </b> {{> editableList collection="users" field="roles"}}</p>
+	  {{/if}}
 	  {{#with profile}}
 	  <p><b> Change {{firstName}}'s Password </b></p>
 	  {{> changePassword}}
 	  {{/with}}
-	  {{/if}}
+
         </div>
         <div class="modal-footer">
           <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
