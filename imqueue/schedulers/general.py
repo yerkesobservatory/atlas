@@ -3,6 +3,7 @@ import datetime
 import astroplan
 import numpy as np
 import astropy.units as units
+import imqueue.database as database
 import astroplan.constraints as constraints
 import astroplan.scheduling as scheduling
 from astroplan import ObservingBlock, FixedTarget
@@ -14,8 +15,8 @@ from routines import pinpoint, lookup
 from telescope import Telescope
 
 def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[ObservingBlock]:
-    """ Return the next object to be imaged according to the 'general' scheduling 
-    algorithm, and the time that the executor must wait before imaging this observation. 
+    """ Return the next object to be imaged according to the 'general' scheduling
+    algorithm, and the time that the executor must wait before imaging this observation.
 
     Parameters
     ----------
@@ -29,7 +30,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
     obs: Dict
         The next observation to be executed
     wait: int
-         The time (in seconds) to wait before imaging this observation. 
+         The time (in seconds) to wait before imaging this observation.
 
     Authors: rprechelt
     """
@@ -41,39 +42,53 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
 
     # build default constraints
     global_constraints = [constraints.AltitudeConstraint(min=40*units.deg), # set minimum altitude
-                          constraints.MoonSeparationConstraint(min=10*units.deg)] # 25 degrees from moon
-                          # constraints.AirmassConstraint(max=5, boolean_constraint = False)]  # rank by airmass
-                          # constraints.AtNightConstraint.twilight_nautical()] # sun below -18
-
+                          constraints.AtNightConstraint.twilight_nautical()] # sun below -18
 
     # list to store observing blocks
     blocks = []
-    
+
     # create targets
     for observation in observations:
         # target coordinates
-        coord = SkyCoord(observation['RA']+' '+observation['Dec'], unit=(units.hourangle, units.deg))
+        center = SkyCoord(observation['RA']+' '+observation['Dec'], unit=(units.hourangle, units.deg))
+
+        # create and apply offset
+        ra_offset = Angle(observation['options'].get('ra_offset') or 0, unit=units.arcsec)
+        dec_offset = Angle(observation['options'].get('dec_offset') or 0, unit=units.arcsec)
+
+        # offset coordinates
+        coord = SkyCoord(center.ra + ra_offset, center.dec + dec_offset)
 
         # create astroplan traget
         target = FixedTarget(coord=coord, name=observation['target'])
 
-        # create time constraint
+        # priority - if the observation has a priority, otherwise 1
+        priority = observation['options'].get('priority') or 1
+
+        # create local constraints
         ltc = constraints.LocalTimeConstraint(min=datetime.datetime.now().time(),
                                               max=session['end'].time())
 
-        # priority - currently constant for all observations
-        # TODO: enable user to set obs-by-obs priority
-        priority = 1
+        # if specified, restrict airmass, otherwise no airmass restriction
+        max_airmass = observation['options'].get('airmass') or 38
+        airmass = constraints.AirmassConstraint(max=max_airmass, boolean_constraint = False)]  # rank by airmass
+
+        # if specified, use observations moon separation, otherwise use 2 degrees
+        moon_sep = observation['options'].get('moon')*units.deg or 2*units.deg
+        moon = constraints.MoonSeparationConstraint(min=moon_sep*units.deg),
+
+        # time, airmass, moon, + altitude, and at night
+        constraints = [ltc, airmass, moon]
 
         # create observing block for this target
         blocks.append(ObservingBlock.from_exposures(target, priority, observation['exposure_time']*units.second,
                                                     observation['exposure_count']*len(observation['filters']),
                                                     config.telescope.readout_time*units.second,
-                                                    configuration = observation, 
+                                                    configuration = observation,
                                                     constraints = [ltc]))
 
     # we need to create a transitioner to go between blocks
-    transitioner = astroplan.Transitioner(0.8*units.deg/units.second,
+    transitioner = astroplan.Transitioner(1*units.deg/units.second,
                                           {'filter': {'default': 3*units.second}})
 
     # create priority scheduler
@@ -98,11 +113,11 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
     return schedule
 
 def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Telescope) -> bool:
-    """ Observe the request observation and save the data according to the parameters of the program. 
+    """ Observe the request observation and save the data according to the parameters of the program.
 
     This function is provided a connected Telescope() object that should be used to execute
-    the observation, and a connected MongoDB client to allow for temporary changes to be stored 
-    in the observation for next time. 
+    the observation, and a connected MongoDB client to allow for temporary changes to be stored
+    in the observation for next time.
 
     Parameters
     ----------
@@ -119,7 +134,7 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Tel
         Returns True if successfully executed, False otherwise
 
     Authors: rprechelt
-    """                
+    """
     # point telescope at target
     telescope.log.info(f'Slewing to {observation["target"]}')
 
@@ -134,7 +149,7 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Tel
     # create basename for observations
     # TODO: support observations which only have RA/Dec
     # TODO: replace _id[0:3] with number from program
-    fname = '_'.join([str(datetime.date.today()), 
+    fname = '_'.join([str(datetime.date.today()),
                       observation['email'].split('@')[0], observation['target'],
                       observation['_id'][0:3]])
     dirname = '/'.join(['', 'home', config.telescope.username, 'data',
@@ -146,8 +161,8 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Tel
 
     # generate basename
     basename = f'{dirname}/'+'_'.join([str(datetime.date.today()),
-                                                    observation['email'].split('@')[0],
-                                                    observation['target']])
+                                       observation['email'].split('@')[0],
+                                       observation['target']])
 
     # we should be pointing roughly at the right place
     # now we pinpoint
@@ -197,9 +212,11 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Tel
 
     # we have finished the observation, let's update record
     # with execDate and mark it completed
-    db.observations.update({'_id': observation['_id']},
-                                  {'$set':
-                                   {'completed': True,
-                                    'execDate': datetime.datetime.now()}})
+    # TODO: we have to get rid of stars.uchicago.edu reference here
+    database.Database.observations.update({'_id': observation['_id']},
+                                          {'$set':
+                                           {'completed': True,
+                                            'execDate': datetime.datetime.now(),
+                                            'directory': 'http://stars.uchicago.edu/atlas/'+dirname}})
 
     return True
