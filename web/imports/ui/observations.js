@@ -110,28 +110,42 @@ Template.observations.events({
         const exptime = target.exptime.value;
         const expcount = target.expcount.value;
         const binning = target.binning.value;
+	const lunar = target.lunar.value;
+	const airmass = target.airmass.value;
+	const offset_ra = target.offset_ra.value;
+	const offset_dec = target.offset_dec.value;
 
-        // build filter list
-        const filterNames = ['filter_clear', 'filter_u', 'filter_g',
-                             'filter_r', 'filter_i', 'filter_z',
-                             'filter_ha'];
-        var filters = [];
-        for (var i = 0; i < filterNames.length; i++) {
-            if (target[filterNames[i]].checked) {
-                if (filterNames[i].split('_')[1] == 'ha') {
-                    filters.push('h-alpha');
-                }
-                else if (filterNames[i].split('_')[1] == 'clear') {
-                    filters.push('clear');
-                }
-                else {
-                    filters.push(filterNames[i].split('_')[1]+'-band');
-                }
-            }
-        }
+	// build filter list
+	const filterNames = ['filter_clear', 'filter_u', 'filter_g',
+			     'filter_r', 'filter_i', 'filter_z',
+			     'filter_ha'];
+	var filters = [];
+	for (var i = 0; i < filterNames.length; i++) {
+	    if (target[filterNames[i]].checked) {
+		if (filterNames[i].split('_')[1] == 'ha') {
+		    filters.push('h-alpha');
+		}
+		else if (filterNames[i].split('_')[1] == 'clear') {
+		    filters.push('clear');
+		}
+		else {
+		    filters.push(filterNames[i].split('_')[1]+'-band');
+		}
+	    }
+	}
 
-        // submit new observation
-        Meteor.call('observations.insert', progId, target_name, exptime, expcount, binning, filters);
+	// check that at least one filter is selected
+	if (filters.length == 0) {
+	    CoffeeAlerts.warning('Your observation needs at least one filter.');
+	    return;
+	}
+
+	// optional parameters
+	options = {'lunar': lunar, 'airmass': airmass,
+		   'offset_ra': offset_ra, 'offset_dec': offset_dec};
+
+	// submit new observation
+	Meteor.call('observations.insert', progId, target_name, exptime, expcount, binning, filters, options);
 
         // reset form
         $('.new-observation')[0].reset();
