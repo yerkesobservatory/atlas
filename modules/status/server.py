@@ -58,58 +58,58 @@ class StatusServer(base.MQTTServer):
         if event == 'opening':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'slit': 'opening', 'status': 'opening'}})
-        else if event == 'openup':
+        elif event == 'openup':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'slit': 'open', 'status': 'open'}})
-        else if event == 'closing':
+        elif event == 'closing':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'slit': 'closing', 'status': 'closing'}})
-        else if event == 'closedown':
+        elif event == 'closedown':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'slit': 'open', 'status': 'open'}})
-        else if event == 'filterchange':
+        elif event == 'filterchange':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'filter': 'changing'}})
-        else if event == 'filter':
+        elif event == 'filter':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'filter': msg.get('filter')}})
-        else if event == 'focus':
+        elif event == 'focus':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'focus': msg.get('focus')}})
-        else if event == 'slew':
+        elif event == 'slew':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'location': msg.get('location'),
                                                     'status': 'slewing'}})
-        else if event == 'point':
+        elif event == 'point':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'location': msg.get('location'),
                                                     'location': 'open'}})
-        else if event == 'lock':
+        elif event == 'lock':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'lock': msg.get('username')}})
-        else if event == 'unlock':
+        elif event == 'unlock':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'lock': None}})
-        else if event == 'wait':
+        elif event == 'wait':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'wait': msg.get('wait'),
                                                     'status': 'sleeping'}})
-        else if event == 'wake':
+        elif event == 'wake':
             slit = self.db.telescopes.find_one({'name': name}).get('slit')
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'wait': 0,
                                                     'status': slit}})
-        else if event == 'weather':
+        elif event == 'weather':
             weather = {'sun': msg.get('sun'), 'moon': msg.get('moon'),
                        'rain': msg.get('rain'), 'cloud': msg.get('cloud'),
                        'dew': msg.get('dew')}
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'weather': weather}})
-        else if event == 'exposing':
+        elif event == 'exposing':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'status': 'exposing',
                                                     'progress': 0}})
-        else if event == 'exposure':
+        elif event == 'exposure':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'status': 'open',
                                                     'progress': 100}})
