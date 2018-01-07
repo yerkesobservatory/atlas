@@ -53,21 +53,8 @@ Template.adminUsers.helpers({
                 {key: '_id',
                  label: 'ID',
                 },
-                {key: '_id',
-                 label: 'Role',
-                 fn: function (value, object, key) {
-                     // console.log(value);
-                     // console.log(Roles.userIsInRole(value, 'users'))
-                     // if (Roles.userIsInRole(value, 'admins')) {
-                     //          return 'Admin';
-                     // }
-                     // else if (Roles.userIsInRole(value, 'users')) {
-                     //          return 'User';
-                     // } else {
-                     //              return 'Unknown';
-                     // }
-                 }
-                },
+                {key: 'roles',
+                 label: 'Roles'},
                 {label: '',
                  tmpl: Template.userAction
                 }
@@ -114,11 +101,9 @@ Template.adminUsers.events({
             // delete user
             Meteor.call('users.remove', this._id);
         } else if (event.target.className.includes('make-admin')) {
-
-            // toggle admin state
+	    // toggle admin state
             Meteor.call('users.addToRole', this._id, 'admin');
         } else if (event.target.className.includes('remove-admin')) {
-
             // toggle admin state
             Meteor.call('users.removeFromRole', this._id, 'admin');
         }
