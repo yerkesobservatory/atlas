@@ -2,9 +2,11 @@
 
 import time
 import argparse
+import importlib
 import websockets
 import telescope
 import imqueue
+import modules.status as status
 import logging
 import colorlog
 import multiprocessing
@@ -36,9 +38,22 @@ if args.subparser == 'start':
         t = telescope.TelescopeServer(authentication=args.no_authentication)
         p = multiprocessing.Process(target=t.start)
         p.start()
-    # start the queue executor
+        args.server.remove('telescope')
+        # start the queue executor
     if 'executor' in args.server:
         p = multiprocessing.Process(target=imqueue.Executor)
         p.start()
+        args.server.remove('executor')
+    if 'status' in args.server:
+        p = multiprocessing.Process(target=status.StatusServer)
+        p.start()
+        args.server.remove('status')
 
-########################################    
+    # try and import each server from the modules.user directory and start it
+    if args.server is not []:
+        for server in args.server:
+            server = importlib.import_module(f'modules.user.{server}')
+            p = multiprocessing.Process(target=server.Server)
+            p.start()
+
+########################################
