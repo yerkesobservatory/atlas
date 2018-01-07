@@ -64,8 +64,19 @@ Template.sessions.events({
 	const startDate = target.startDate.value+' '+target.startTime.value;
 	const endDate = target.endDate.value+' '+target.endTime.value;
 
+	// clear any previous alerts
+	CoffeeAlerts.clearSeen();
+
 	// submit new observation
-	Meteor.call('sessions.insert', programId, startDate, endDate);
+	Meteor.call('sessions.insert', programId,
+		    startDate, endDate, function (error, result) {
+			if (error.message == '[session-conflict]') {
+			    CoffeeAlerts.error('Your sessions conflicts with other sessions and therefore cannot be scheduled.');
+			}
+			else if (error) {
+			    CoffeeAlerts.error('An unknown error occured in adding your session');
+			}
+		    });
 
     },
     // on press of the delete button
