@@ -12,7 +12,8 @@ class Database(object):
     try:
         # database client
         client = pymongo.MongoClient(host=config.queue.database_host,
-                                     port=config.queue.database_port)
+                                     port=config.queue.database_port,
+                                     connect=False)
 
         database = client[config.queue.database]
 
