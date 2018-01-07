@@ -66,7 +66,7 @@ class StatusServer(base.MQTTServer):
                                           {'$set': {'slit': 'closing', 'status': 'closing'}})
         elif event == 'closedown':
             self.db.telescopes.update_one({'name': name},
-                                          {'$set': {'slit': 'open', 'status': 'open'}})
+                                          {'$set': {'slit': 'closed', 'status': 'closed'}})
         elif event == 'filterchange':
             self.db.telescopes.update_one({'name': name},
                                           {'$set': {'filter': 'changing'}})
