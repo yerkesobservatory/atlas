@@ -1,38 +1,4 @@
-/* ==== SIGN IN ==== */
-.form-signin {
-    max-width: 330px;
-    padding: 15px;
-    margin: 0 auto;
-}
-.form-signin .form-signin-heading,
-.form-signin .checkbox {
-    margin-bottom: 10px;
-}
-.form-signin .checkbox {
-    font-weight: normal;
-}
-.form-signin .form-control {
-    position: relative;
-    height: auto;
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
-    padding: 10px;
-    font-size: 16px;
-}
-.form-signin .form-control:focus {
-    z-index: 2;
-}
-.form-signin input[type="email"] {
-    margin-bottom: -1px;
-    border-bottom-right-radius: 0;
-    border-bottom-left-radius: 0;
-}
-.form-signin input[type="password"] {
-    margin-bottom: 10px;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-}
+
 
 
 /* ==== FORGOT ==== */
@@ -100,4 +66,160 @@
     border-top-right-radius: 0;
 }
 
+body {
+    font-family: "Futura";
+    font-style: "Medium"
+}
 
+#navbar-test {
+  font-family: "Futura";
+  font-style: "Medium";
+  font-size: 14;
+}
+
+#navbar-trans-test {
+  font-family: "Futura";
+  font-style: "Medium";
+  font-size: 14;
+  background-color: rgba(0,0,0,0.0);
+  margin-top: 15px;
+}
+
+#welcome_message {
+  color: white;
+  font-family: "Futura";
+  font-style: "Bold";
+  font-size: 40px;
+  margin-top: 350px;
+  margin-left: 80px;
+
+  line-height: 125%;
+  font-weight: 900;
+
+  text-underline-position: under;
+}
+
+#login_button, #signup_button {
+  margin-top: 25px;
+  border-color: white;
+  border-radius: 10px;
+  background-color:#011527;
+  color: white;
+  padding: 10px 55px;
+  font-size: 16px;
+}
+
+
+u {
+  text-decoration: none;
+  position: relative;
+}
+
+u:after {
+  content: '';
+  width: 100%;
+  position: absolute;
+  left: 0;
+  bottom: -15px;
+  border-width: 0 0 5px;
+  border-style: solid;
+}
+
+/* Modal */
+
+
+.modal-content {
+	background: #3a3a3a;
+	-moz-border-radius: 4px; -webkit-border-radius: 4px; border-radius: 4px;
+	border: 0;
+	text-align: left;
+}
+
+.modal-header {
+	padding: 55px 25px 15px 25px;
+  background: rgba(0,0,0,1);
+	/*background: #011527;*/
+	border: 0;
+  width: 500px;
+  max-width: 100%;
+  max-height: 100%;
+  margin-left: 100px;
+	-moz-border-radius: 4px 4px 0 0; -webkit-border-radius: 4px 4px 0 0; border-radius: 20px 20px 0 0;
+	color: #888;
+}
+
+
+.modal-header .close {
+	font-size: 36px;
+	color: #eee;
+	font-weight: 300;
+	text-shadow: none;
+	opacity: 1;
+}
+
+.modal-title {
+	margin-bottom: 10px;
+	line-height: 30px;
+  text-align: center;
+	color: #eee;
+}
+
+.modal-body {
+	padding: 10px 70px 70px 70px;
+  background: rgba(0,0,0,0.75);
+  width: 500px;
+  max-width: 100%;
+  max-height: 100%;
+  margin-left: 100px;
+	text-align: left;
+	-moz-border-radius: 0 0 4px 4px; -webkit-border-radius: 0 0 4px 4px; border-radius: 0 0 20px 20px;
+	color: #eee;
+}
+
+.modal-panel {
+	background-color: #0F425C;
+	color: #0F425C;
+  border-radius: 20px;
+
+}
+
+.modal-body img {
+	margin-bottom: 15px;
+}
+
+.modal-body form textarea {
+	height: 100px;
+
+}
+
+.modal-body form .input-error {
+	border-color: #0F425C;
+}
+
+#button_login {
+  background: #011527;
+  margin-top:20px;
+  padding: 10px 55px;
+  background: #0F425C;
+  border-color: white;
+  text-align:center;
+}
+
+#button_login:hover{
+  background-color: #0F425C;
+  background-color: #FFB547;
+}
+
+#button_forgot_password {
+  background: #011527;
+  margin-top:20px;
+  padding: 10px 55px;
+  background: #0F425C;
+  border-color: white;
+  text-align:center;
+}
+
+#button_forgot_password:hover{
+  background-color: #0F425C;
+  background-color: #FFB547;
+}

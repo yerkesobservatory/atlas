@@ -1,8 +1,10 @@
 <!-- default page for '/' route -->
 <template name="home">
+{{> navigation}}
   <div class="container-fluid">
+
     <div class="row">
-      
+
       <div class="col-lg-6">
 	<div class="panel panel-default">
 	  <div class="panel-heading">Your Profile</div>
@@ -17,7 +19,7 @@
 	    {{> telescopes}}
 	  </div> <!-- panel-body -->
 	</div> <!-- panel -->
-		
+
       </div> <!-- first column -->
 
       <div class="col-lg-6">
@@ -27,9 +29,9 @@
 	    {{> announcements}}
 	  </div> <!-- panel-body -->
 	</div> <!-- panel -->
-	
+
       </div> <!-- second column -->
-      
+
     </div> <!-- row -->
   </div> <!-- container -->
 </template>
