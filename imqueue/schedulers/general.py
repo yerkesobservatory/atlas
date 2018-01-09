@@ -1,3 +1,4 @@
+import telescope
 import pymongo
 import datetime
 import astroplan
@@ -12,7 +13,6 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun
 from typing import List, Dict
 from config import config
 from routines import pinpoint, lookup
-from telescope import Telescope
 
 def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[ObservingBlock]:
     """ Return the next object to be imaged according to the 'general' scheduling
@@ -71,7 +71,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
 
         # if specified, restrict airmass, otherwise no airmass restriction
         max_airmass = observation['options'].get('airmass') or 38
-        airmass = constraints.AirmassConstraint(max=max_airmass, boolean_constraint = False)]  # rank by airmass
+        airmass = constraints.AirmassConstraint(max=max_airmass, boolean_constraint = False)  # rank by airmass
 
         # if specified, use observations moon separation, otherwise use 2 degrees
         moon_sep = observation['options'].get('moon')*units.deg or 2*units.deg
@@ -112,7 +112,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
     # return the scheduled blocks
     return schedule
 
-def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Telescope) -> bool:
+def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> bool:
     """ Observe the request observation and save the data according to the parameters of the program.
 
     This function is provided a connected Telescope() object that should be used to execute
