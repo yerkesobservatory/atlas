@@ -1,16 +1,87 @@
 <!-- template for user profile on home page -->
 <template name="profile">
-  <p><b>Name:</b> {{user.profile.firstName}} {{user.profile.lastName}}</p>
-  <p><b>Affiliation:</b> {{user.profile.affiliation}}</p>
-  <p><b>Pending Observations:</b> {{numPending user}}</p>
-  <p><b>Completed Observations:</b> {{numCompleted user}}</p>
-  <p><b>Badges:</b> {{badges user}}</p>
-  <p><b>Roles:</b> {{user.roles}}</p>
+  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>NAME: </b>{{user.profile.firstName}} {{user.profile.lastName}}</p>
+  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>AFFILIATION:</b> {{user.profile.affiliation}}</p>
+  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>PENDING:</b> {{numPending user}}</p>
+  <table class="table">
+  <thead>
+    <tr>
+      <th scope="col">Target</th>
+      <th scope="col">Exposure Time</th>
+      <th scope="col">Filter</th>
+      <th scope="col">Bin</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th scope="row">{{obj4Pending user 1 target}}</th>
+      <td>{{obj4Pending user 1 exposure_time}}</td>
+      <td>{{obj4Pending user 1 filters}}</td>
+      <td>{{obj4Pending user 1 binning}}</td>
+    </tr>
+    <tr>
+      <th scope="row">{{obj4Pending user 2 target}}</th>
+      <td>{{obj4Pending user 2 exposure_time}}</td>
+      <td>{{obj4Pending user 2 filters}}</td>
+      <td>{{obj4Pending user 2 binning}}</td>
+    </tr>
+    <tr>
+      <th scope="row">{{obj4Pending user 3 target}}</th>
+      <td>{{obj4Pending user 3 exposure_time}}</td>
+      <td>{{obj4Pending user 3 filters}}</td>
+      <td>{{obj4Pending user 3 binning}}</td>
+    </tr>
+    <tr>
+      <th scope="row">{{obj4Pending user 4 target}}</th>
+      <td>{{obj4Pending user 4 exposure_time}}</td>
+      <td>{{obj4Pending user 4 filters}}</td>
+      <td>{{obj4Pending user 4 binning}}</td>
+    </tr>
+  </tbody>
+</table>
+  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>COMPLETED:</b> {{numCompleted user}}</p>
+  <table class="table">
+  <thead>
+    <tr>
+      <th scope="col">Target</th>
+      <th scope="col">Exposure Time</th>
+      <th scope="col">Filter</th>
+      <th scope="col">Bin</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th scope="row">{{obj4Completed user 1 target}}</th>
+      <td>{{obj4Completed user 1 exposure_time}}</td>
+      <td>{{obj4Completed user 1 filters}}</td>
+      <td>{{obj4Completed user 1 binning}}</td>
+    </tr>
+    <tr>
+      <th scope="row">{{obj4Completed user 2 target}}</th>
+      <td>{{obj4Completed user 2 exposure_time}}</td>
+      <td>{{obj4Completed user 2 filters}}</td>
+      <td>{{obj4Completed user 2 binning}}</td>
+    </tr>
+    <tr>
+      <th scope="row">{{obj4Completed user 3 target}}</th>
+      <td>{{obj4Completed user 3 exposure_time}}</td>
+      <td>{{obj4Completed user 3 filters}}</td>
+      <td>{{obj4Completed user 3 binning}}</td>
+    </tr>
+    <tr>
+      <th scope="row">{{obj4Completed user 4 target}}</th>
+      <td>{{obj4Completed user 4 exposure_time}}</td>
+      <td>{{obj4Completed user 4 filters}}</td>
+      <td>{{obj4Completed user 4 binning}}</td>
+    </tr>
+  </tbody>
+</table>
+  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>ROLES:</b> {{user.roles}}</p>
+  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>BADGES:</b> {{badges user}}</p>
   <!-- this could be made into a button or something prettier? -->
   <a href="#" id="editProfile">Edit</a>
   <!-- modal for editing profile -->
   {{> editProfile}}
-
 </template>
 
 <template name="editProfile">

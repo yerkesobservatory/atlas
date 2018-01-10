@@ -19,12 +19,54 @@ Template.profile.helpers({
 				      'completed': false}).count();
 	}
     },
+
+
     numCompleted(user) {
 	if (user) {
 	    return Observations.find({'owner': user._id,
 				      'completed': true}).count();
 	}
     },
+    obj4Pending(user, slot, query_item) {
+      if (numPending(user) > 3){
+       if (user) {
+        var index=slot-1;
+        return Observations.find({'owner': user._id,'completed': false},{query_item:1, _id:0}).sort({ submitDate: -1 })[index];
+               }
+        }
+      else {
+       if (user){
+         if(slot<numPending(user)){
+           var index=slot-1;
+           return Observations.find({'owner': user._id,'completed': false},{query_item:1, _id:0}).sort({ submitDate: -1 })[index];
+            }
+         else{
+            return null;
+            }
+          }
+        }
+    },
+
+    obj4Completed(user, slot, query_item) {
+    if (numCompleted(user) > 3){
+     if (user) {
+      var index=slot-1;
+      return Observations.find({'owner': user._id,'completed': true},{query_item:1, _id:0}).sort({ submitDate: -1 })[index];
+             }
+      }
+    else {
+     if (user){
+       if(slot<numCompleted(user)){
+         var index=slot-1;
+         return Observations.find({'owner': user._id,'completed': true},{query_item:1, _id:0}).sort({ submitDate: -1 })[index];
+          }
+       else{
+          return null;
+          }
+        }
+      }
+    },
+
 
     badges(user) {
 	if (user) {
@@ -32,6 +74,8 @@ Template.profile.helpers({
 	}
     },
 });
+
+
 
 // Template.editProfile.helpers({
 //     user() {

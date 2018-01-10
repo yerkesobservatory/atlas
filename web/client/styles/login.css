@@ -66,15 +66,20 @@
     border-top-right-radius: 0;
 }
 
-body {
+body, p {
     font-family: "Futura";
     font-style: "Medium"
 }
+
 
 #navbar-test {
   font-family: "Futura";
   font-style: "Medium";
   font-size: 14;
+  background-color: #0F425C;
+  margin: 0 -9999rem;
+  /* add back negative margin value */
+  padding: 0.25rem 9999rem;
 }
 
 #navbar-trans-test {
@@ -85,7 +90,7 @@ body {
   margin-top: 15px;
 }
 
-#welcome_message {
+#welcome_message, #home_message {
   color: white;
   font-family: "Futura";
   font-style: "Bold";
@@ -222,4 +227,9 @@ u:after {
 #button_forgot_password:hover{
   background-color: #0F425C;
   background-color: #FFB547;
+}
+
+.img-fluid{
+  max-width: 100%;
+  height: auto;
 }
