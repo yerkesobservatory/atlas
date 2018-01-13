@@ -182,6 +182,25 @@ class SSHTelescope(object):
         unlocked = self.unlock()
         return closed and unlocked
 
+    def lamps_on(self) -> bool:
+        """ Turn on any dome lamps.
+        """
+        # TODO
+        return True
+
+    def lamps_off(self) -> bool:
+        """ Turn on any dome lamps.
+        """
+        # TODO
+        return True
+
+    def chip_temp(self, chip: str) -> bool:
+        """ Return temperature (in C) of the chip with identifier
+        'chip'
+        """
+        # TODO
+        return True
+
     def lock(self, user: str, comment: str = 'observing') -> bool:
         """ Lock the telescope with the given username.
         """
@@ -538,6 +557,18 @@ class SSHTelescope(object):
 
         return (re.search(telescope.enable_tracking_re, result) and True) or False
 
+    def disable_tracking(self) -> bool:
+        """ Disable the tracking motor for the telescope.
+        """
+        # TODO
+        return True
+
+    def move_dome(self, daz: float) -> bool:
+        """ Move the dome to.. TODO
+        """
+        # TODO
+        return True
+
     def calibrate_motors(self) -> bool:
         """ Run the motor calibration routine.
         """
@@ -630,7 +661,8 @@ class SSHTelescope(object):
         if wait >= 60 * config.telescope.wait_time:
 
             # if the dome is open, close it
-            if self.dome_open():
+            dome = self.dome_open()
+            if dome:
                 self.log.info('Closing down the telescope while we sleep...')
                 self.close_down()
 
@@ -640,6 +672,10 @@ class SSHTelescope(object):
         # we aren't going to sleep while we wait
         else:
             time.sleep(wait)
+
+        # if the dome was open when we got called, try and open it
+        if dome and self.weather_ok():
+            self.open_dome()
 
         self.publish({'event': 'wake',
                       'time': datetime.datetime.now().isoformat()})
@@ -778,15 +814,15 @@ class SSHTelescope(object):
             # notify that we are taking exposure
             self.publish({'event': 'exposing',
                           'type': 'bias',
-                          'exptime': 0.1,
+                          'exptime': 0,
                           'binning': binning,
                           'time': datetime.datetime.now().isoformat()})
-            self.run_command(telescope.take_dark.format(time=0.1, binning=binning,
+            self.run_command(telescope.take_bias.format(binning=binning,
                                                         filename=fname))
             # publish to MQTT (or not)
             self.publish({'event': 'exposure',
                           'type': 'bias',
-                          'exptime': 0.1,
+                          'exptime': 0,
                           'binning': binning,
                           'remote': config.telescope.host,
                           'path': fname,
