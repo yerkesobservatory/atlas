@@ -5,14 +5,29 @@ import { Observations } from '../api/observations.js';
 import { Programs } from '../api/programs.js';
 import $ from 'jquery';
 
+// global variable to store pointing
+aladin = null;
+
 // subscribe to stream
 Template.observations.onCreated(function onCreated() {
     Meteor.subscribe('observations');
+
+    $.getScript("//aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.js", function() {
+	aladin = A.aladin('#aladin-lite-div', {survey: "P/DSS2/color",
+					       fov: (23.7/60),
+					       showLayersControl: false,
+					       showShareControl: false,
+					       showZoomControl: false,
+					       showGotoControl: false,
+					       showReticle: false,
+					       showFrame: false});
+
+    });
 });
 
-Template.observationAction.onRendered(function() {
-    var clipboard = new Clipboard('.copy-link');
-});
+// Template.observationAction.onRendered(function() {
+//     var clipboard = new Clipboard('.copy-link');
+// });
 
 // subscribe to stream
 Template.newObservation.onCreated(function onCreated() {
@@ -100,6 +115,15 @@ Template.newObservation.helpers({
 
 // event handlers
 Template.observations.events({
+    'blur #target'(event) {
+
+	// point Aladin preview at object
+	if (event.target.value) {
+	    aladin.gotoObject(event.target.value);
+	}
+
+	event.preventDefault();
+    },
     'submit .new-observation'(event) {
 
 	// prevent default browser

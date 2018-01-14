@@ -14,6 +14,11 @@
         </div>
       </div>
       <div class="col-md-8">
+
+    <!-- insert this snippet where you want Aladin Lite viewer to appear and after the loading of jQuery -->
+    <div id="aladin-lite-div" style="width:400px;height:400px;"></div>
+
+
         {{> reactiveTable settings=settings}}
       </div>
     </div>
@@ -180,7 +185,7 @@
       <li><a href="#" class="action-completed">Mark Completed</a></li>
       {{else}}
       <li><a href="#" class="action-completed">Mark Uncompleted</a></li>
-      <li><a href="#" class="copy-link" data-clipboard-text={{directory}}>Copy Link to Files</a></li>
+      <!-- <li><a href="#" class="copy-link" data-clipboard-text={{directory}}>Copy Link to Files</a></li> -->
       {{/unless}}
       <li class="divider"></li>
       <li><a href="#" class="action-delete">Delete</a></li>
