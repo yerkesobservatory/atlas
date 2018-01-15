@@ -1,45 +1,129 @@
+<template name="bkgd_control">
+    <style>
+    body {
+      background: url("control_background.jpeg") no-repeat center center fixed;
+      -webkit-background-size: cover;
+      -moz-background-size: cover;
+      -o-background-size: cover;
+      background-size: cover;
+    }
+    </style>
+    <!--<div id="color-overlay"></div>-->
+</template>
+
 <template name="control">
+  {{> navigation}}
+  {{> bkgd_control}}
+  <br>
+  <div class="container-fluid">
+  <h2 id="home_message" style="font-size: 25px; margin-top: 130px; margin-left: 0px; margin-bottom: 30px;">STONE EDGE OBSERVATORY GUI</h2>
+
+  </div>
   <div class="container-fluid">
   <div class="row">
-    
+
+  <!--  <img src="filter_wheel.png" alt="" usemap="#Map" style="height:200px;"/>
+    <map name="Map" id="Map">
+        <area alt="" title="" href="#" shape="poly" coords="1047,1169,720,1886,1071,1982,1383,1880" />
+        <area alt="" title="" href="#" shape="poly" coords="1140,1112,1527,1820,1776,1625,1920,1304" />
+        <area alt="" title="" href="#" shape="poly" coords="1173,1010,1947,1166,1965,848,1803,515" />
+        <area alt="" title="" href="#" shape="poly" coords="1101,893,1689,416,1452,197,1131,119" />
+        <area alt="" title="" href="#" shape="poly" coords="984,929,942,119,642,200,369,413" />
+        <area alt="" title="" href="#" shape="poly" coords="918,1010,270,530,126,836,135,1172" />
+        <area alt="" title="" href="#" shape="poly" coords="945,1121,582,1826,327,1613,189,1319" />
+    </map>-->
+
     <!-- left control panel -->
-    <div class="col-md-4">
-      <div class="panel panel-default">
-	<div class="panel-heading">Telescope Control</div>
-	<div class="panel-body">
-	  
-	  <a href="#" class="btn btn-success">Connect to Telescope</a>
+    <div class="col-xs-3">
+      <div class="panel panel-default" style="border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(1,1,1,0.5);">
+      <div class="panel-heading" style="font-size:22px; border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0);">TELESCOPE STATUS</div>
+      <div class="panel-body">
+        <p style='color: rgba(255,163,25,1);'><b style='color:white; font-weight: normal;'>DOME: </b> </p>
+        <p style='color: rgba(255,163,25,1);'><b style='color:white; font-weight: normal;'>SLIT:</b> </p>
+        <p style='color: rgba(255,163,25,1);'><b style='color:white; font-weight: normal;'>TRACKING:</b> </p>
+        <p style='color: rgba(255,163,25,1);'><b style='color:white; font-weight: normal;'>LAMPS:</b> </p>
 
-	      <form class="form-vertical control" style="padding-top: 30px;">
-		<fieldset>
-
-		  <!-- Target Name -->
-		  <div class="form-group col-lg-12">
-		    <div class="row">
-		      <label for="target" class="control-label">Target</label>
-		    </div>
-		    <div class="row">
-		    <!-- <div class="col-lg-9"> -->
-		    <input class="form-control" id="target" placeholder="Target Name or hh:mm:ss dd:mm:ss" name="target" type="text" required>
-		    </div>
-		    </div>
-		  <!--   </div> -->
-		  <!-- </div> -->
-		</fieldset>
-	      </form>
-	  
-	      <a href="#" class="btn btn-info">New Observation</a>
-	</div>
       </div>
-      
+      </div>
+
+
+      <h2 id="home_message" style="font-size: 23px; font-weight: normal; margin-top: 50px; margin-left: 0px;">TELESCOPE CONTROL</h2>
+      <a href="#" data-toggle="modal" data-target="#login" id='login_button' class="btn btn-success btn-default" style="border-radius:10px; width:100%; padding: 10px 10px;">CONNECT TO TELESCOPE</a>
+      <form class="form-vertical control" style="padding-top: 30px;">
+  <fieldset>
+
+    <!-- Target Name -->
+    <div class="form-group col-lg-12">
+      <div class="row">
+        <label for="target" class="control-label">Target</label>
+      </div>
+      <div class="row">
+      <!-- <div class="col-lg-9"> -->
+      <input class="form-control" id="target" placeholder="Target Name or hh:mm:ss dd:mm:ss" name="target" type="text" required>
+      </div>
+      </div>
+    <!--   </div> -->
+    <!-- </div> -->
+  </fieldset>
+      </form>
+
+      <a href="#" id="button_login" class="btn btn-success btn-default" style="border-radius:10px; width:100%; padding: 10px 10px;">NEW OBSERVATION</a>
+
+      <div class="modal fade" id="login" role="dialog" style='margin-top:100px;'>
+        <div class="modal-dialog">
+
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">
+              <span aria-hidden="true">&times;</span><span class="sr-only">Close</span>
+            </button>
+            <img src="logo_circle.png" width="30%" style='margin-left:160px; margin-top:25px'>
+          </div>
+
+          <div class="modal-body" style="padding: 30px 80px 50px 80px;">
+                  {{> control_login_modal}}
+          </div>
+
+        </div>
+      </div>
+
           <!-- bottom control panel -->
-      <div class="panel panel-default">
-	<div class="panel-heading">Camera Control</div>
-	<div class="panel-body">
+    </div>
+
+
+    <!-- center image panel -->
+    <div class="col-xs-6">
+      <div class="row">
+      <div class="container-fluid col-xs-12">
+        <div class="container-fluid col-xs-4">
+          <img src="cloud_icon.gif" class="img-fluid" style="max-width:100px; margin-top:-320px;">
+          <p style="color:white; text-align:left; margin-top:-130px;"><b>Clouds:</b> {{telescope.weather.cloud}}</p>
+        </div>
+        <div class="container-fluid col-xs-4">
+          <img src="drop_icon.gif" class="img-fluid" style="max-width:100px; margin-top:-320px; margin-left:15px;">
+          <p style="color:white; text-align:left; margin-left:35px; margin-top:-130px;"><b>Rain:</b> {{telescope.weather.rain}}</p>
+        </div>
+        <div class="container-fluid col-xs-4">
+          <img src="globe_icon.gif" class="img-fluid" style="max-width:100px; margin-top:-320px;">
+          <p style="color:white; text-align:left; margin-top:-130px;"><b>Location:</b><br> {{telescope.location}}</p>
+        </div>
+      </div>
+      </div>
+
+      <img style="border-radius: 50%; width:100%; border-color: rgba(1,1,1,1);" src="test_GUI_image.jpg">
+
+    </div>
+
+    <div class="col-xs-3">
+
+    <img style="width:100%; border-color: rgba(1,1,1,1);" src="webcam_still.png">
+
+      <div class="panel panel-default" style="margin-top: 30px; border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(1,1,1,0.5);">
+<div class="panel-heading" style="font-size:22px; border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0);">CAMERA CONTROL</div>
+  <div class="panel-body">
 
 	  <form class="form-horizontal register" style="margin-bottom:30px;">
 	    <fieldset>
-		  
+
 	<!-- filters -->
 	<div class="col-lg-12 col-xs-offset-1" style="margin-bottom:15px;">
 	  <div class="row">
@@ -93,43 +177,49 @@
 
 		  <!-- Exposure Time -->
 		  <div class="form-group" style="padding-top:10px;">
-		    <label for="exptime" class="col-lg-3 control-label">Exposure Time</label>
-		    <div class="col-lg-9">
-		      <input class="form-control" id="exptime" placeholder="Exposure Time (s)" name="target" type="text" required>
+		    <label for="exptime" class="col-xs-6 control-label">EXP TIME (s)</label>
+		    <div class="col-xs-6">
+		      <input class="form-control" id="exptime" placeholder="" name="target" type="text" required>
 		    </div>
 		  </div>
 
 		  <!-- Binning -->
 		  <div class="form-group">
-		    <label for="binning" class="col-lg-3 control-label">Binning</label>
-		    <div class="col-lg-9">
+		    <label for="binning" class="col-xs-6 control-label">BIN</label>
+		    <div class="col-xs-6">
 		      <input class="form-control" id="binning" placeholder="Binning" name="binning" type="number" required value=2 min=1 max=8>
 		    </div>
 		  </div>
-		    <a href="#" class="btn btn-info">Take Exposure</a>
+      <a href="#" id="button_login" class="btn btn-success btn-default" style="border-radius:10px; width:100%; padding: 10px 10px;">TAKE EXPOSURE</a>
 		</fieldset>
 	      </form>
 
-	  <div class="progress progress-striped">
-	    <div class="progress-bar progress-bar-info" style="width: 70%"></div>
-	    </div>
+        <div class="progress" style="background-image:none; background-color: rgba(26,34,49,1); max-width:90%;">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="width:70%"></div>
+        </div>
 
-	</div>
-      </div>
 
-    </div>
-
-    <!-- center image panel -->
-    <div class="col-md-8">
-      <div class="panel panel-default">
-	<div class="panel-heading">Image Viewer</div>
-	<div class="panel-body">
 	</div>
       </div>
     </div>
 
 
-    
+
   </div>
+  </div>
+</template>
+
+<template name='control_login_modal'>
+
+  <div class="container-fluid">
+    <form class="login form-signin">
+
+        <div class="form-group">
+          <label class="sr-only" for="form-password">Password</label>
+          <input type="password" name="password" placeholder="Password" class="form-password form-control" id="form-password" required>
+        </div>
+
+        <button id="button_login" name="submit" type="submit" class="btn btn-default" style="border-radius:10px; width:100%;">LOGIN</button>
+    </form>
   </div>
 </template>
