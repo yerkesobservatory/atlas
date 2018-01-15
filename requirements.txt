@@ -7,14 +7,19 @@ ccdproc==1.2.0
 certifi==2017.4.17
 cffi==1.11.2
 chardet==3.0.4
+click==6.7
 colorlog==2.10.0
 cryptography==2.1.4
 cycler==0.10.0
 decorator==4.1.2
+Flask==0.12.2
 google-api-python-client==1.6.4
 httplib2==0.10.3
 idna==2.6
+itsdangerous==0.24
+Jinja2==2.10
 jplephem==2.6
+MarkupSafe==1.0
 matplotlib==2.0.2
 networkx==2.0
 numpy==1.13.1
@@ -51,3 +56,4 @@ urllib3==1.21.1
 uvloop==0.8.0
 websocket-client==0.44.0
 websockets==3.3
+Werkzeug==0.14.1
