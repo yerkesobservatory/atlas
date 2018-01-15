@@ -1,6 +1,8 @@
 import io
 import flask
 import base64
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from typing import Dict
 from routines import plots
@@ -23,7 +25,7 @@ class ResourceServer(object):
             return self.visibility(target, **kwargs)
 
         # start it
-        app.run()
+        app.run(host='0.0.0.0', port=config.queue.resource_port)
 
     def visibility(self, target: str) -> Dict[str, str]:
         """ This endpoint produces a visibility curve (using code in /routines)

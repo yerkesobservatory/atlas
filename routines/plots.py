@@ -4,6 +4,7 @@ import io
 import astropy
 import datetime
 import matplotlib
+matplotlib.use('Agg') # to stop server crashing without backend
 import numpy as np
 import astropy.units as units
 import astropy.time as time
