@@ -6,10 +6,11 @@ import importlib
 import websockets
 import telescope
 import imqueue
-import modules.status as status
 import logging
 import colorlog
 import multiprocessing
+import modules.status as status
+import modules.resource as resource
 from config import config
 
 ### Create command-line parser ###
@@ -48,6 +49,10 @@ if args.subparser == 'start':
         p = multiprocessing.Process(target=status.StatusServer)
         p.start()
         args.server.remove('status')
+    if 'resource' in args.server:
+        p = multiprocessing.Process(target=resource.ResourceServer)
+        p.start()
+        args.server.remove('resource')
 
     # try and import each server from the modules.user directory and start it
     if args.server is not []:
