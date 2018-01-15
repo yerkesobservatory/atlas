@@ -8,6 +8,7 @@ import json
 import datetime
 import pymongo
 import logging
+import astroplan
 import colorlog
 import telescope
 import schedule as run
@@ -84,6 +85,9 @@ class Executor(object):
         focus the telescope, and then, if there is a scheduled Session, execute
         that session, or if not, unlock the telescope and start a new timer.
         """
+
+        # update astroplan's target data files
+        astroplan.download_IERS_A()
 
         # check if telescope is available tonight
         available, endtime = self.telescope_available()
