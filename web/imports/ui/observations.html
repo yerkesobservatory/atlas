@@ -1,36 +1,11 @@
-<!-- new template -->
-
-<template name="bkgd_observations">
-    <style>
-    body {
-            background-color: #192231;
-    }
-    </style>
-</template>
-
-<template name="dss">
-  <div class="panel panel-default" style="height:200px;">
-    <div class="panel-body">
-      <!-- Here goes dss preview -->
-    </div> <!-- panel-body -->
-  </div> <!-- panel -->
-</template>
-
-<template name="visibility">
-  <div class="panel panel-default" style="height:200px;">
-    <div class="panel-body">
-      <!--here goes the visibility chart code-->
-    </div> <!-- panel-body -->
-  </div> <!-- panel -->
-
-</template>
-
 <!-- template for the observation page -->
 <template name="observations">
   {{> navigation}}
-  {{> bkgd_observations}}
-<p id="home_message" style="font-size: 25px; margin-top: 50px; margin-left:0px;">OBSERVATIONS</p>
-<p style="font-size: 20px; margin-top:30px; margin-bottom:40px; color:white;">SUBMIT AN OBSERVATION</p>
+  <!-- change the background color -->
+  <style>body {background-color: #192231;}</style>
+
+  <p id="home_message" style="font-size: 25px; margin-top: 50px; margin-left:0px;">OBSERVATIONS</p>
+  <p style="font-size: 20px; margin-top:30px; margin-bottom:40px; color:white;">SUBMIT AN OBSERVATION</p>
   <!-- form to submit new observation -->
   <div class="container-fluid">
     <div class="row">
@@ -44,13 +19,22 @@
       </div>
       <div class="col-xs-8">
         <p style="font-size: 20px; margin-top:30px; margin-bottom:40px; color:white;">DSS PREVIEW</p>
-        {{> dss}}
+	  <div class="panel panel-default" style="height:200px;">
+	    <div class="panel-body">
+	      <!-- <div id="aladin-lite-div" style="width:400px;height:400px;"></div> -->
+	      <div id="aladin-lite-div" style="height:300px;width:450px;"></div>
+	    </div> <!-- panel-body -->
+	  </div> <!-- panel -->
+
         <p style="font-size: 20px; margin-top:30px; margin-bottom:40px; color:white;">VISIBILITY CHART</p>
-        {{> visibility}}
+	<div class="panel panel-default" style="height:200px;">
+	  <div class="panel-body">
+	    <img id="visibility_plot" src="" alt="">
+	  </div> <!-- panel-body -->
+	</div> <!-- panel -->
       </div>
     </div>
   </div>
-
 </template>
 
 <!-- form to create new observation -->
@@ -225,7 +209,7 @@
       <li><a href="#" class="action-completed">Mark Completed</a></li>
       {{else}}
       <li><a href="#" class="action-completed">Mark Uncompleted</a></li>
-      <li><a href="#" class="copy-link" data-clipboard-text={{directory}}>Copy Link to Files</a></li>
+      <!-- <li><a href="#" class="copy-link" data-clipboard-text={{directory}}>Copy Link to Files</a></li> -->
       {{/unless}}
       <li class="divider"></li>
       <li><a href="#" class="action-delete">Delete</a></li>
