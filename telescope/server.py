@@ -130,7 +130,7 @@ class TelescopeServer(object):
             self.log.warning(f'UNKNOWN cli-role: {roles}. Denying authorization...')
             return False
 
-2        # if something weird happens, deny rights
+        # if something weird happens, deny rights
         self.log.warning('Command DENIED for UNKNOWN reason.')
         return False
 
