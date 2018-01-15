@@ -4,7 +4,6 @@ local
 *secret*
 config/*secret*
 
-web/package-lock.json
 config/config.toml
 config/telescope.py
 modules/user
