@@ -1,4 +1,5 @@
 """ This function provides functions to make various astronomical plots. """
+import os
 import io
 import astropy
 import datetime
@@ -11,7 +12,10 @@ import astropy.coordinates as coordinates
 from config import config
 from routines import lookup
 
-def visibility_curve(target: str) -> matplotlib.figure.Figure:
+# load our matplotlib stylesheet from config/
+plt.style.use(os.path.join(os.path.split(os.path.dirname(__file__))[0], os.path.join('config', 'matplotlibrc')))
+
+def visibility_curve(target: str, **kwargs) -> matplotlib.figure.Figure:
     """ Generate the visibility curve of a target object for the next
     24 hours.
 
@@ -66,7 +70,7 @@ def visibility_curve(target: str) -> matplotlib.figure.Figure:
             hour_angles[i] = angle
 
     # create the fig
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(subplot_kw={'facecolor': 'white'}, **kwargs)
 
     # plot object altitude
     scatter = ax.scatter(delta_times, object_altaz.alt, c=object_altaz.az, cmap='viridis', label=target)
@@ -83,6 +87,9 @@ def visibility_curve(target: str) -> matplotlib.figure.Figure:
 
     # add colorbar
     fig.colorbar(scatter).set_label('Azimuth [deg]')
+
+    # horizontal line at minimum-altitude
+    ax.axhline(config.telescope.min_alt, color='red', linestyle='dashed')
 
     # configure x-axis
     ax.set_xlim([0, 24])
