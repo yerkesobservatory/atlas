@@ -1,5 +1,9 @@
 
-
+html *
+{
+   font-family: Futura !important;
+   color: white;
+}
 
 /* ==== FORGOT ==== */
 .form-forgot {
@@ -59,11 +63,25 @@
     margin-bottom: -1px;
     border-bottom-right-radius: 0;
     border-bottom-left-radius: 0;
+    width: 100%;
+    margin: 8px 0;
+    box-sizing: border-box;
+    border: 1px solid #859BA0;
+    border-radius: 0px;
+    background-color: #0A1928;
+    color:white;
 }
 .form-reset input[id="inputPassword2"] {
     margin-bottom: 10px;
     border-top-left-radius: 0;
     border-top-right-radius: 0;
+    width: 100%;
+    margin: 8px 0;
+    box-sizing: border-box;
+    border: 1px solid #859BA0;
+    border-radius: 0px;
+    background-color: #0A1928;
+    color:white;
 }
 
 body, p {
@@ -232,4 +250,136 @@ u:after {
 .img-fluid{
   max-width: 100%;
   height: auto;
+}
+
+.table-striped>tbody>tr:nth-child(odd)>td,
+.table-striped>tbody>tr:nth-child(odd)>th {
+	background-color: #0F425C;
+}
+
+#program_images{
+  opacity: 1.0;
+  filter: alpha(opacity=100);
+  width: 100%;
+}
+
+#program_images:hover {
+    opacity: 0.5;
+    filter: alpha(opacity=50); /* For IE8 and earlier */
+    width: 100%;
+}
+
+.text {
+  color: white;
+  font-size: 20px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.toggle-arrow{
+    background-position: -289px -96px;
+}
+
+.collapsed .toggle-arrow{
+    background-position: -312px -96px;
+}
+input[type=text], input[type=number], input[type=time], input[type=date], #program, #executor {
+    width: 100%;
+    margin: 8px 0;
+    box-sizing: border-box;
+    border: 1px solid #859BA0;
+    border-radius: 0px;
+    background-color: #0A1928;
+    color:white;
+}
+
+#submit_obs {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #859BA0;
+  border-radius: 20px;
+  background-color: #0A1928;
+  color:white;
+  font-family: Futura;
+
+}
+
+#submit_obs:hover {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #859BA0;
+  border-radius: 20px;
+  background-color: #FFB547;
+  color:white;
+  font-family: Futura;
+
+}
+
+#submit_changePassword{
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #859BA0;
+  border-radius: 10px;
+  background-color: #12425B;
+  color:white;
+  font-family: Futura;
+}
+
+#submit_changePassword:hover {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #859BA0;
+  border-radius: 10px;
+  background-color: #FFB547;
+  color:white;
+  font-family: Futura;
+
+}
+#submit_session {
+  width: 75%;
+  box-sizing: border-box;
+  border: 1px solid #859BA0;
+  border-radius: 10px;
+  background-color: #12425B;
+  color:white;
+  font-family: Futura;
+
+}
+
+#submit_session:hover {
+  width: 75%;
+  box-sizing: border-box;
+  border: 1px solid #859BA0;
+  border-radius: 10px;
+  background-color: #FFB547;
+  color:white;
+  font-family: Futura;
+
+}
+
+#editProfile{
+  color: #859BA0;
+}
+
+#editProfile:hover {
+  color: #FFB547;
+}
+
+#showBadges{
+  color: #859BA0;
+}
+
+#showBadges:hover {
+  color: #FFB547;
+}
+
+#mosaic{
+  color: white;
+  font-family: "Futura";
+  font-style: "Bold";
+  font-size: 18px;
 }

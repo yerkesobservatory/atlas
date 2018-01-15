@@ -19,7 +19,13 @@
           {{#if currentUser}}
           <li><a href="{{pathFor route='programs'}}">PROGRAMS</a></li>
           <li><a href="{{pathFor route='sessions'}}">SESSIONS</a></li>
-          <li><a href="{{pathFor route='observations'}}">OBSERVATIONS</a></li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">OBSERVATIONS<span class="caret"></span></a>
+            <ul class="dropdown-menu">
+              <li><a href="{{pathFor route='observations'}}">SUBMIT OBSERVATION</a></li>
+              <li><a href="{{pathFor route='completedObservations'}}">MY OBSERVATIONS</a></li>
+            </ul>
+          </li>
           {{#if isInRole 'beta-tester'}}
           <li><a href="{{pathFor route='control'}}">CONTROL</a></li>
           {{/if}}
@@ -65,7 +71,13 @@
           {{#if currentUser}}
           <li><a href="{{pathFor route='programs'}}">PROGRAMS</a></li>
           <li><a href="{{pathFor route='sessions'}}">SESSIONS</a></li>
-          <li><a href="{{pathFor route='observations'}}">OBSERVATIONS</a></li>
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">OBSERVATIONS<span class="caret"></span></a>
+            <ul class="dropdown-menu">
+              <li><a href="{{pathFor route='observations'}}">SUBMIT OBSERVATION</a></li>
+              <li><a href="{{pathFor route='completedObservations'}}">MY OBSERVATIONS</a></li>
+            </ul>
+          </li>
           {{#if isInRole 'beta-tester'}}
           <li><a href="{{pathFor route='control'}}">CONTROL</a></li>
           {{/if}}

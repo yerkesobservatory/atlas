@@ -3,6 +3,7 @@ import './programs.html';
 import { Programs } from '../api/programs.js';
 import $ from 'jquery';
 
+
 // subscribe to programs stream
 Template.programs.onCreated(function onCreated() {
     Meteor.subscribe('programs');
@@ -24,14 +25,14 @@ Template.programs.helpers({
 	    collection: Programs,
 	    showRowCount: true,
 	    showNavigationRowsPerPage: false,
-	    noDataTmpl: Template.noPrograms, 
+	    noDataTmpl: Template.noPrograms,
 	    fields: [
 		{key: 'name',
 		 label: 'Name'},
 		{key: 'executor',
 		 label: 'Execution'},
 		{key: 'createdAt',
-		 label: 'Created'}, 
+		 label: 'Created'},
 		{key: 'completed',
 		 label: 'Completed',
 		 fn: function (value, object, key) {
@@ -46,6 +47,7 @@ Template.programs.helpers({
 		 tmpl: Template.programAction
 		}
 	    ]
+      
 	};
     }
 });
@@ -115,7 +117,7 @@ Template.programs.onRendered(function() {
 	    name: {
 		required: true,
 		minlength: 4,
-		maxlength: 32}, 
+		maxlength: 32},
 	    executor: {
 		required: true}
 

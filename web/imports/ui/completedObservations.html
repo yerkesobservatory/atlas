@@ -1,0 +1,49 @@
+<!-- new template -->
+
+<template name="bkgd_comp_observations">
+    <style>
+    body {
+            background-color: #192231;
+    }
+    </style>
+</template>
+
+<!-- template for the observation page -->
+<template name="completedObservations">
+  {{> navigation}}
+  {{> bkgd_comp_observations}}
+<p id="home_message" style="font-size: 25px; margin-top: 50px; margin-left:0px;">OBSERVATIONS</p>
+<p style="font-size: 20px; margin-top:30px; margin-bottom:40px; color:white;">SUBMIT AN OBSERVATION</p>
+  <!-- form to submit new observation -->
+  <div class="col-md-12" style="margin-top:50px;">
+  <!-- display existing sessions -->
+  {{> reactiveTable class="table table-striped table-hover" settings=settings}}
+  </div>
+
+</template>
+
+
+<template name="noObservations">
+  <div class="alert alert-dismissible alert-info">
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    There are no observations to show.
+  </div>
+</template>
+
+<template name="observationAction">
+  <div class="btn-group">
+    <a href="#" class="btn btn-info">Actions</a>
+    <a href="#" class="btn btn-info dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></a>
+    <ul class="dropdown-menu">
+      {{#unless completed}}
+      <li><a href="#" class="action-completed">Mark Completed</a></li>
+      {{else}}
+      <li><a href="#" class="action-completed">Mark Uncompleted</a></li>
+      <li><a href="#" class="copy-link" data-clipboard-text={{directory}}>Copy Link to Files</a></li>
+      {{/unless}}
+      <li><a href="#" class="action-completed">Resubmit Observation</a></li>
+      <li class="divider"></li>
+      <li><a href="#" class="action-delete">Delete</a></li>
+    </ul>
+  </div>
+</template>

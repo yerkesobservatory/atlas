@@ -1,110 +1,69 @@
 <!-- template for user profile on home page -->
 <template name="profile">
-  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>NAME: </b>{{user.profile.firstName}} {{user.profile.lastName}}</p>
-  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>AFFILIATION:</b> {{user.profile.affiliation}}</p>
-  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>PENDING:</b> {{numPending user}}</p>
-  <table class="table">
-  <thead>
-    <tr>
-      <th scope="col">Target</th>
-      <th scope="col">Exposure Time</th>
-      <th scope="col">Filter</th>
-      <th scope="col">Bin</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th scope="row">{{obj4Pending user 1 target}}</th>
-      <td>{{obj4Pending user 1 exposure_time}}</td>
-      <td>{{obj4Pending user 1 filters}}</td>
-      <td>{{obj4Pending user 1 binning}}</td>
-    </tr>
-    <tr>
-      <th scope="row">{{obj4Pending user 2 target}}</th>
-      <td>{{obj4Pending user 2 exposure_time}}</td>
-      <td>{{obj4Pending user 2 filters}}</td>
-      <td>{{obj4Pending user 2 binning}}</td>
-    </tr>
-    <tr>
-      <th scope="row">{{obj4Pending user 3 target}}</th>
-      <td>{{obj4Pending user 3 exposure_time}}</td>
-      <td>{{obj4Pending user 3 filters}}</td>
-      <td>{{obj4Pending user 3 binning}}</td>
-    </tr>
-    <tr>
-      <th scope="row">{{obj4Pending user 4 target}}</th>
-      <td>{{obj4Pending user 4 exposure_time}}</td>
-      <td>{{obj4Pending user 4 filters}}</td>
-      <td>{{obj4Pending user 4 binning}}</td>
-    </tr>
-  </tbody>
-</table>
-  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>COMPLETED:</b> {{numCompleted user}}</p>
-  <table class="table">
-  <thead>
-    <tr>
-      <th scope="col">Target</th>
-      <th scope="col">Exposure Time</th>
-      <th scope="col">Filter</th>
-      <th scope="col">Bin</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th scope="row">{{obj4Completed user 1 target}}</th>
-      <td>{{obj4Completed user 1 exposure_time}}</td>
-      <td>{{obj4Completed user 1 filters}}</td>
-      <td>{{obj4Completed user 1 binning}}</td>
-    </tr>
-    <tr>
-      <th scope="row">{{obj4Completed user 2 target}}</th>
-      <td>{{obj4Completed user 2 exposure_time}}</td>
-      <td>{{obj4Completed user 2 filters}}</td>
-      <td>{{obj4Completed user 2 binning}}</td>
-    </tr>
-    <tr>
-      <th scope="row">{{obj4Completed user 3 target}}</th>
-      <td>{{obj4Completed user 3 exposure_time}}</td>
-      <td>{{obj4Completed user 3 filters}}</td>
-      <td>{{obj4Completed user 3 binning}}</td>
-    </tr>
-    <tr>
-      <th scope="row">{{obj4Completed user 4 target}}</th>
-      <td>{{obj4Completed user 4 exposure_time}}</td>
-      <td>{{obj4Completed user 4 filters}}</td>
-      <td>{{obj4Completed user 4 binning}}</td>
-    </tr>
-  </tbody>
-</table>
-  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>ROLES:</b> {{user.roles}}</p>
-  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>BADGES:</b> {{badges user}}</p>
-  <!-- this could be made into a button or something prettier? -->
-  <a href="#" id="editProfile">Edit</a>
+  <a href="#" id="editProfile" class="pull-right">Edit Profile</a>
   <!-- modal for editing profile -->
   {{> editProfile}}
+  <br><br>
+  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>NAME: </b>{{user.profile.firstName}} {{user.profile.lastName}}</p>
+  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>AFFILIATION:</b> {{user.profile.affiliation}}</p>
+
+  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>PENDING:</b> {{numPending user}}</p>
+  {{> reactiveTable settings=settings id="obs_status_table" class="table table-striped table-hover" showNavigation='never' multiColumnSort='false' collection="pending_observations"}}
+
+<p style='color: rgba(255,163,25,1);'><b style='color:white;'>COMPLETED:</b> {{numCompleted user}}</p>
+{{> reactiveTable settings=settings id="obs_status_table" class="table table-striped table-hover" showNavigation='never' multiColumnSort='false' collection="completed_observations"}}
+
+  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>ROLES:</b> {{user.roles}}</p>
+  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>BADGES:</b> {{badges user}}</p>
+  <img src="badges_static.gif" style="padding-bottom:35px;">
+  <a href="#" data-toggle="modal" data-target="#showBadgesModal" id="showBadges" class="pull-right">Show all badges</a>
+  <!-- modal for editing profile -->
+  {{> showBadges}}
+  <!-- this could be made into a button or something prettier? -->
+
 </template>
 
-<template name="editProfile">
-  <div class="modal fade" id="editProfileModal">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
+<template name="showBadges">
+  <div class="modal fade" id="showBadgesModal" role="document">
+    <div class="modal-dialog">
         <div class="modal-header">
-          <h5 class="modal-title">Edit Profile</h5>
+          <h5 class="modal-title" id="modal_profile" style="font-size:24px;">BADGES</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!--put user badge "collection" here-->
+        </div>
+        <div class="modal-footer">
+          <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
+          <!-- <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button> -->
+        </div>
+    </div>
+  </div>
+</template>
+
+
+<template name="editProfile">
+  <div class="modal fade" id="editProfileModal" role="document">
+    <div class="modal-dialog">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modal_profile" style="font-size:24px;">EDIT PROFILE</h5>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
         <div class="modal-body">
 	  {{#with profile}}
-	  <p><b>First Name: </b> {{> editableText collection="users" field="firstName"}}</p>
-	  <p><b>Last Name: </b> {{> editableText collection="users" field="lastName"}}</p>
+	  <p><b>FIRST NAME: </b> {{> editableText collection="users" field="firstName"}}</p>
+	  <p><b>LAST NAME: </b> {{> editableText collection="users" field="lastName"}}</p>
 	  {{/with}}
 	  {{#if isInRole 'admin'}}
 	  <!-- TODO: roles throws exception when document is none -->
-	  <p><b>Roles: </b> {{> editableList collection="users" field="roles"}}</p>
+	  <p><b>ROLES: </b> {{> editableList collection="users" field="roles"}}</p>
 	  {{/if}}
 	  {{#with profile}}
-	  <p><b> Change {{firstName}}'s Password </b></p>
+	  <p><b> CHANGE {{firstName}}'S PASSWORD </b></p>
 	  {{> changePassword}}
 	  {{/with}}
 
@@ -113,7 +72,6 @@
           <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
           <!-- <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button> -->
         </div>
-      </div>
     </div>
   </div>
 </template>
@@ -122,22 +80,36 @@
   <div class="container-fluid">
     <form class="changePassword form-reset">
 
-      <div class="form-group" id="change-password">
-    <label for="currentPassword" class="sr-only">Current Password</label>
+    <div class="form-group" id="change-password">
+    <label for="currentPassword" class="sr-only">CURRENT PASSWORD</label>
     <input type="password" id="currentPassword" class="form-control" placeholder="Current Password" required name="currentPassword" style="margin-bottom:0px;">
       </div>
 
       <div class="form-group" id="change-password">
-    <label for="password" class="sr-only">New Password</label>
+    <label for="password" class="sr-only">NEW PASSWORD</label>
     <input type="password" id="password" class="form-control" placeholder="New Password" required name="password">
       </div>
 
       <div class="form-group" id="form-passwordRepeat">
-    <label for="passwordRepeat" class="sr-only">Repeat New Password</label>
+    <label for="passwordRepeat" class="sr-only">REPEAT NEW PASSWORD</label>
     <input type="password" id="passwordRepeat" class="form-control" placeholder="Repeat New Password" required name="passwordRepeat">
       </div>
 
-    <button class="btn btn-lg btn-success btn-block" type="submit">Change Password</button>
+    <button class="btn btn-lg btn-success btn-block" id="submit_changePassword" type="submit">RESET PASSWORD</button>
   </form>
   </div>
+</template>
+
+<template name="observations_snippet">
+  <h2> Observations </h2>
+
+  <!-- form to submit new observation -->
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-8">
+        {{> reactiveTable settings=settings}}
+      </div>
+    </div>
+  </div>
+
 </template>

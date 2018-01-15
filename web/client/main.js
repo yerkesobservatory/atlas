@@ -37,6 +37,7 @@ import '../imports/ui/control.js';
 import '../imports/admin/admin.js';
 import '../imports/admin/affiliations.js';
 
+import '../imports/ui/completedObservations.js';
 // deny client side updates to users
 Meteor.users.deny({
     update() { return true; }

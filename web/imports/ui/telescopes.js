@@ -31,5 +31,14 @@ Template.telescopes.helpers({
 	    };
 	}
     },
+    isExposing(telescope){
+      if (telescope){
+        if (telescope.observation != null){
+          return true;
+        } else {
+          return false;
+        };
+      }
+    },
 
 });

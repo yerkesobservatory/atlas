@@ -4,20 +4,57 @@ import $ from 'jquery';
 import { Observations } from '../api/observations.js';
 import { Accounts } from 'meteor/accounts-base';
 
+
+
 Template.profile.onCreated(function onCreated() {
     Meteor.subscribe('users');
     Meteor.subscribe('observations');
+});
+
+
+
+Template.profile.helpers({
+  observations() {
+return Observations.find({ owner: Meteor.userId()});
+  },
+  settings() {
+return {
+    collection: Observations,
+    showRowCount: true,
+    showNavigationRowsPerPage: false,
+    showFilter: false,
+    rowsPerPage: 4,
+    fields: [
+  {key: 'target',
+   label: 'Target'},
+  {key: 'exposure_time',
+   label: 'Exposure Time (s)'},
+  {key: 'exposure_count',
+   label: 'Exposure Count'},
+  {key: 'filters',
+   label: 'Filters',
+   fn: function (value, object, key) {
+       return value.join(', ');
+   }},
+  {key: 'binning',
+   label: 'Binning'},
+  // {key: 'submitDate',
+  //  label: 'Date Submitted'},
+    ]
+};
+  }
 });
 
 Template.profile.helpers({
     user() {
 	return Meteor.user();
     },
+
     numPending(user) {
-	if (user) {
-	    return Observations.find({'owner': user._id,
-				      'completed': false}).count();
-	}
+      if (user) {
+    	    return Observations.find({'owner': user._id,
+    				      'completed': false}).count();
+    	}
     },
 
 
@@ -31,14 +68,15 @@ Template.profile.helpers({
       if (numPending(user) > 3){
        if (user) {
         var index=slot-1;
-        return Observations.find({'owner': user._id,'completed': false},{query_item:1, _id:0}).sort({ submitDate: -1 })[index];
+        return Meteor.observations().target[slot][str(query_item)]
+        return Observations.find({'owner': user._id,'completed': false},{query_item:1, _id:0}).sort({ submitDate: -1 })[slot];
                }
         }
       else {
        if (user){
-         if(slot<numPending(user)){
+         if(slot<=(numPending(user)) ){
            var index=slot-1;
-           return Observations.find({'owner': user._id,'completed': false},{query_item:1, _id:0}).sort({ submitDate: -1 })[index];
+           return Observations.find({'owner': user._id,'completed': false},{query_item:1, _id:0}).sort({ submitDate: -1 })[0];
             }
          else{
             return null;
@@ -74,14 +112,6 @@ Template.profile.helpers({
 	}
     },
 });
-
-
-
-// Template.editProfile.helpers({
-//     user() {
-// 	return Meteor.user();
-//     },
-// });
 
 Template.profile.events({
     'click #editProfile': function(e) {

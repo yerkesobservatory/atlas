@@ -19,7 +19,7 @@ AccountsTemplates.configureRoute('signIn', {
     template: 'login',
     layoutTemplate: 'empty',
     redirect: function() {
-	var user = Meteor.user();
+	var uswer = Meteor.user();
 	if (user)
       //this.redirect('/home');
       Router.go('/');
@@ -30,8 +30,10 @@ AccountsTemplates.configureRoute('signIn', {
 Router.route('/', 'home');
 Router.route('/home');
 Router.route('/observations');
+Router.route('/completedObservations');
 Router.route('/sessions');
 Router.route('/programs');
+Router.route('/test_programs');
 Router.route('/admin', {
     onBeforeAction: function () {
 	if (Roles.userIsInRole(Meteor.userId(), 'admin')) {
