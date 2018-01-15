@@ -5,7 +5,7 @@
   <style>body {background-color: #192231;}</style>
 
   <p id="home_message" style="font-size: 25px; margin-top: 50px; margin-left:0px;">OBSERVATIONS</p>
-  <p style="font-size: 20px; margin-top:30px; margin-bottom:40px; color:white;">SUBMIT AN OBSERVATION</p>
+  <p style="font-size: 20px; margin-top:30px; margin-bottom:0px; color:white;">SUBMIT AN OBSERVATION</p>
   <!-- form to submit new observation -->
   <div class="container-fluid">
     <div class="row">
@@ -18,18 +18,19 @@
         </div>
       </div>
       <div class="col-xs-8">
-        <p style="font-size: 20px; margin-top:30px; margin-bottom:40px; color:white;">DSS PREVIEW</p>
-	  <div class="panel panel-default" style="height:200px;">
+
+	  <div class="panel panel-default" style="height:450px; border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0); color:white;">
 	    <div class="panel-body">
+        <p style="font-size: 20px; margin-top:30px;">DIGITIZED SKY SURVEY (DSS) PREVIEW:</p>
 	      <!-- <div id="aladin-lite-div" style="width:400px;height:400px;"></div> -->
-	      <div id="aladin-lite-div" style="height:300px;width:450px;"></div>
+	      <div id="aladin-lite-div" style="height:300px;width:450px; border-radius:20px;"></div>
 	    </div> <!-- panel-body -->
 	  </div> <!-- panel -->
 
-        <p style="font-size: 20px; margin-top:30px; margin-bottom:40px; color:white;">VISIBILITY CHART</p>
-	<div class="panel panel-default" style="height:200px;">
+        <p style="font-size: 20px; margin-top:30px; color:white;">VISIBILITY CHART:</p>
+	<div class="panel panel-default" style="height:350px; border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0); color:white;">
 	  <div class="panel-body">
-	    <img id="visibility_plot" src="" alt="">
+	    <img id="visibility_plot" src="test.png" alt="" style="width:450px; border-radius:20px;">
 	  </div> <!-- panel-body -->
 	</div> <!-- panel -->
       </div>
