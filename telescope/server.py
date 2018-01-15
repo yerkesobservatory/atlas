@@ -150,6 +150,9 @@ class TelescopeServer(object):
             # we attempt to authenticate using the username and password
             msg = await websocket.recv()
             msg = json.loads(msg)
+            action = msg.get('action')
+            if action is not 'connect':
+                return
             email = msg.get('email')
             password = msg.get('password')
 
@@ -260,7 +263,7 @@ class TelescopeServer(object):
                 # command does not exist
                 else:
                     self.log.warning(f'Command does not exist: {command}')
-                    await self.send_message(websocket, success=False, command=command, result='COMMAND DOES NOT EXIST')
+                    await self.send_message(websocket, success=False, command=command, result='COMMAND NOT FOUND')
 
         # if the connection was closed
         except websockets.exceptions.ConnectionClosed as _:
