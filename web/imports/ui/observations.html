@@ -1,6 +1,5 @@
 <!-- template for the observation page -->
-<template name="observations">
-  {{> navigation}}
+<template name="newObservation">
   <!-- change the background color -->
   <style>body {background-color: #192231;}</style>
 
@@ -13,7 +12,7 @@
         <div class="panel panel-default" style="border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0);">
           <div class="panel-heading" style="border-style: none; border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0);"></div>
           <div class="panel-body" style="border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0);">
-            {{> newObservation}}
+            {{> newObservationForm}}
           </div>
         </div>
       </div>
@@ -40,7 +39,7 @@
 </template>
 
 <!-- form to create new observation -->
-<template name="newObservation">
+<template name="newObservationForm">
 
   <form class="form-horizontal new-observation">
     <fieldset>
@@ -51,11 +50,15 @@
         <div class="col-lg-9">
           <select class="form-control" id="program" name="program" required>
             {{#each program in programs}}
-            {{#if isGeneral program}}
-            <option value="{{program._id}}" selected="selected">{{program.name}}</option>
-            {{else}}
-            <option value="{{program._id}}">{{program.name}}</option>
-            {{/if}}
+	    {{#unless isEqual progam "DSO" "Asteroids" "Variables" "Solar System"}}
+	        <option value="{{program._id}}">{{program.name}}</option>
+	    {{else}}
+	      {{#if isEqual program "DSO"}}
+                <option value="{{program._id}}" selected="selected"><b>{{program.name}}</b></option>
+              {{else}}
+                <option value="{{program._id}}"><b>{{program.name}}</b></option>
+              {{/if}}
+	    {{/unless}}
             {{/each}}
           </select>
         </div>
@@ -98,45 +101,45 @@
         <div class="row">
           <div class="checkbox-inline">
             <label>
-              <input type="checkbox" name="filter_clear"> Clear
+              <input type="checkbox" name="filter_clear" class="filter"> Clear
             </label>
           </div>
           <div class="checkbox-inline">
             <label>
-              <input type="checkbox" name="filter_ha"> H-alpha
+              <input type="checkbox" name="filter_ha" class="filter"> H-alpha
             </label>
           </div>
         </div> <!-- row -->
         <div class="row">
           <div class="checkbox-inline">
             <label>
-              <input type="checkbox" name="filter_u"> u'
+              <input type="checkbox" name="filter_u" class="filter"> u'
             </label>
           </div>
           <div class="checkbox-inline">
             <label>
-              <input type="checkbox" name="filter_g"> g'
+              <input type="checkbox" name="filter_g" class="filter"> g'
             </label>
           </div>
           <div class="checkbox-inline">
             <label>
-              <input type="checkbox" name="filter_r"> r'
+              <input type="checkbox" name="filter_r" class="filter"> r'
             </label>
           </div>
 
           <div class="checkbox-inline">
             <label>
-              <input type="checkbox" name="filter_i"> i'
+              <input type="checkbox" name="filter_i" class="filter"> i'
             </label>
           </div>
           <div class="checkbox-inline">
             <label>
-              <input type="checkbox" name="filter_z"> z'
+              <input type="checkbox" name="filter_z" class="filter"> z'
             </label>
           </div>
         </div>
-
       </div>
+      
       <button type="button" class="btn btn-info collapsed" style="border-color: rgba(0,0,0,0); background-color:#859BA0; border-radius:0px; font-family: Futura; width:100%; margin-top:20px; margin-bottom:20px;" data-toggle="collapse" data-target="#advanced">
         ADVANCED OPTIONS <i class="icon-large toggle-arrow" style="color:white;"></i>
     </button>
@@ -170,12 +173,12 @@
       <br>
       <p id="mosaic" style="text-align: center;">MOSAIC OPTIONS</p>
       <div class="form-group" id="form-offset_ra form-offset_dec">
-        <label for="x_frame" class="col-lg-3 control-label" style="font-family: Futura; font-size:10px; color:white;">X-FRAME OFFSET</label>
+        <label for="x_frame" class="col-lg-3 control-label" style="font-family: Futura; font-size:10px; color:white;">X-FRAME COUNT</label>
         <div class="col-lg-3">
           <input class="form-control" type="number" id="x_frame" placeholder="" name="x_frame" min=0 max=60>
         </div>
 
-        <label for="y_frame" class="col-lg-3 control-label" style="font-family: Futura; font-size:10px; color:white;">Y-FRAME OFFSET</label>
+        <label for="y_frame" class="col-lg-3 control-label" style="font-family: Futura; font-size:10px; color:white;">Y-FRAME COUNT</label>
         <div class="col-lg-3">
           <input class="form-control" type="number" id="y_frame" placeholder="" name="y_frame" min=0 max=60>
         </div>
@@ -183,7 +186,7 @@
 
     </div>
     <br>
-    <p style="font-size:20px;">TOTAL EXPOSURE TIME: <b>    </b></p>
+    <p style="font-size:18px;">TOTAL OBSERVATION TIME: <b>{{totalObservationTime}}</b></p>
       <!-- submit buttons -->
       <div class="form-group" >
         <div class="col-xs-12" style="padding-top: 10px;">
@@ -193,6 +196,18 @@
 
     </fieldset>
   </form>
+</template>
+
+<!-- template for the observation page -->
+<template name="observations">
+  <style>body {background-color: #192231;}</style>
+  <p id="home_message" style="font-size: 25px; margin-top: 50px; margin-left:0px;">OBSERVATIONS</p>
+  <!-- form to submit new observation -->
+  <div class="col-md-12" style="margin-top:50px;">
+  <!-- display existing sessions -->
+  {{> reactiveTable settings=settings class="table table-striped table-hover" }}
+  </div>
+
 </template>
 
 <template name="noObservations">
