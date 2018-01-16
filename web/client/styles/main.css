@@ -1,8 +1,8 @@
 
 html *
 {
-   font-family: Futura !important;
-   color: white;
+    font-family: "Muli" !important;
+    color: white;
 }
 
 /* ==== FORGOT ==== */
@@ -85,13 +85,13 @@ html *
 }
 
 p {
-    font-family: "Futura";
+    font-family: "Muli";
     font-style: "Medium"
 }
 
 
 #navbar-test {
-  font-family: "Futura";
+  font-family: "Muli";
   font-style: "Medium";
   font-size: 14;
   background-color: #0F425C;
@@ -101,16 +101,16 @@ p {
 }
 
 #navbar-trans-test {
-  font-family: "Futura";
-  font-style: "Medium";
-  font-size: 14;
-  background-color: rgba(0,0,0,0.0);
-  margin-top: 15px;
+    font-family: "Muli";
+    font-style: "Medium";
+    font-size: 14;
+    background-color: rgba(0,0,0,0.0);
+    margin-top: 15px;
 }
 
 #welcome_message, #home_message {
   color: white;
-  font-family: "Futura";
+  font-family: "Muli";
   font-style: "Bold";
   font-size: 40px;
   margin-top: 350px;
@@ -304,7 +304,7 @@ input[type=text], input[type=number], input[type=time], input[type=date], #progr
   border-radius: 20px;
   background-color: #0A1928;
   color:white;
-  font-family: Futura;
+  font-family: Muli;
 
 }
 
@@ -315,7 +315,7 @@ input[type=text], input[type=number], input[type=time], input[type=date], #progr
   border-radius: 20px;
   background-color: #FFB547;
   color:white;
-  font-family: Futura;
+  font-family: Muli;
 
 }
 
@@ -326,7 +326,7 @@ input[type=text], input[type=number], input[type=time], input[type=date], #progr
   border-radius: 10px;
   background-color: #12425B;
   color:white;
-  font-family: Futura;
+  font-family: Muli;
 }
 
 #submit_changePassword:hover {
@@ -336,7 +336,7 @@ input[type=text], input[type=number], input[type=time], input[type=date], #progr
   border-radius: 10px;
   background-color: #FFB547;
   color:white;
-  font-family: Futura;
+  font-family: Muli;
 
 }
 #submit_session {
@@ -346,7 +346,7 @@ input[type=text], input[type=number], input[type=time], input[type=date], #progr
   border-radius: 10px;
   background-color: #12425B;
   color:white;
-  font-family: Futura;
+  font-family: Muli;
 
 }
 
@@ -357,7 +357,7 @@ input[type=text], input[type=number], input[type=time], input[type=date], #progr
   border-radius: 10px;
   background-color: #FFB547;
   color:white;
-  font-family: Futura;
+  font-family: Muli;
 
 }
 
@@ -379,14 +379,14 @@ input[type=text], input[type=number], input[type=time], input[type=date], #progr
 
 #mosaic{
   color: white;
-  font-family: "Futura";
+  font-family: "Muli";
   font-style: "Bold";
   font-size: 18px;
 }
 
 #telescope_status{
   color: white;
-  font-family: "Futura";
+  font-family: "Muli";
   font-weight: normal;
   font-size: 12px;
 }
@@ -406,7 +406,7 @@ input[type=text], input[type=number], input[type=time], input[type=date], #progr
 }
 
 html, body {
-    font-family: "Futura";
+    font-family: "Muli";
     font-style: "Medium"
     max-width: 100%;
     overflow-x: hidden;
