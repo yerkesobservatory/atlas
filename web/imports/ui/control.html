@@ -12,7 +12,6 @@
 </template>
 
 <template name="control">
-  {{> navigation}}
   {{> bkgd_control}}
   <br>
   <div class="container-fluid">
@@ -38,10 +37,12 @@
       <div class="panel panel-default" style="border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(1,1,1,0.5);">
       <div class="panel-heading" style="font-size:22px; border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0);">TELESCOPE STATUS</div>
       <div class="panel-body">
-        <p style='color: rgba(255,163,25,1);'><b style='color:white; font-weight: normal;'>DOME: </b> </p>
-        <p style='color: rgba(255,163,25,1);'><b style='color:white; font-weight: normal;'>SLIT:</b> </p>
-        <p style='color: rgba(255,163,25,1);'><b style='color:white; font-weight: normal;'>TRACKING:</b> </p>
-        <p style='color: rgba(255,163,25,1);'><b style='color:white; font-weight: normal;'>LAMPS:</b> </p>
+	{{#with telescope}}
+        <p style='color: rgba(255,163,25,1);'><b style='color:white; font-weight: normal;'>STATUS: </b> {{status}}</p>
+        <p style='color: rgba(255,163,25,1);'><b style='color:white; font-weight: normal;'>SLIT:</b> {{slit}}</p>
+        <p style='color: rgba(255,163,25,1);'><b style='color:white; font-weight: normal;'>TRACKING:</b> {{tracking}}</p>
+        <p style='color: rgba(255,163,25,1);'><b style='color:white; font-weight: normal;'>LAMPS:</b> {{lamps}}</p>
+	{{/with}}
 
       </div>
       </div>
