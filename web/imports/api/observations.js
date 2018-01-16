@@ -18,31 +18,19 @@ if (Meteor.isServer) {
         }
     });
 
-    Meteor.publish('completedObservations', function() {
-        if (Roles.userIsInRole(this.userId, 'admin')) {
-            return Observations.find();
-        } else {
-            return Observations.find({ owner: this.userId });
-        }
-    });
+    ReactiveTable.publish("completed_observations", Observations,
+			  function () {
+			      return {"owner": this.userId, "completed": true};
+			  },
+			  {"disablePageCountReactivity": true});
 
-    ReactiveTable.publish("completed_observations", Observations, {"completed": true}, {"disablePageCountReactivity": true}, function(){
-        return Observations.find({ owner: this.userId });
+    ReactiveTable.publish("pending_observations", Observations,
+			  function () {
+			      return {"owner": this.userId, "completed": false};
+			  },
+			  {"disablePageCountReactivity": true});
 
-
-      });
-
-      ReactiveTable.publish("pending_observations", Observations, {"completed": false}, {"disablePageCountReactivity": true}, function(){
-          return Observations.find({ owner: this.userId });
-
-
-        });
 }
-
-
-
-
-
 
 Meteor.methods({
     'observations.insert'(progId, target, exptime, expcount, binning, filters, options) {
