@@ -71,7 +71,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
 
         # if specified, restrict airmass, otherwise no airmass restriction
         max_airmass = observation['options'].get('airmass') or 38
-        airmass = constraints.AirmassConstraint(max=max_airmass, boolean_constraint = False)]  # rank by airmass
+        airmass = constraints.AirmassConstraint(max=max_airmass, boolean_constraint = False)  # rank by airmass
 
         # if specified, use observations moon separation, otherwise use 2 degrees
         moon_sep = observation['options'].get('moon')*units.deg or 2*units.deg
