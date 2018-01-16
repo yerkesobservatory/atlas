@@ -1,9 +1,9 @@
 <template name="login">
+  <style>#navbar {background-color: rgba(0,0,0,0.0);}</style>
   {{#if currentUser}}
   <h3><a href="{{pathFor route='home'}}">Please click here to continue...</a></h3>
   {{else}}
   <div class="container-fluid" style="margin-left:auto; margin-right:auto;">
-  {{> navigation_transparent}}
   {{> bkgd_im}}
   {{> login_setup}}
 </div>
