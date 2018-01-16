@@ -63,9 +63,6 @@ Meteor.methods({
                 // add to user to users group
                 Roles.addUsersToRoles(id, ['user']);
 
-                // create 'general' program for that user
-                Meteor.call('programs.insert', 'General', 'general');
-
                 // send enrollment email
                 Accounts.sendEnrollmentEmail(id);
 
