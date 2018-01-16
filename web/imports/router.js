@@ -29,11 +29,10 @@ AccountsTemplates.configureRoute('signIn', {
 // create page routings for other pages
 Router.route('/', 'home');
 Router.route('/home');
+Router.route('/newObservation');
 Router.route('/observations');
-Router.route('/completedObservations');
 Router.route('/sessions');
 Router.route('/programs');
-Router.route('/test_programs');
 Router.route('/admin', {
     onBeforeAction: function () {
 	if (Roles.userIsInRole(Meteor.userId(), 'admin')) {
