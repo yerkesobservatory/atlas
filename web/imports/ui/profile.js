@@ -4,111 +4,72 @@ import $ from 'jquery';
 import { Observations } from '../api/observations.js';
 import { Accounts } from 'meteor/accounts-base';
 
-
-
 Template.profile.onCreated(function onCreated() {
     Meteor.subscribe('users');
     Meteor.subscribe('observations');
 });
 
-
+Template.editProfile.helpers({
+    profile() {
+	if (Meteor.user()) {
+	    return Meteor.user().profile;
+	}
+    }
+});
 
 Template.profile.helpers({
-  observations() {
-return Observations.find({ owner: Meteor.userId()});
-  },
-  settings() {
-return {
-    collection: Observations,
-    showRowCount: true,
-    showNavigationRowsPerPage: false,
-    showFilter: false,
-    rowsPerPage: 4,
-    fields: [
-  {key: 'target',
-   label: 'Target'},
-  {key: 'exposure_time',
-   label: 'Exposure Time (s)'},
-  {key: 'exposure_count',
-   label: 'Exposure Count'},
-  {key: 'filters',
-   label: 'Filters',
-   fn: function (value, object, key) {
-       return value.join(', ');
-   }},
-  {key: 'binning',
-   label: 'Binning'},
-  // {key: 'submitDate',
-  //  label: 'Date Submitted'},
-    ]
-};
-  }
+    settings() {
+	return {
+	    showRowCount: false,
+	    showNavigationRowsPerPage: false,
+	    multiColumnSort: false,
+	    showNavigation: "never",
+	    showFilter: false,
+	    rowsPerPage: 4,
+	    fields: [
+		{key: 'target',
+		 label: 'Target'},
+		{key: 'exposure_time',
+		 label: 'Exposure Time (s)'},
+		{key: 'exposure_count',
+		 label: 'Exposure Count'},
+		{key: 'filters',
+		 label: 'Filters',
+		 fn: function (value, object, key) {
+		     strings = [];
+		     for (var i = 0; i < value.length; i++) {
+			 if (value[i].search('-band') != -1) {
+			     strings.push(value[i].replace('-band', "'"));
+			 }
+			 else if (value[i] == 'h-alpha') {
+			     strings.push('ha');
+			 }
+			 else if (value[i] == 'clear') {
+			     strings.push('clear');
+			 }
+		     }
+		     return strings;
+		 }},
+		{key: 'binning',
+		 label: 'Binning'},
+	    ]};
+    }
 });
 
 Template.profile.helpers({
     user() {
 	return Meteor.user();
     },
-
     numPending(user) {
-      if (user) {
-    	    return Observations.find({'owner': user._id,
-    				      'completed': false}).count();
-    	}
+	if (user) {
+	    return Observations.find({'owner': user._id,
+				      'completed': false}).count();
+	}
     },
-
-
     numCompleted(user) {
 	if (user) {
 	    return Observations.find({'owner': user._id,
 				      'completed': true}).count();
-	}
-    },
-    obj4Pending(user, slot, query_item) {
-      if (numPending(user) > 3){
-       if (user) {
-        var index=slot-1;
-        return Meteor.observations().target[slot][str(query_item)]
-        return Observations.find({'owner': user._id,'completed': false},{query_item:1, _id:0}).sort({ submitDate: -1 })[slot];
-               }
-        }
-      else {
-       if (user){
-         if(slot<=(numPending(user)) ){
-           var index=slot-1;
-           return Observations.find({'owner': user._id,'completed': false},{query_item:1, _id:0}).sort({ submitDate: -1 })[0];
-            }
-         else{
-            return null;
-            }
-          }
-        }
-    },
-
-    obj4Completed(user, slot, query_item) {
-    if (numCompleted(user) > 3){
-     if (user) {
-      var index=slot-1;
-      return Observations.find({'owner': user._id,'completed': true},{query_item:1, _id:0}).sort({ submitDate: -1 })[index];
-             }
-      }
-    else {
-     if (user){
-       if(slot<numCompleted(user)){
-         var index=slot-1;
-         return Observations.find({'owner': user._id,'completed': true},{query_item:1, _id:0}).sort({ submitDate: -1 })[index];
-          }
-       else{
-          return null;
-          }
-        }
-      }
-    },
-
-
-    badges(user) {
-	if (user) {
-	    return ['Explorer', ' Kronian', ' Harperian'];
 	}
     },
 });
