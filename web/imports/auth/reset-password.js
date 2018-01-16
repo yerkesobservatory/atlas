@@ -25,6 +25,8 @@ Template.forgotPassword.events({
                 }
             } else {
                 CoffeeAlerts.success('Your password has been reset. Please check your email for a link to set a new password');
+                //fade out modal
+                $('.modal-backdrop').remove();
             }
         });
         Router.go('home');

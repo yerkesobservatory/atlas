@@ -10,6 +10,8 @@
   <!-- include Aladin Lite CSS file in the head section of your page -->
   <link rel="stylesheet" href="//aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.css" />
 
+  <!-- Muli Font -->
+  <link href="https://fonts.googleapis.com/css?family=Muli" rel="stylesheet">
 
   <title>Stone Edge Observatory</title>
 </head>
@@ -28,10 +30,12 @@
 <!-- master template for all pages -->
 <template name="main">
 
+  {{> navigation}}
+
   <body>
 
     <!-- nav bar -->
-    {{> navigation}}
+    <!--{{> navigation}}-->
 
     <div class="container">
       {{> coffeeAlerts}}

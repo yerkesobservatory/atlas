@@ -48,7 +48,9 @@ class ResourceServer(object):
             # support CORS
             response.headers['Access-Control-Allow-Origin'] = (flask.request.headers.get('ORIGIN') or 'https://queue.stoneedgeobservatory.com')
 
+            # close image and figures
             img.close()
+            plt.close(fig)
 
             return response
 

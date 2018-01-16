@@ -6,6 +6,7 @@ import { Programs } from './programs.js';
 
 export const Observations = new Mongo.Collection('observations');
 
+
 // publish the observations
 if (Meteor.isServer) {
     // create the publication
@@ -16,11 +17,23 @@ if (Meteor.isServer) {
             return Observations.find({ owner: this.userId });
         }
     });
+
+    ReactiveTable.publish("completed_observations", Observations,
+			  function () {
+			      return {"owner": this.userId, "completed": true};
+			  },
+			  {"disablePageCountReactivity": true});
+
+    ReactiveTable.publish("pending_observations", Observations,
+			  function () {
+			      return {"owner": this.userId, "completed": false};
+			  },
+			  {"disablePageCountReactivity": true});
+
 }
 
-
 Meteor.methods({
-    'observations.insert'(progId, target, exptime, expcount, binning, filters) {
+    'observations.insert'(progId, target, exptime, expcount, binning, filters, options) {
 
         // validate parameters
         check(progId, String);

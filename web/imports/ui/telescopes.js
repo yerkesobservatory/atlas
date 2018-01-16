@@ -15,12 +15,30 @@ Template.telescopes.helpers({
     },
     isWeatherGood(telescope) {
 	if (telescope) {
-	    if (telescope.weather == "GOOD") {
+	    if (telescope.weather.good == "true") {
 		return "text-success";
 	    } else {
 		return "text-danger";
 	    };
 	}
-    }, 
-});
+    },
+    isSlitOpen(telescope) {
+	if (telescope) {
+	    if (telescope.slit == "open") {
+		return true;
+	    } else {
+		return false;
+	    };
+	}
+    },
+    isExposing(telescope){
+      if (telescope){
+        if (telescope.observation != null){
+          return true;
+        } else {
+          return false;
+        };
+      }
+    },
 
+});

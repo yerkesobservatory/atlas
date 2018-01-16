@@ -1,48 +1,64 @@
 <!-- template for the observation page -->
-<template name="observations">
-  <h2> Observations </h2>
+<template name="newObservation">
+  <!-- change the background color -->
+  <style>body {background-color: #192231;}</style>
 
+  <p id="home_message" style="font-size: 25px; margin-top: 50px; margin-left:0px;">OBSERVATIONS</p>
+  <p style="font-size: 20px; margin-top:30px; margin-bottom:0px; color:white;">SUBMIT AN OBSERVATION</p>
   <!-- form to submit new observation -->
   <div class="container-fluid">
     <div class="row">
-      <div class="col-md-4" style="padding-top:49px;">
-        <div class="panel panel-default">
-          <div class="panel-heading">New Observation</div>
-          <div class="panel-body">
-            {{> newObservation}}
+      <div class="col-xs-5">
+        <div class="panel panel-default" style="border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0);">
+          <div class="panel-heading" style="border-style: none; border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0);"></div>
+          <div class="panel-body" style="border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0);">
+            {{> newObservationForm}}
           </div>
         </div>
       </div>
-      <div class="col-md-8">
+      <div class="col-xs-7">
 
-    <!-- insert this snippet where you want Aladin Lite viewer to appear and after the loading of jQuery -->
-    <div id="aladin-lite-div" style="width:400px;height:400px;"></div>
-    <img id="visibility_plot" src="" alt="">
+	  <div class="panel panel-default" style="height:100%; border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0); color:white;">
+	    <div class="panel-body">
+        <p style="font-size: 20px; margin-top:-43px;">DIGITIZED SKY SURVEY (DSS) PREVIEW:</p>
+	      <!-- <div id="aladin-lite-div" style="width:400px;height:400px;"></div> -->
+	      <div id="aladin-lite-div" style="height:550px; width:550px; border-radius:20px;"></div>
+	    </div> <!-- panel-body -->
+	  </div> <!-- panel -->
 
-        {{> reactiveTable settings=settings}}
+    <p style="font-size: 20px; margin-top:70px; color:white;">VISIBILITY CHART:</p>
+  <div class="panel panel-default" style="height:350px; border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0); color:white;">
+  <div class="panel-body">
+  <img id="visibility_plot" src="" alt="" style="width:550px; border-radius:20px;">
+  </div> <!-- panel-body -->
+  </div> <!-- panel -->
+
       </div>
     </div>
   </div>
-
 </template>
 
 <!-- form to create new observation -->
-<template name="newObservation">
+<template name="newObservationForm">
 
   <form class="form-horizontal new-observation">
     <fieldset>
 
       <!-- program -->
-      <div class="form-group" id="form-program">
-        <label for="program" class="col-lg-3 control-label">Observing Program</label>
+      <div class="form-group" id="form-program" >
+        <label for="program" class="col-lg-3 control-label" style="font-family:Futura; " >PROGRAM</label>
         <div class="col-lg-9">
           <select class="form-control" id="program" name="program" required>
             {{#each program in programs}}
-            {{#if isGeneral program}}
-            <option value="{{program._id}}" selected="selected">{{program.name}}</option>
-            {{else}}
-            <option value="{{program._id}}">{{program.name}}</option>
-            {{/if}}
+	    {{#unless isEqual progam "DSO" "Asteroids" "Variables" "Solar System"}}
+	        <option value="{{program._id}}">{{program.name}}</option>
+	    {{else}}
+	      {{#if isEqual program "DSO"}}
+                <option value="{{program._id}}" selected="selected"><b>{{program.name}}</b></option>
+              {{else}}
+                <option value="{{program._id}}"><b>{{program.name}}</b></option>
+              {{/if}}
+	    {{/unless}}
             {{/each}}
           </select>
         </div>
@@ -50,7 +66,7 @@
 
       <!-- Target Name -->
       <div class="form-group" id="form-target">
-        <label for="target" class="col-lg-3 control-label">Target</label>
+        <label for="target" class="col-lg-3 control-label" style="font-family:Futura;">TARGET</label>
         <div class="col-lg-9">
           <input class="form-control" id="target" placeholder="Target Name or hh:mm:ss dd:mm:ss" name="target" type="text" required>
         </div>
@@ -58,7 +74,7 @@
 
       <!-- Exposure Time -->
       <div class="form-group" id="form-exptime">
-        <label for="exptime" class="col-lg-3 control-label">Exposure Time</label>
+        <label for="exptime" class="col-lg-3 control-label" style="font-family:Futura;">EXP TIME</label>
         <div class="col-lg-9">
           <input class="form-control" id="exptime" placeholder="Exposure Time (s)" name="exptime" type="text" min=0 required>
         </div>
@@ -66,7 +82,7 @@
 
       <!-- Exposure Count -->
       <div class="form-group" id="form-expcount">
-        <label for="expcount" class="col-lg-3 control-label">Exposure Count</label>
+        <label for="expcount" class="col-lg-3 control-label" style="font-family:Futura;">EXP COUNT</label>
         <div class="col-lg-9">
           <input class="form-control" id="expcount" placeholder="Exposure Count" name="expcount" type="number" min=1 max=100 required>
         </div>
@@ -74,7 +90,7 @@
 
       <!-- Binning -->
       <div class="form-group" id="form-binning">
-        <label for="binning" class="col-lg-3 control-label">Binning</label>
+        <label for="binning" class="col-lg-3 control-label" style="font-family:Futura; color:white; ">BIN</label>
         <div class="col-lg-9">
           <input class="form-control" id="binning" placeholder="Binning" type="number" min=1 max=8 value="2" name="binning" required>
         </div>
@@ -85,88 +101,113 @@
         <div class="row">
           <div class="checkbox-inline">
             <label>
-              <input type="checkbox" name="filter_clear"> Clear
+              <input type="checkbox" name="filter_clear" class="filter"> Clear
             </label>
           </div>
           <div class="checkbox-inline">
             <label>
-              <input type="checkbox" name="filter_ha"> H-alpha
+              <input type="checkbox" name="filter_ha" class="filter"> H-alpha
             </label>
           </div>
         </div> <!-- row -->
         <div class="row">
           <div class="checkbox-inline">
             <label>
-              <input type="checkbox" name="filter_u"> u'
+              <input type="checkbox" name="filter_u" class="filter"> u'
             </label>
           </div>
           <div class="checkbox-inline">
             <label>
-              <input type="checkbox" name="filter_g"> g'
+              <input type="checkbox" name="filter_g" class="filter"> g'
             </label>
           </div>
           <div class="checkbox-inline">
             <label>
-              <input type="checkbox" name="filter_r"> r'
+              <input type="checkbox" name="filter_r" class="filter"> r'
             </label>
           </div>
 
           <div class="checkbox-inline">
             <label>
-              <input type="checkbox" name="filter_i"> i'
+              <input type="checkbox" name="filter_i" class="filter"> i'
             </label>
           </div>
           <div class="checkbox-inline">
             <label>
-              <input type="checkbox" name="filter_z"> z'
+              <input type="checkbox" name="filter_z" class="filter"> z'
             </label>
           </div>
         </div>
-
       </div>
-
+      
+      <button type="button" class="btn btn-info collapsed" style="border-color: rgba(0,0,0,0); background-color:#859BA0; border-radius:0px; font-family: Futura; width:100%; margin-top:20px; margin-bottom:20px;" data-toggle="collapse" data-target="#advanced">
+        ADVANCED OPTIONS <i class="icon-large toggle-arrow" style="color:white;"></i>
+    </button>
+      <div id="advanced" class="collapse">
       <!-- advanced options -->
       <!-- Lunar Separation -->
-      <div class="form-group" id="form-lunar">
-        <label for="lunar" class="col-lg-3 control-label">Lunar Separation</label>
-        <div class="col-lg-9">
-          <input class="form-control" id="lunar" placeholder="Minimum Lunar Separation (deg)" name="lunar" min=0 max=60>
+      <div class="form-group" id="form-lunar form-airmass">
+        <label for="lunar" class="col-lg-3 control-label" style="font-family: Futura; font-size:10px; color:white;">LUNAR AVOIDANCE (deg)</label>
+        <div class="col-lg-3">
+          <input class="form-control" type="number" id="lunar" placeholder="" name="lunar" min=0 max=60>
         </div>
-      </div>
 
-      <!-- Maximum Airmass -->
-      <div class="form-group" id="form-airmass">
-        <label for="airmass" class="col-lg-3 control-label">Maximum Airmass</label>
-        <div class="col-lg-9">
-          <input class="form-control" id="airmass" placeholder="Maximum Airmass" name="airmass" min=1 max=38>
+        <label for="airmass" class="col-lg-3 control-label" style="font-family: Futura; font-size:10px; color:white;">MAX AIRMASS (sec(z))</label>
+        <div class="col-lg-3">
+          <input class="form-control" type="number" id="airmass" placeholder="" name="airmass" min=1 max=38>
         </div>
       </div>
 
       <!-- Pointing Offset - RA -->
-      <div class="form-group" id="form-offset_ra">
-        <label for="offset_ra" class="col-lg-3 control-label">Pointing Offset (RA)</label>
-        <div class="col-lg-9">
-          <input class="form-control" id="offset_ra" placeholder="Pointing Offset RA (arcmins)" name="offset_ra" min=0 max=60>
+      <div class="form-group" id="form-offset_ra form-offset_dec">
+        <label for="offset_ra" class="col-lg-3 control-label" style="font-family: Futura; font-size:10px; color:white;">OFFSET RA (arcmin)</label>
+        <div class="col-lg-3">
+          <input class="form-control" type="number" id="offset_ra" placeholder="" name="offset_ra" min=0 max=60>
+        </div>
+
+        <label for="offset_dec" class="col-lg-3 control-label" style="font-family: Futura; font-size:10px; color:white;">OFFSET DEC (arcmin)</label>
+        <div class="col-lg-3">
+          <input class="form-control" type="number" id="offset_dec" placeholder="" name="offset_dec" min=0 max=60>
+        </div>
+      </div>
+      <br>
+      <p id="mosaic" style="text-align: center;">MOSAIC OPTIONS</p>
+      <div class="form-group" id="form-offset_ra form-offset_dec">
+        <label for="x_frame" class="col-lg-3 control-label" style="font-family: Futura; font-size:10px; color:white;">X-FRAME COUNT</label>
+        <div class="col-lg-3">
+          <input class="form-control" type="number" id="x_frame" placeholder="" name="x_frame" min=0 max=60>
+        </div>
+
+        <label for="y_frame" class="col-lg-3 control-label" style="font-family: Futura; font-size:10px; color:white;">Y-FRAME COUNT</label>
+        <div class="col-lg-3">
+          <input class="form-control" type="number" id="y_frame" placeholder="" name="y_frame" min=0 max=60>
         </div>
       </div>
 
-      <!-- Pointing Offset - Dec -->
-      <div class="form-group" id="form-offset_dec">
-        <label for="offset_dec" class="col-lg-3 control-label">Pointing Offset (Dec)</label>
-        <div class="col-lg-9">
-          <input class="form-control" id="offset_dec" placeholder="Pointing Offset Dec (arcmins)" name="offset_dec" min=0 max=60>
-        </div>
-      </div>
-
+    </div>
+    <br>
+    <p style="font-size:18px;">TOTAL OBSERVATION TIME: <b>{{totalObservationTime}}</b></p>
       <!-- submit buttons -->
       <div class="form-group" >
-        <div class="col-lg-12 col-lg-offset-3" style="padding-top: 10px;">
-          <button type="reset" class="btn btn-warning">Cancel</button>
-          <button type="submit" class="btn btn-success">Submit</button>
+        <div class="col-xs-12" style="padding-top: 10px;">
+          <button type="submit" id="submit_obs" class="btn btn-success">SUBMIT</button>
         </div>
       </div>
+
     </fieldset>
   </form>
+</template>
+
+<!-- template for the observation page -->
+<template name="observations">
+  <style>body {background-color: #192231;}</style>
+  <p id="home_message" style="font-size: 25px; margin-top: 50px; margin-left:0px;">OBSERVATIONS</p>
+  <!-- form to submit new observation -->
+  <div class="col-md-12" style="margin-top:50px;">
+  <!-- display existing sessions -->
+  {{> reactiveTable settings=settings class="table table-striped table-hover" }}
+  </div>
+
 </template>
 
 <template name="noObservations">
