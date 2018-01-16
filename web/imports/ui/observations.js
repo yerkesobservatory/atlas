@@ -106,10 +106,9 @@ Template.newObservationForm.helpers({
 // event handlers
 Template.newObservationForm.events({
     'blur #target'(event) {
-	console.log('HELLO!');
+	CoffeeAlerts.clearSeen();
 	// point Aladin preview at object
 	if (event.target.value) {
-	    console.log('Slewing preview');
 	    if (aladin) {
 		aladin.gotoObject(event.target.value);
 	    }
@@ -188,10 +187,6 @@ Template.newObservationForm.events({
 	// reset form
 	$('.new-observation')[0].reset();
 
-    },
-    'blur #target'(event, instance) {
-	CoffeeAlerts.clearSeen();
-	event.preventDefault()
     },
     // the below handlers update the ReactiveDict to calculate total observation time
     'blur #exptime'(event, instance) {
