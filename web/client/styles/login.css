@@ -84,7 +84,7 @@ html *
     color:white;
 }
 
-body, p {
+p {
     font-family: "Futura";
     font-style: "Medium"
 }
@@ -403,4 +403,11 @@ input[type=text], input[type=number], input[type=time], input[type=date], #progr
 
 #create_program:hover{
   background-color: #5B8FA8;
+}
+
+html, body {
+    font-family: "Futura";
+    font-style: "Medium"
+    max-width: 100%;
+    overflow-x: hidden;
 }
