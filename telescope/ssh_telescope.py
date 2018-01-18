@@ -5,6 +5,7 @@ import time
 import logging
 import colorlog
 import paramiko
+import random
 import websocket as ws
 import config.telescope as telescope
 import paho.mqtt.client as mqtt
@@ -199,6 +200,34 @@ class SSHTelescope(object):
         'chip'
         """
         # TODO
+        return True
+
+    #mcn
+    def chip_temp_ok(self) -> bool:
+        """ Compare current chip temperature to the set temperature.
+        If the same, return True; else, return False
+        """
+        result = self.run_command(telescope.get_ccd_status)
+    
+        # search for chip and setpoint temperatures
+        tchip = re.search(telescope.get_tchip_re, result)
+        setpoint = re.search(telescope.get_setpoint_re, result)
+
+        # extract group and return
+        if tchip and setpoint:
+            return (float(tchip.group(0))-float(setpoint.group(0)) < 1 #within 1 degree is good enough
+        else:
+            self.log.warning(f'Unable to parse get_ccd_status: \"{result}\"')
+            return False  # return the safest value        
+
+        return False
+
+    #mcn
+    def cool_ccd(self) -> bool:
+        """ Cool the CCD
+        """
+        result = self.run_command(telescope.cool_ccd)        
+
         return True
 
     def lock(self, user: str, comment: str = 'observing') -> bool:
@@ -435,6 +464,23 @@ class SSHTelescope(object):
 
         return False
 
+    def goto_point_for_flats(self) -> bool:
+        """ Point the telescope east of zenith with a bit of wiggle.
+        """
+
+        #point scope east of zenith
+        ha = config.telescope.ha_east #eastward
+        dec = config.general.latitude #zenith
+
+        #randomize
+        dHa = 0.5*random.random()
+        dDec = 0.5*random.random()
+        ha += dHa
+        dec += dDec
+
+        self.run_command(telescope.goto_for_flats.format(ha=ra, dec=dec))
+
+
     def goto_point(self, ra: str, dec: str) -> (bool, float, float):
         """ Point the telescope at a given RA/Dec.
 
@@ -560,8 +606,9 @@ class SSHTelescope(object):
     def disable_tracking(self) -> bool:
         """ Disable the tracking motor for the telescope.
         """
-        # TODO
-        return True
+        result = self.run_command(telescope.disable_tracking)
+
+        return (re.search(telescope.disable_tracking_re, result) and True) or False
 
     def move_dome(self, daz: float) -> bool:
         """ Move the dome to.. TODO
