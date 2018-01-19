@@ -6,6 +6,7 @@ import logging
 import colorlog
 import paramiko
 import random
+import datetime
 import websocket as ws
 import config.telescope as telescope
 import paho.mqtt.client as mqtt
@@ -210,15 +211,15 @@ class SSHTelescope(object):
         result = self.run_command(telescope.get_ccd_status)
     
         # search for chip and setpoint temperatures
-        tchip = re.search(telescope.get_tchip_re, result)
-        setpoint = re.search(telescope.get_setpoint_re, result)
+        tchip = re.search(telescope.tchip_ccd_re, result)
+        setpoint = re.search(telescope.setpoint_ccd_re, result)
 
         # extract group and return
-        if tchip and setpoint:
-            return (float(tchip.group(0))-float(setpoint.group(0)) < 1 #within 1 degree is good enough
-        else:
-            self.log.warning(f'Unable to parse get_ccd_status: \"{result}\"')
-            return False  # return the safest value        
+        if tchip and setpoint:  
+          return float(tchip.group(0))-float(setpoint.group(0)) < 1 #within 1 degree is good enough
+        #else:
+        #    self.log.warning(f'Unable to parse get_ccd_status: \"{result}\"')
+        #    return False  # return the safest value        
 
         return False
 
@@ -611,15 +612,46 @@ class SSHTelescope(object):
         return (re.search(telescope.disable_tracking_re, result) and True) or False
 
     def move_dome(self, daz: float) -> bool:
-        """ Move the dome to.. TODO
+        """ Move the dome to az=daz
         """
-        # TODO
-        return True
+        result = self.run_command(telescope.move_dome.format(az=daz))
+
+        return (re.search(telescope.move_dome_re, result) and True) or False
+
+    def home_dome(self) -> bool:
+        """ Calibrate the dome motor
+        """        
+        result = self.run_command(telescope.home_dome)
+
+        return (re.search(telescope.home_dome_re, result) and True) or False        
+
+    def home_ha(self) -> bool:
+        """ Calibrate the HA motor
+        """  
+        result = self.run_command(telescope.home_ha)
+
+        return (re.search(telescope.home_ha_re, result) and True) or False   
+
+    def home_dec(self) -> bool:
+        """ Calibrate the DEC motor
+        """          
+        result = self.run_command(telescope.home_dec)
+
+        return (re.search(telescope.home_dec_re, result) and True) or False   
 
     def calibrate_motors(self) -> bool:
         """ Run the motor calibration routine.
         """
-        return False
+        if not self.home_dome():
+            return False
+
+        if not self.home_ha():
+            return False
+
+        if not self.home_dec():
+            return False                        
+
+        return True
 
     # TODO
     def get_focus(self) -> float:
