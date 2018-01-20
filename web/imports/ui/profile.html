@@ -14,10 +14,10 @@
   {{> reactiveTable collection="completed_observations" settings=settings id="obs_status_table" class="table table-striped table-hover" }}
 
   <p style='color: rgba(255,163,25,1);'><b style='color:white;'>ROLES:</b> {{user.roles}}</p>
-  <img src="badges_static.png" style="padding-bottom:35px; width:100%;">
-  <a href="#" data-toggle="modal" data-target="#showBadgesModal" id="showBadges" class="pull-right">Show all badges</a>
+  <!-- <img src="badges_static.png" style="padding-bottom:35px; width:100%;"> -->
+  <!-- <a href="#" data-toggle="modal" data-target="#showBadgesModal" id="showBadges" class="pull-right">Show all badges</a> -->
   <!-- modal for editing profile -->
-  {{> showBadges}}
+  <!-- {{> showBadges}} -->
   <!-- this could be made into a button or something prettier? -->
 
 </template>
@@ -62,7 +62,7 @@
         <p><b>ROLES: </b> {{> editableList collection="users" field="roles"}}</p>
         {{/if}}
         {{#with profile}}
-        <p><b> CHANGE {{firstName}}'S PASSWORD </b></p>
+        <p><b> CHANGE YOUR PASSWORD </b></p>
         {{> changePassword}}
         {{/with}}
 
