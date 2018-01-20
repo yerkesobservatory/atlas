@@ -1,15 +1,5 @@
-<template name="bkgd_admin">
-    <style>
-    body {
-            background-color: #192231;
-    }
-    </style>
-</template>
-
-
 <template name="admin">
-  {{> navigation}}
-  {{> bkgd_admin}}
+  <style>body {background-color: #192231;}</style>
   {{#if isInRole 'admin'}}
 
   <!-- start navigation -->
