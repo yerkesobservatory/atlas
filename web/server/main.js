@@ -46,7 +46,7 @@ Meteor.startup(() => {
         }
 
         // creating public programs
-        insertProgram('Deep Sky', 'deepsky');
+        insertProgram('General', 'general');
         insertProgram('Asteroids', 'asteroid');
         insertProgram('Variable Stars', 'variable');
         insertProgram('Solar System', 'solarsystem');

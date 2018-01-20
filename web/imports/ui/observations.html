@@ -50,10 +50,10 @@
         <div class="col-lg-9">
           <select class="form-control" id="program" name="program" required>
             {{#each program in programs}}
-	    {{#unless isEqual progam "DSO" "Asteroids" "Variables" "Solar System"}}
+	    {{#unless isEqual progam "General" "Asteroids" "Variables" "Solar System"}}
 	        <option value="{{program._id}}">{{program.name}}</option>
 	    {{else}}
-	      {{#if isEqual program "DSO"}}
+	      {{#if isEqual program "General"}}
                 <option value="{{program._id}}" selected="selected"><b>{{program.name}}</b></option>
               {{else}}
                 <option value="{{program._id}}"><b>{{program.name}}</b></option>
