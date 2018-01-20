@@ -8,11 +8,11 @@
   {{> program_icons}}
 
   <div class="col-md-12" style="margin-top:150px;">
-      <button type="button" class="btn pull-right" id="button_new_program" style="display: inline-block; border-radius:0px; border-color: rgba(0,0,0,0); background-color:rgba(0,0,0,0);">
-        <div class="text pull-right" style="margin-top:-70px; margin-left:0px; margin-right:-45px;">
+      <!-- <button type="button" class="btn pull-right" id="button_new_program" style="display: inline-block; border-radius:0px; border-color: rgba(0,0,0,0); background-color:rgba(0,0,0,0);"> -->
+        <div class="text pull-right" id="new_program_div" style="margin-top:-70px; margin-left:0px; margin-right:-45px;">
           <p style="font-size:28px;" class="" id="create_program"> <img src="plus.gif" style="width:10%;"> CREATE YOUR OWN OBSERVING PLAN</p>
         </div>
-      </button>
+      <!-- </button> -->
 
     </div>
   <!-- display private programs -->
@@ -97,12 +97,11 @@
 
   	      <!-- executor -->
   	      <div class="form-group" id="form-executor">
-  		<label for="executor" class="col-lg-3 control-label">EXECUTION STRATEGY</label>
+  		<label for="executor" class="col-lg-3 control-label">Execution Strategy</label>
   		<div class="col-lg-9">
   		  <select class="form-control" id="executor" name="executor" required>
-    		    <option value="deepsky">Deep Sky Object</option>
+    		    <option value="general">General</option>
 		    <option value="variable">Variable Star</option>
-		    <option value="mosaic">Mosaic</option>
   		    <option value="asteroid">Asteroid</option>
 		    <option value="solarsystem">Solar System</option>
   		  </select>
