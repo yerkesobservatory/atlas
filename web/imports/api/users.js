@@ -9,6 +9,10 @@ import { Sessions } from './sessions.js';
 // publish user affiliations
 export const Affiliations = new Mongo.Collection('affiliations');
 
+Meteor.users.deny({
+    update() { return true; }
+});
+
 // publish affiliations and users
 if (Meteor.isServer) {
 
@@ -55,7 +59,7 @@ Meteor.methods({
             // create a new user
             const id = Accounts.createUser({
                 email: email,
-                profile: profile})
+		profile: profile})
 
             // user was sucessfully created
             if (id) {
@@ -65,7 +69,6 @@ Meteor.methods({
 
                 // send enrollment email
                 Accounts.sendEnrollmentEmail(id);
-
 
             } else {
                 CoffeeAlerts.error('Unable to create user...');
