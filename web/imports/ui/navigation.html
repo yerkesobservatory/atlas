@@ -26,7 +26,9 @@
               <li><a href="{{pathFor route='observations'}}">MY OBSERVATIONS</a></li>
             </ul>
           </li>
+	  {{#if isInRole 'real-time'}}
           <li><a href="{{pathFor route='control'}}">CONTROL</a></li>
+	  {{/if}}
           {{/if}}
         </ul>
 
