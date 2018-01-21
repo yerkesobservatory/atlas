@@ -139,8 +139,8 @@
       {{else}}
       <li><a href="#" class="action-completed">Mark Uncompleted</a></li>
       {{/unless}}
-      <li><a href="#" id="openShareModal">Share</a></li>
-      <li><a href="#" id="openProgramDetailsModal" class="action-share">View Details</a></li>
+      <li><a href="#" class="openShareModal">Share</a></li>
+      <li><a href="#" class="openProgramDetailsModal">View Details</a></li>
       <li class="divider"></li>
       <li><a href="#" class="action-delete">Delete</a></li>
     </ul>
@@ -164,17 +164,16 @@
       <!-- BODY -->
       <div class="modal-body" style="padding: 30px 80px 50px 80px;">
 	<div class="container-fluid">
-	  <form class="form-horizontal new-program">
+	  <form class="form-horizontal shareModalForm" id="{{_id}}">
 	    <fieldset>
 
 	      <!-- USERS -->
 	      <div class="form-group" id="form-program">
 		<label for="program" class="col-lg-3 control-label">ADD USERS</label>
 		<div class="col-lg-9">
-		  <input class="form-control" id="shareModal" placeholder="" name="name" type="text" required>
+		  <input class="form-control" id="email" placeholder="" name="email" type="text" required>
 		</div>
 	      </div>
-
 
 	      <!-- submit buttons -->
 	      <div class="form-group" >
@@ -208,6 +207,10 @@
 	  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>COMPLETED: {{numCompleted name}}</b>
 	    <!-- {{> reactiveTable collection="completed_observations" settings=settings id="obs_status_table" class="table table-striped table-hover"}} -->
 	  </p>
+
+	  {{#if isPrivate _id}}
+	  <p style='color: rgba(255,163,25,1);'><b style='color:white;'>SHARED WITH: {{sharedWith _id}}</b></p>
+	  {{/if}}
 	</div>
       </div>
     </div>

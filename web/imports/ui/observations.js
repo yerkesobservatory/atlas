@@ -54,7 +54,7 @@ Template.newObservationForm.onCreated(function onCreated() {
 Template.newObservationForm.helpers({
     // return all programs owned by the user, or owned by no-one (public programs)
     programs() {
-	return Programs.find({ '$or': [{owner: Meteor.userId()}, {owner: null}]});
+	return Programs.find({ '$or': [{owner: Meteor.userId()}, {owner: null}, {'sharedWith': Meteor.userId()}]});
     },
     // total observation time string ; in seconds if less than 60s,
     // in minutes if less than 60 minutes, in hours otherwise
@@ -193,25 +193,29 @@ Template.newObservationForm.events({
 	if (instance.obsProperties) {
 	    instance.obsProperties.set('exptime', event.target.value);
 	}
-	event.preventDefault()
+	event.preventDefault();
+	CoffeeAlerts.clearSeen();
     },
     'blur #expcount'(event, instance) {
 	if (instance.obsProperties) {
 	    instance.obsProperties.set('expcount', event.target.value);
 	}
-	event.preventDefault()
+	event.preventDefault();
+	CoffeeAlerts.clearSeen();
     },
     'blur #x_frame'(event, instance) {
 	if (instance.obsProperties) {
 	    instance.obsProperties.set('xframe', event.target.value);
 	}
-	event.preventDefault()
+	event.preventDefault();
+	CoffeeAlerts.clearSeen();
     },
     'blur #y_frame'(event, instance) {
 	if (instance.obsProperties) {
 	    instance.obsProperties.set('yframe', event.target.value);
 	}
-	event.preventDefault()
+	event.preventDefault();
+	CoffeeAlerts.clearSeen();
     },
     'change .filter'(event, instance) {
 	if (instance.obsProperties) {
@@ -222,7 +226,8 @@ Template.newObservationForm.events({
 		instance.obsProperties.set('numfilters', count-1);
 	    }
 	}
-	event.preventDefault()
+	event.preventDefault();
+	CoffeeAlerts.clearSeen();
     },
 });
 

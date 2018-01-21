@@ -86,8 +86,28 @@ Template.programDetailsModal.helpers({
 		return "Public";
 	    }
 	    else {
-		return program.owner;
+		user = Meteor.users.findOne(program.owner);
+		if (user) {
+		    return user.profile.firstName + ' ' + user.profile.lastName;
+		}
 	    }
+	}
+    },
+    isPrivate(id) {
+	if (id) {
+	    program = Programs.findOne(id);
+	    if (program) {
+		return program.owner != null;
+	    }
+	}
+    },
+    sharedWith(id) {
+	if (id) {
+	    const user_ids = Programs.find({'sharedWith': id}).fetch();
+	    const ids = user_ids.map(x => x.sharedWith);
+	    console.log(Meteor.users.find().fetch())
+	    const users = Meteor.users.find({'_id': {'$in': ids}}).fetch();
+	    console.log(users);
 	}
     },
     settings() {
@@ -166,10 +186,39 @@ Template.programs.events({
 	} else if (event.target.className.includes('action-completed')) {
 	    // mark program completed
 	    Meteor.call('programs.setCompleted', this._id, ! this.completed);
+	} else if (event.target.className.includes('openShareModal')) {
+	    Modal.show('shareModal', this);
+	} else if (event.target.className.includes('openProgramDetailsModal')) {
+	    Modal.show('programDetailsModal', this);
 	}
     }
-})
+});
 
+Template.shareModal.events({
+    // share modal
+    'submit .shareModalForm'(event, instance) {
+
+	// prevent default form submission
+	event.preventDefault()
+
+	// clear existing coffee alerts
+	CoffeeAlerts.clearSeen();
+
+	// get username
+	const email = event.target.email.value;
+
+	// try and share with user
+	Meteor.call('programs.shareProgramwith', this._id, email, function (error, result) {
+	    if (error) {
+		CoffeeAlerts.error(error);
+	    } else {
+		CoffeeAlerts.success('Program successfully shared with '+email+' !');
+		Modal.hide()
+	    }
+	});
+
+    },
+});
 Template.newProgramModal.events({
     // submitting new programs
     'submit .new-program'(event) {
@@ -194,35 +243,36 @@ Template.newProgramModal.events({
 	// close the modal
 	Modal.hide();
     },
+
 });
 
 // build rules for form validation
 Template.programs.onRendered(function() {
     $( '.new-program' ).validate({
-        errorClass: 'text-danger',
-        errorElement: 'p',
-        highlight: function(element, errorClass) {
+	errorClass: 'text-danger',
+	errorElement: 'p',
+	highlight: function(element, errorClass) {
 	    $(element.form).find('#form-'+element.id).removeClass('has-success');
 	    $(element.form).find('#form-'+element.id).addClass('has-error');
-        },
-        unhighlight: function(element, errorClass) {
+	},
+	unhighlight: function(element, errorClass) {
 	    $(element.form).find('#form-'+element.id).removeClass('has-error');
 	    $(element.form).find('#form-'+element.id).addClass('has-success');
-        },
-        rules: {
+	},
+	rules: {
 	    name: {
-                required: true,
-                minlength: 3,
-                maxlength: 32},
+		required: true,
+		minlength: 3,
+		maxlength: 32},
 	    executor: {
-                required: true}
+		required: true}
 
-        },
-        messages: {
+	},
+	messages: {
 	    name: {
-                required: "You have to give your observing program a name...",
-                minlength: "Please make the name longer than 4 characters",
-                maxlength: "verbosity may be king, but a name shorted than 32 characters would be appreciated"}
-        }
+		required: "You have to give your observing program a name...",
+		minlength: "Please make the name longer than 4 characters",
+		maxlength: "verbosity may be king, but a name shorted than 32 characters would be appreciated"}
+	}
     });
 });
