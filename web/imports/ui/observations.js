@@ -12,7 +12,7 @@ aladin = null;
 // load sky preview
 Template.newObservation.onCreated(function onCreated() {
 
-    $.getScript("//aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.js", function() {
+    $.getScript("https://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.js", function() {
         aladin = A.aladin('#aladin-lite-div', {survey: "P/DSS2/color",
                                                fov: (26/60),
                                                showLayersControl: false,
