@@ -107,14 +107,9 @@ Template.newObservationForm.helpers({
 Template.newObservationForm.events({
     'blur #target'(event) {
 	CoffeeAlerts.clearSeen();
-	// point Aladin preview at object
-	if (event.target.value) {
-	    if (aladin) {
-		aladin.gotoObject(event.target.value);
-	    }
-	}
 
-	HTTP.get('https://queue.stoneedgeobservatory.com:8179/visibility/'+event.target.value,
+	// load visiblity curves
+	HTTP.get('https://sirius.stoneedgeobservatory.com:8179/visibility/'+event.target.value,
 		 function (error, response) {
 		     if (error) {
 			 console.log(error);
@@ -123,6 +118,13 @@ Template.newObservationForm.events({
 			 $("#visibility_plot").attr('src','data:image/png;base64,'+response.content);
 		     }
 		 });
+
+	// point Aladin preview at object
+	if (event.target.value) {
+	    if (aladin) {
+		aladin.gotoObject(event.target.value);
+	    }
+	}
 
 	event.preventDefault();
     },
