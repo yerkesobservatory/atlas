@@ -114,7 +114,7 @@ Template.newObservationForm.events({
 	    }
 	}
 
-	HTTP.get('http://queue.stoneedgeobservatory.com:8179/visibility/'+event.target.value,
+	HTTP.get('https://queue.stoneedgeobservatory.com:8179/visibility/'+event.target.value,
 		 function (error, response) {
 		     if (error) {
 			 console.log(error);
