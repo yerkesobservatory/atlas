@@ -1,6 +1,22 @@
 <!-- default page for '/' route -->
 <template name="home">
-  {{> bkgd_im_profile}}
+    <style>
+    body {
+    /*background-image: url("profile_stars.gif");
+    background-position: bottom;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+    background-repeat: no-repeat;*/
+
+    background: url("profile_stars.gif") no-repeat center center fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+    }
+  </style>
 
   <div class="container-fluid">
 
@@ -64,27 +80,6 @@
   <div class="container-fluid">
     <h2 id="home_message" style="font-size: 25px; margin-top: 50px; text-align: right;">PROFILE SNAPSHOT</h2>
   </div>
-</template>
-
-<template name="bkgd_im_profile">
-  <style>
-    body {
-    /*background-image: url("profile_stars.gif");
-    background-position: bottom;
-    -webkit-background-size: cover;
-    -moz-background-size: cover;
-    -o-background-size: cover;
-    background-size: cover;
-    background-repeat: no-repeat;*/
-
-    background: url("profile_stars.gif") no-repeat center center fixed;
-    -webkit-background-size: cover;
-    -moz-background-size: cover;
-    -o-background-size: cover;
-    background-size: cover;
-
-    }
-  </style>
 </template>
 
 <template name="weather_icons">
