@@ -776,7 +776,10 @@ class SSHTelescope(object):
         while i < count:
 
             # create filename
-            fname = filename + f'_{i}.fits'
+            if count == 1: #don't add count if just one exposure
+                fname = filename + f'.fits'
+            else:
+               fname = filename + f'_{i}.fits'                
 
             self.log.info(f'Taking exposure {i+1}/{count} with name: {fname}')
 
