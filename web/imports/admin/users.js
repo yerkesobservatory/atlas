@@ -76,17 +76,20 @@ Template.adminUsers.events({
         // extract values
         const target = event.target;
         const email = target.email.value;
-        const affiliation = target.affiliation.value;
-        const minor = target.minor.checked;
+	const name = target.name.value.split(' ');
+	const affiliation = target.affiliation.value;
+	const minor = target.minor.checked;
 
-        // create new user
-        const profile =  {
-            affiliation: affiliation,
-            minor: minor,
-        }
+	// create new user
+	const profile =  {
+	    affiliation: affiliation,
+	    minor: minor,
+	    firstName: name[0].trim(),
+	    lastName: name[1].trim()
+	}
 
-        // insert user
-        Meteor.call('users.insert', email, profile);
+	// insert user
+	Meteor.call('users.insert', email, profile);
 
         // reset form
         $('.new-user')[0].reset();

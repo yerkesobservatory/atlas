@@ -9,6 +9,53 @@ Template.profile.onCreated(function onCreated() {
     Meteor.subscribe('observations');
 });
 
+Template.editProfile.helpers({
+    profile() {
+	if (Meteor.user()) {
+	    return Meteor.user().profile;
+	}
+    }
+});
+
+Template.profile.helpers({
+    settings() {
+	return {
+	    showRowCount: false,
+	    showNavigationRowsPerPage: false,
+	    multiColumnSort: false,
+	    showNavigation: "never",
+	    showFilter: false,
+	    rowsPerPage: 4,
+	    fields: [
+		{key: 'target',
+		 label: 'Target'},
+		{key: 'exposure_time',
+		 label: 'Exposure Time (s)'},
+		{key: 'exposure_count',
+		 label: 'Exposure Count'},
+		{key: 'filters',
+		 label: 'Filters',
+		 fn: function (value, object, key) {
+		     strings = [];
+		     for (var i = 0; i < value.length; i++) {
+			 if (value[i].search('-band') != -1) {
+			     strings.push(value[i].replace('-band', "'"));
+			 }
+			 else if (value[i] == 'h-alpha') {
+			     strings.push('ha');
+			 }
+			 else if (value[i] == 'clear') {
+			     strings.push('clear');
+			 }
+		     }
+		     return strings;
+		 }},
+		{key: 'binning',
+		 label: 'Binning'},
+	    ]};
+    }
+});
+
 Template.profile.helpers({
     user() {
 	return Meteor.user();
@@ -25,19 +72,7 @@ Template.profile.helpers({
 				      'completed': true}).count();
 	}
     },
-
-    badges(user) {
-	if (user) {
-	    return ['Explorer', ' Kronian', ' Harperian'];
-	}
-    },
 });
-
-// Template.editProfile.helpers({
-//     user() {
-// 	return Meteor.user();
-//     },
-// });
 
 Template.profile.events({
     'click #editProfile': function(e) {

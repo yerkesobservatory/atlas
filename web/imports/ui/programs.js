@@ -1,37 +1,130 @@
 import './programs.html';
 
 import { Programs } from '../api/programs.js';
+import { Observations } from '../api/observations.js';
 import $ from 'jquery';
+
 
 // subscribe to programs stream
 Template.programs.onCreated(function onCreated() {
     Meteor.subscribe('programs');
 });
 
+// subscribe to programs stream
+Template.programDetailsModal.onCreated(function onCreated() {
+    Meteor.subscribe('observations');
+});
+
 Template.programAction.helpers({
     isCurrentUser(userId) {
-	return userId === Meteor.userId();
+        return userId === Meteor.userId();
     },
 });
 
 // access programs
 Template.programs.helpers({
     programs() {
-	return Programs.find({ owner: Meteor.userId()});
+        return Programs.find({ owner: Meteor.userId()});
+    },
+    settings() {
+        return {
+            showRowCount: true,
+	    multiColumnSort: false,
+	    rowsPerPage: 10,
+            showNavigationRowsPerPage: false,
+	    showFilter: false,
+            // noDataTmpl: Template.noPrograms,
+            fields: [
+                {key: 'name',
+                 label: 'Name'},
+                {key: 'executor',
+                 label: 'Execution'},
+                {key: 'createdAt',
+                 label: 'Created'},
+                {key: 'completed',
+                 label: 'Completed',
+                 fn: function (value, object, key) {
+                     if (value === true) {
+                         return "Yes";
+                     } else {
+                         return "No";
+                     }
+                 }
+                },
+                {label: '',
+                 tmpl: Template.programAction
+                }
+            ]
+        };
+    }
+});
+
+// access programs
+Template.programDetailsModal.helpers({
+    numPending(name) {
+	if (name) {
+	    const observations = Programs.findOne({'name': name}).observations;
+	    if (observations) {
+		return Observations.find({'_id': {"$in": observations},
+					  'completed': false}).count();
+	    }
+	}
+    },
+    numCompleted(name) {
+	if (name) {
+	    const observations = Programs.findOne({'name': name}).observations;
+	    if (observations) {
+		return Observations.find({'_id': {"$in": observations},
+					  'completed': true}).count();
+	    }
+	}
+    },
+    owner(name) {
+	if (name) {
+	    program = Programs.findOne({'name': name});
+	    if (program.owner == null) {
+		return "Public";
+	    }
+	    else {
+		user = Meteor.users.findOne(program.owner);
+		if (user) {
+		    return user.profile.firstName + ' ' + user.profile.lastName;
+		}
+	    }
+	}
+    },
+    isPrivate(id) {
+	if (id) {
+	    program = Programs.findOne(id);
+	    if (program) {
+		return program.owner != null;
+	    }
+	}
+    },
+    sharedWith(id) {
+	if (id) {
+	    const user_ids = Programs.find({'sharedWith': id}).fetch();
+	    const ids = user_ids.map(x => x.sharedWith);
+	    console.log(Meteor.users.find().fetch())
+	    const users = Meteor.users.find({'_id': {'$in': ids}}).fetch();
+	    console.log(users);
+	}
     },
     settings() {
 	return {
-	    collection: Programs,
 	    showRowCount: true,
+	    showNavigation: 'never',
+	    multiColumnSort: false,
+	    showFilter: false,
 	    showNavigationRowsPerPage: false,
-	    noDataTmpl: Template.noPrograms, 
+	    // noDataTmpl: Template.noPrograms,
 	    fields: [
 		{key: 'name',
 		 label: 'Name'},
 		{key: 'executor',
 		 label: 'Execution'},
 		{key: 'createdAt',
-		 label: 'Created'}, 
+		 label: 'Created'},
 		{key: 'completed',
 		 label: 'Completed',
 		 fn: function (value, object, key) {
@@ -52,27 +145,26 @@ Template.programs.helpers({
 
 // event handlers
 Template.programs.events({
-    // submitting new programs
-    'submit .new-program'(event) {
-
-	// prevent default browser
+    'click #button_dso'(event, instance) {
 	event.preventDefault();
-
-	// clear 'success' formatting from form
-	$('.new-program').find('.form-group').removeClass('has-success');
-
-	// get value from form
-	const target = event.target;
-	const name = target.name.value;
-	const executor = target.executor.value;
-
-	// submit new program
-	Meteor.call('programs.insert', name, executor);
-
-	// reset form
-	$('.new-program')[0].reset();
+        Modal.show('programDetailsModal', Programs.findOne({'name': 'General'}));
     },
-
+    'click #button_asteroid'(event, instance) {
+	event.preventDefault();
+        Modal.show('programDetailsModal', Programs.findOne({'name': 'Asteroids'}));
+    },
+    'click #button_variable'(event, instance) {
+	event.preventDefault();
+        Modal.show('programDetailsModal', Programs.findOne({'name': 'Variable Stars'}));
+    },
+    'click #button_solar'(event, instance) {
+	event.preventDefault();
+        Modal.show('programDetailsModal', Programs.findOne({'name': 'Solar System'}));
+    },
+    'click #new_program_div'(event, instance) {
+    	event.preventDefault();
+    	Modal.show('newProgramModal');
+    },
     // on press of the delete button
     'click .reactive-table tbody tr': function (event) {
 	event.preventDefault();
@@ -94,9 +186,65 @@ Template.programs.events({
 	} else if (event.target.className.includes('action-completed')) {
 	    // mark program completed
 	    Meteor.call('programs.setCompleted', this._id, ! this.completed);
+	} else if (event.target.className.includes('openShareModal')) {
+	    Modal.show('shareModal', this);
+	} else if (event.target.className.includes('openProgramDetailsModal')) {
+	    Modal.show('programDetailsModal', this);
 	}
     }
-})
+});
+
+Template.shareModal.events({
+    // share modal
+    'submit .shareModalForm'(event, instance) {
+
+	// prevent default form submission
+	event.preventDefault()
+
+	// clear existing coffee alerts
+	CoffeeAlerts.clearSeen();
+
+	// get username
+	const email = event.target.email.value;
+
+	// try and share with user
+	Meteor.call('programs.shareProgramwith', this._id, email, function (error, result) {
+	    if (error) {
+		CoffeeAlerts.error(error);
+	    } else {
+		CoffeeAlerts.success('Program successfully shared with '+email+' !');
+		Modal.hide()
+	    }
+	});
+
+    },
+});
+Template.newProgramModal.events({
+    // submitting new programs
+    'submit .new-program'(event) {
+
+	// prevent default browser
+	event.preventDefault();
+
+	// clear 'success' formatting from form
+	$('.new-program').find('.form-group').removeClass('has-success');
+
+	// get value from form
+	const target = event.target;
+	const name = target.name.value;
+	const executor = target.executor.value;
+
+	// submit new program
+	Meteor.call('programs.insert', name, executor);
+
+	// reset form
+	$('.new-program')[0].reset();
+
+	// close the modal
+	Modal.hide();
+    },
+
+});
 
 // build rules for form validation
 Template.programs.onRendered(function() {
@@ -114,8 +262,8 @@ Template.programs.onRendered(function() {
 	rules: {
 	    name: {
 		required: true,
-		minlength: 4,
-		maxlength: 32}, 
+		minlength: 3,
+		maxlength: 32},
 	    executor: {
 		required: true}
 

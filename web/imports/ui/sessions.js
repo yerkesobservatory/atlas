@@ -12,42 +12,43 @@ Template.sessions.onCreated(function onCreated() {
 // access sessions
 Template.sessions.helpers({
     sessions() {
-	return Sessions.find({}, { sort: {'createDate': -1 } });
+        return Sessions.find({}, { sort: {'createDate': -1 } });
     },
     programs() {
-	return Programs.find({owner: Meteor.userId()}, { sort: {'createDate': -1 } });
+        return Programs.find({owner: Meteor.userId()}, { sort: {'createDate': -1 } });
     },
-     settings() {
-	return {
-	    collection: Sessions,
-	    showRowCount: true,
-	    showNavigationRowsPerPage: false,
-	    noDataTmpl: Template.noSessions,
-	    fields: [
-		{key: 'start',
-		 label: 'Start'},
-		{key: 'end',
-		 label: 'End'},
-		{key: 'programId',
-		 label: 'Program',
-		 fn: function (value, object, key) {
-		     const program = Programs.findOne(value);
-		     if (program) {
-			 return program.name;
-		     }
-		 }
-		},
-		{key: 'email',
-		 label: 'User'},
-		{label: '',
-		 fn: function(value, object, key) {
-		     if (object.owner == Meteor.userId()) {
-		     	 return new Spacebars.SafeString('<a href="#" class="btn btn-danger delete">Delete</a>');
-		     }
-		 }
-		 },
-		]
-	};
+    settings() {
+        return {
+            collection: Sessions,
+            showRowCount: true,
+	    showFilter: false,
+            showNavigationRowsPerPage: false,
+            noDataTmpl: Template.noSessions,
+            fields: [
+                {key: 'start',
+                 label: 'Start'},
+                {key: 'end',
+                 label: 'End'},
+                {key: 'programId',
+                 label: 'Program',
+                 fn: function (value, object, key) {
+                     const program = Programs.findOne(value);
+                     if (program) {
+                         return program.name;
+                     }
+                 }
+                },
+                {key: 'email',
+                 label: 'User'},
+                {label: '',
+                 fn: function(value, object, key) {
+                     if (object.owner == Meteor.userId()) {
+                         return new Spacebars.SafeString('<a href="#" class="btn btn-danger delete">Delete</a>');
+                     }
+                 }
+                },
+            ]
+        };
     }
 });
 
@@ -55,38 +56,39 @@ Template.sessions.helpers({
 Template.sessions.events({
     'submit .new-session'(event) {
 
-	// prevent default browser
-	event.preventDefault();
+        // prevent default browser
+        event.preventDefault();
 
-	// get value from form
-	const target = event.target;
-	const programId = target.program.value;
-	const startDate = target.startDate.value+' '+target.startTime.value;
-	const endDate = target.endDate.value+' '+target.endTime.value;
+        // get value from form
+        const target = event.target;
+        const programId = target.program.value;
+        const startDate = target.startDate.value+' '+target.startTime.value;
+        const endDate = target.endDate.value+' '+target.endTime.value;
 
-	// clear any previous alerts
-	CoffeeAlerts.clearSeen();
+        // clear any previous alerts
+        CoffeeAlerts.clearSeen();
 
-	// submit new observation
-	Meteor.call('sessions.insert', programId,
-		    startDate, endDate, function (error, result) {
-			if (error.message == '[session-conflict]') {
-			    CoffeeAlerts.error('Your sessions conflicts with other sessions and therefore cannot be scheduled.');
-			}
-			else if (error) {
-			    CoffeeAlerts.error('An unknown error occured in adding your session');
-			}
-		    });
+        // submit new observation
+        Meteor.call('sessions.insert', programId,
+                    startDate, endDate, function (error, result) {
+                        if (error) {
+                            if (error.message == '[session-conflict]') {
+                                CoffeeAlerts.error('Your sessions conflicts with other sessions and therefore cannot be scheduled.');
+                            }
+                            else if (error) {
+                                CoffeeAlerts.error('An unknown error occured in adding your session');
+                            }
+                        }
+                    });
 
     },
     // on press of the delete button
     'click .reactive-table tbody tr': function (event) {
-	event.preventDefault();
-	// checks if the actual clicked element has the class `delete`
-	if (event.target.className.includes('delete')) {
-	    // delete observation
-	    Meteor.call('sessions.remove', this._id);
-	}
+        event.preventDefault();
+        // checks if the actual clicked element has the class `delete`
+        if (event.target.className.includes('delete')) {
+            // delete observation
+            Meteor.call('sessions.remove', this._id);
+        }
     }
 });
-

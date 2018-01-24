@@ -4,6 +4,7 @@ import json
 import string
 import random
 import uvloop
+import pymongo
 import logging
 import bcrypt
 import datetime
@@ -12,7 +13,6 @@ import asyncio
 import websockets
 import paramiko
 from config import config
-from imqueue import database
 from telescope.ssh_telescope import SSHTelescope
 from telescope.exception import *
 
@@ -28,7 +28,7 @@ class TelescopeServer(object):
     def __init__(self, authentication=True):
         """ Establishes a long term SSH connection to the telescope
         control server; this does not start the processing of websocket handlers
-        on the specified ports. start() must be explicitly called.
+        on the specified ports. start() must be explicitly called. 
         """
 
         # initialize logging system
@@ -37,7 +37,7 @@ class TelescopeServer(object):
 
             # whether we should authenticate
         self.authentication = authentication
-
+        
         # websocket for current connection
         websocket: websockets.WebSocketServerProtocol = None
 
@@ -46,20 +46,28 @@ class TelescopeServer(object):
 
         # do not connect to database if authentication is disabled
         if authentication:
-            self.db = database.Database()
+            # create connection to database - get users collection
+            try:
+                self.db_client = pymongo.MongoClient(host='localhost', port=config.queue.database_port)
+                self.users = self.db_client[config.queue.database].users
+            except:
+                errmsg = 'Unable to connect or authenticate to database. Exiting...'
+                self.log.critical(errmsg)
+                raise ConnectionException(errmsg)
         else:
             self.log.warning('AUTHENTICATION DISABLED!! INSECURE!!')
-
+        
         # telescope to execute commands
         try:
             self.telescope = SSHTelescope()
         except Exception as e:
+            self.telescope = None
             self.log.critical(f'TelescopeServer unable to connect to telescope controller. Reason: {e}')
             exit(-1)
 
         # get list of telescope methods
         self.telescope_methods = [func for func in dir(SSHTelescope) if callable(getattr(SSHTelescope, func))
-                                  and not func.startswith("_")]
+                   and not func.startswith("_")]
 
         # set asyncio event loop to use libuv
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
@@ -76,10 +84,10 @@ class TelescopeServer(object):
         """
         if self.telescope:
             self.telescope.disconnect()
-
+            
     def start(self):
         """ Start the event loop listening for websocket
-        connections.
+        connections. 
         """
 
         # create a server listening for websocket connections
@@ -92,9 +100,9 @@ class TelescopeServer(object):
         self.loop.run_forever()
 
     def command_authorized(self, user: dict, command: str):
-        """ Check that 'user' is authorized to run 'command'.
-
-        Returns True if OK, False if NOT AUTHORIZED.
+        """ Check that 'user' is authorized to run 'command'. 
+        
+        Returns True if OK, False if NOT AUTHORIZED. 
         """
 
         # if authentication is disabled, every command is OK
@@ -121,7 +129,7 @@ class TelescopeServer(object):
         if 'cli-imaging' in roles:
             return command in ['lock', 'unlock', 'keep_open', 'goto_target',
                                'goto_point', 'enable_tracking', 'wait_until_good',
-                               'current_filter', 'change_filter', 'wait',
+                               'current_filter', 'change_filter', 'wait', 
                                'take_exposure', 'take_dark', 'take_bias']
         elif 'cli-full' in roles:
             return True
@@ -141,8 +149,8 @@ class TelescopeServer(object):
 
     async def process(self, websocket, path):
         """ This is the handler for new websocket
-        connections. This exists for the lifetime of
-        the connection by a Telescope class.
+        connections. This exists for the lifetime of 
+        the connection by a Telescope class. 
         """
         try:
             self.log.info('Connection request received. Awaiting authentication...')
@@ -163,7 +171,7 @@ class TelescopeServer(object):
             if self.authentication:
                 # check username and password against DB
                 try:
-                    user = self.db.users.find_one({'emails.address': email})
+                    user = self.users.find_one({'emails.address': email})
                     if user:
                         # meteor hashes password with sha256 before passing to bcrypt
                         # passwords sent to us are already sha256 encrypted by Telescope
@@ -185,7 +193,7 @@ class TelescopeServer(object):
                     return
 
             # we have now authenticated the user
-
+            
             # check whether we are connected to someone else
             if TelescopeServer.connected:
 
@@ -217,7 +225,7 @@ class TelescopeServer(object):
 
             if self.authentication:
                 # explicity save user
-                user = self.db.users.find_one({'emails.address': email})
+                user = self.users.find_one({'emails.address': email})
             else:
                 user = None
 
@@ -298,7 +306,7 @@ class TelescopeServer(object):
     @classmethod
     def __init_log(cls) -> bool:
         """ Initialize the logging system for this module and set
-        a ColoredFormatter.
+        a ColoredFormatter. 
         """
         # create format string for this module
         format_str = config.logging.fmt.replace('[name]', 'TELESCOPE SERVER')

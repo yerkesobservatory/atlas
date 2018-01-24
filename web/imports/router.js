@@ -17,17 +17,19 @@ AccountsTemplates.configureRoute('signIn', {
     name: 'signin',
     path: '/login',
     template: 'login',
-    layoutTemplate: 'empty', 
+    layoutTemplate: 'empty',
     redirect: function() {
-	var user = Meteor.user();
+	var uswer = Meteor.user();
 	if (user)
-	    Router.go('/');
+      //this.redirect('/home');
+      Router.go('/');
     }
 });
 
 // create page routings for other pages
 Router.route('/', 'home');
 Router.route('/home');
+Router.route('/newObservation');
 Router.route('/observations');
 Router.route('/sessions');
 Router.route('/programs');

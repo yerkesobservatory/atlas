@@ -11,11 +11,20 @@ export const Programs = new Mongo.Collection('programs');
 if (Meteor.isServer) {
     // create the publication
     Meteor.publish('programs', function() {
-	return Programs.find({ owner: this.userId });
+	// return Programs.find({ owner: this.userId });
+	return Programs.find({ '$or': [{owner: Meteor.userId()}, {owner: null}, {sharedWith: Meteor.userId()}]});
     });
+
+    // publish only private programs (do not include public programs)
+    ReactiveTable.publish("private-programs", Programs,
+			  function () {
+			      return {'$or': [{'owner': this.userId}, {'sharedWith': this.userId}]};
+			  }, options={"disablePageCountReactivity": true});
 }
 
+
 Meteor.methods({
+    // insert a program with 'name' using the specified execution strategy in 'executor'
     'programs.insert'(name, executor) {
 
 	// validate parameters
@@ -37,17 +46,18 @@ Meteor.methods({
 	if (programNames.indexOf(name) != -1) {
 	    return;
 	}
-	
+
 	// insert programs
 	Programs.insert({
 	    name: name,
-	    executor: executor, 
+	    executor: executor,
 	    owner: Meteor.userId(),
 	    email: Meteor.user().emails[0]["address"],
 	    completed: false,
 	    sessions: [],
 	    observations: [],
-	    createdAt: new Date(), 
+	    sharedWith: [],
+	    createdAt: new Date(),
 	});
     },
 
@@ -64,7 +74,7 @@ Meteor.methods({
 
 	// found the program
 	if (prog) {
-	    	// cannot delete 'General' program
+	    // cannot delete 'General' program
 	    if (prog.name == "General") {
 		return;
 	    }
@@ -94,7 +104,24 @@ Meteor.methods({
 
 	// mark the program as completed
 	Programs.update(progId, {$set: {completed: completed}});
-    }, 
+    },
+
+    'programs.shareProgramwith'(id, email) {
+
+	if (Meteor.isServer) {
+
+	    // find user by email
+	    users = Meteor.users.find({'emails.address': email.trim()}).fetch();
+
+	    // if the user isn't found, error
+	    if (users.length < 1) {
+		throw new Meteor.Error('Unable to find user with email: ' + email);
+	    } else {
+		program = Programs.update(id, {'$addToSet': {'sharedWith': users[0]._id}});
+		return 'Success!';
+	    }
+	}
+    },
 
 });
 

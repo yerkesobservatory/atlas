@@ -1,5 +1,6 @@
 import { Meteor } from 'meteor/meteor';
 import { Random } from 'meteor/random';
+import { Programs } from '../imports/api/programs.js';
 
 // import routing
 import '../imports/router.js'
@@ -15,21 +16,40 @@ import '../imports/api/announcements.js';
 Meteor.startup(() => {
     // code to run on server at startup
 
-    // there are no usrs
+    // there are no users, this is our FIRST startup
     if (! Meteor.users.findOne()) {
 
-	// create a user
-	const password = Random.id();
-	const id = Accounts.createUser({
-	    email: 'newaccount@admin.com',
-	    password: password
-	});
+        // create a user
+        const password = Random.id();
+        const id = Accounts.createUser({
+            email: 'newaccount@admin.com',
+            password: password
+        });
 
-	// make the user an admin
-	Roles.addUsersToRoles(id, 'admin');
+        // make the user an admin
+        Roles.addUsersToRoles(id, 'admin');
 
-	// print the password
-	console.log("Created new account with password: "+password);
+        // print the password
+        console.log("Created new account with password: "+password);
+
+	// function to insert a program
+        function insertProgram(name, executor) {
+            Programs.insert({
+                name: name,
+                executor: executor,
+                owner: null,
+                completed: false,
+                sessions: [],
+                observations: [],
+                createdAt: new Date(),
+            });
+        }
+
+        // creating public programs
+        insertProgram('General', 'general');
+        insertProgram('Asteroids', 'asteroid');
+        insertProgram('Variable Stars', 'variable');
+        insertProgram('Solar System', 'solarsystem');
     }
 });
 
@@ -37,11 +57,11 @@ Meteor.startup(() => {
     "use strict";
 
     Accounts.urls.resetPassword = function (token) {
-	return Meteor.absoluteUrl('reset/' + token);
+        return Meteor.absoluteUrl('reset/' + token);
     };
 
     Accounts.urls.enrollAccount = function (token) {
-    	return Meteor.absoluteUrl('reset/' + token);
+        return Meteor.absoluteUrl('reset/' + token);
     };
 
     Accounts.emailTemplates.from = 'Stone Edge Observatory <sirius.stonedgeobservatory@gmail.com>';
@@ -49,24 +69,23 @@ Meteor.startup(() => {
 
     // setup enrollment email
     Accounts.emailTemplates.enrollAccount.text = (user, url) => {
-	return 'Welcome to Atlas @ Stone Edge Observatory!\n\n'
-	    + 'To activate your account, please click the link below:\n\n'
-	    + url;
+        return 'Welcome to Atlas @ Stone Edge Observatory!\n\n'
+            + 'To activate your account, please click the link below:\n\n'
+            + url;
     };
     Accounts.emailTemplates.enrollAccount.subject = (user, url) => {
-	return 'Your new Stone Edge Observatory account';
+        return 'Your new Stone Edge Observatory account';
     };
 
     // configure password reset message
     Accounts.emailTemplates.resetPassword.text = (user, url) => {
-	return 'Hello from Atlas @ Stone Edge Observatory!\n\n'
-	    + 'Your password has been successfully reset; to set your'
-	    + ' new password, please click the link below. \n\n'
-	    + url;
+        return 'Hello from Atlas @ Stone Edge Observatory!\n\n'
+            + 'Your password has been successfully reset; to set your'
+            + ' new password, please click the link below. \n\n'
+            + url;
     };
     Accounts.emailTemplates.resetPassword.subject = (user, url) => {
-	return 'Resetting your password for Atlas @ Stone Edge Observatory';
+        return 'Resetting your password for Atlas @ Stone Edge Observatory';
     };
 
 })();
-

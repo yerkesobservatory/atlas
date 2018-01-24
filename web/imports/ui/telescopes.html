@@ -1,9 +1,44 @@
 <!-- template for telescope status on home page -->
 <template name="telescopes">
+  {{#if isSlitOpen telescope}}
+    {{> slit_open_image}}
+  {{else}}
+    {{> slit_closed_image}}
+  {{/if}}
+  <div class="row">
+  <div class="container-fluid col-xs-12">
+  <p style="color:white; font-size: 18px; margin-top:-80px; text-align:center; margin-bottom:100px;"><b>Slit:</b> <b style="color:#FFB547;">{{telescope.slit}}</b></p>
+    <div class="container-fluid col-xs-4">
+      <img src="cloud_icon.gif" class="img-fluid" style="max-width:100px; margin-top:-80px;">
+      <p style="color:white; text-align:left;"><b>Clouds:</b> {{telescope.weather.cloud}}</p>
+    </div>
+    <div class="container-fluid col-xs-4">
+      <img src="drop_icon.gif" class="img-fluid" style="max-width:100px; margin-top:-80px; margin-left:15px;">
+      <p style="color:white; text-align:left; margin-left:35px;"><b>Rain:</b> {{telescope.weather.rain}}</p>
+    </div>
+    <div class="container-fluid col-xs-4">
+      <img src="globe_icon.gif" class="img-fluid" style="max-width:100px; margin-top:-80px;">
+      <p style="color:white; text-align:left;"><b>Location:</b><br> {{telescope.location}}</p>
+    </div>
+  </div>
+</div>
+
+  <p style="color:white; font-size: 18px;"><b>PROGRESS:</b></p>
+  <div class="progress" style="background-image:none; background-color: rgba(26,34,49,1); max-width:90%;">
+    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="{{telescope.progress}}" aria-valuemin="0" aria-valuemax="100" style="width:0%"></div>
+</div>
+<!--not sure if this is correct-->
+{{#if isExposing telescope}}
+  <p style="color:white; font-size: 18px;"><b>Exposing: {{telescope.observation}}</b></p>
+{{/if}}
+
+</template>
+
+<template name="telescopes_old">
   <p><b>Name:</b> {{telescope.name}}</p>
   <p><b>Status:</b> {{telescope.status}}</p>
-  <p class="{{isWeatherGood telescope}}"><b>Weather:</b> {{telescope.weather}}</p>
-  <p><b>Slit:</b> {{telescope.slit}}</p>
+  <p class="{{isWeatherGood telescope}}"><b>Weather:</b> {{telescope.weather.good}}</p>
+  <p class="{{isSlitOpen telescope}}"><b>Slit:</b> {{telescope.slit}}</p>
   <p><b>Current Observation:</b> {{telescope.observation}}</p>
   <p><b>Location:</b> {{telescope.location}}</p>
 
@@ -12,5 +47,13 @@
   <div class="progress">
     <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="{{telescope.progress}}" aria-valuemin="0" aria-valuemax="100" style="width: 75%"></div>
 </div>
-		 
+
+</template>
+
+<template name="slit_closed_image">
+  <img src='slit_closed.gif' class="img-fluid" alt="slit_closed_image">
+</template>
+
+<template name="slit_open_image">
+  <img src="slit_open.gif" class="img-fluid" alt="slit_open_image">
 </template>

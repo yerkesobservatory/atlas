@@ -6,6 +6,13 @@
 
   <!-- Latest compiled and minified CSS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/solar/bootstrap.min.css" crossorigin="anonymous">
+
+  <!-- include Aladin Lite CSS file in the head section of your page -->
+  <!-- <link rel="stylesheet" href="https://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.css" /> -->
+
+  <!-- Muli Font -->
+  <link href="https://fonts.googleapis.com/css?family=Muli" rel="stylesheet">
+
   <title>Stone Edge Observatory</title>
 </head>
 
@@ -23,10 +30,12 @@
 <!-- master template for all pages -->
 <template name="main">
 
+  {{> navigation}}
+
   <body>
 
     <!-- nav bar -->
-    {{> navigation}}
+    <!--{{> navigation}}-->
 
     <div class="container">
       {{> coffeeAlerts}}

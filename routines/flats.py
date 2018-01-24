@@ -1,5 +1,5 @@
 """ This function uses a connected telescope object to take a series of
-flats.
+flats. 
 """
 
 def take_flats(telescope: 'Telescope', config: 'Config') -> bool:
@@ -17,7 +17,7 @@ def take_flats(telescope: 'Telescope', config: 'Config') -> bool:
     res: bool
         True if focus was successful, False if otherwise
     """
-
+    
     #where should we put this?
     flats_image_sequence = [
     #   (bin,   filter,     count)

@@ -1,21 +1,90 @@
 <template name="login">
-  
+  <style>#navbar {background-color: rgba(0,0,0,0.0);}</style>
   {{#if currentUser}}
   <h3><a href="{{pathFor route='home'}}">Please click here to continue...</a></h3>
   {{else}}
-  <div class="container-fluid">
-  <form class="login form-signin">
-    <label for="inputEmail" class="sr-only">Email</label>
-    <input type="email" id="inputEmail" class="form-control" placeholder="Email" required autofocus name="email">
-    <label for="inputPassword" class="sr-only">Password</label>
-    <input type="password" id="inputPassword" class="form-control" placeholder="Password" required name="password">
-    <button class="btn btn-lg btn-success btn-block" type="submit">Sign in</button>
-  </form>
+  <div class="container-fluid" style="margin-left:auto; margin-right:auto;">
+  {{> bkgd_im}}
+  {{> login_setup}}
+</div>
+  <div class="modal fade" id="login" role="dialog" style='margin-top:100px;'>
+    <div class="modal-dialog">
+
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">
+          <span aria-hidden="true">&times;</span><span class="sr-only">Close</span>
+        </button>
+        <img src="logo_circle.png" width="30%" style='margin-left:160px; margin-top:25px'>
+      </div>
+
+      <div class="modal-body" style="padding: 30px 80px 50px 80px;">
+              {{> login_modal}}
+			</div>
+
+    </div>
   </div>
+
+  <div class="modal fade" id="forgot_password" role="dialog" style='margin-top:100px;'>
+    <div class="modal-dialog">
+
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">
+          <span aria-hidden="true">&times;</span><span class="sr-only">Close</span>
+        </button>
+        <img src="logo_circle.png" width="30%" style='margin-left:160px; margin-top:25px'>
+      </div>
+
+      <div class="modal-body" style="padding: 30px 80px 50px 80px;">
+              {{> forgotPassword}}
+			</div>
+
+    </div>
+  </div>
+
   {{/if}}
-</template>
-
-<template name="setup">
 
 </template>
 
+<template name='login_modal'>
+  <div class="container-fluid">
+    <form class="login form-signin">
+        <div class="form-group">
+          <label class="sr-only" for="form-email-address">Email Address</label>
+          <input type="email" name="email" placeholder="Email Address" class="form-email-address form-control" id="form-email-address" required>
+        </div>
+
+        <div class="form-group">
+          <label class="sr-only" for="form-password">Password</label>
+          <input type="password" name="password" placeholder="Password" class="form-password form-control" id="form-password" required>
+        </div>
+
+        <button id="button_login" name="submit" type="submit" class="btn btn-default" style="border-radius:10px;">LOGIN</button>
+    </form>
+  </div>
+</template>
+
+
+<template name="login_setup">
+  <h1 id='welcome_message'>WELCOME TO THE <br> <u>STONE EDGE OBSERVATORY</u></h1>
+  <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#login" id='login_button' style="margin-left:80px; height:100%; margin-bottom:350px;">LOGIN</button>
+  <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#forgot_password" id='signup_button' style="margin-left:15px; margin-bottom:350px;">FORGOT PASSWORD?</button>
+</template>
+
+<template name="bkgd_im">
+  <style>
+  body {
+          /*background-image: url("login.jpeg");
+          background-position: bottom;
+          -webkit-background-size: cover;
+          -moz-background-size: cover;
+          -o-background-size: cover;
+          background-size: cover;*/
+
+          background: url("login.jpeg") no-repeat bottom center fixed;
+          -webkit-background-size: cover;
+          -moz-background-size: cover;
+          -o-background-size: cover;
+          background-size: cover;
+  }
+  </style>
+</template>
