@@ -76,12 +76,9 @@ Template.newObservationForm.helpers({
 	    }  else if (totalTime <=60*30) { // return time in minutes rounded to 1 decimal place
 		time = parseFloat(totalTime/60).toFixed(1);
 		return time + " mins";
-	    } else if (totalTime <= 60*60) { // return time in minutes
-		time = parseFloat(totalTime/60).toFixed(0);
-		return time + " mins";
 	    }
 	    else { // return time in hours
-		time = parseFloat(totalTime/(60*60)).toFixed(0);
+		time = parseFloat(totalTime/(60*60)).toFixed(1);
 		return time + " hours";
 	    }
 	} else {
