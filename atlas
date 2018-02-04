@@ -40,7 +40,7 @@ if args.subparser == 'start':
         p = multiprocessing.Process(target=t.start)
         p.start()
         args.server.remove('telescope')
-        # start the queue executor
+    # start the queue executor
     if 'executor' in args.server:
         p = multiprocessing.Process(target=imqueue.Executor)
         p.start()
