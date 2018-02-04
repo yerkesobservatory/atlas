@@ -5,10 +5,14 @@ import time
 import logging
 import colorlog
 import paramiko
+import datetime
 import websocket as ws
-import config.telescope as telescope
+import routines.flats as flats
+import routines.focus as focus
 import paho.mqtt.client as mqtt
-from routines import pinpoint, focus, flats, lookup
+import routines.lookup as lookup
+import config.telescope as telescope
+import routines.pinpoint as pinpoint
 from config import config
 from telescope.exception import *
 
@@ -59,7 +63,7 @@ class SSHTelescope(object):
                 self.log.info(f'Successfully connected to MQTT broker')
 
                 # create publish function
-                self.publish = lambda msg: client.publish(topic, json.dumps(msg))
+                self.publish = lambda msg: self.client.publish(topic, json.dumps(msg))
             except Exception as e:
                 self.log.warning(f'Unable to connect to MQTT broker: {e}')
                 self.publish = lambda msg: True
