@@ -12,17 +12,18 @@ aladin = null;
 // load sky preview
 Template.newObservation.onCreated(function onCreated() {
 
-    $.getScript("https://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.js", function() {
-        aladin = A.aladin('#aladin-lite-div', {survey: "P/DSS2/color",
-                                               fov: (26/60),
-                                               showLayersControl: false,
-                                               showShareControl: false,
-                                               showZoomControl: false,
-                                               showGotoControl: false,
-                                               showReticle: false,
-                                               showFrame: false});
+    // aladin is disabled until HTTPS is fixed
+    // $.getScript("https://aladin.u-strasbg.fr/AladinLite/api/v2/latest/aladin.min.js", function() {
+    //     aladin = A.aladin('#aladin-lite-div', {survey: "P/DSS2/color",
+    //                                            fov: (26/60),
+    //                                            showLayersControl: false,
+    //                                            showShareControl: false,
+    //                                            showZoomControl: false,
+    //                                            showGotoControl: false,
+    //                                            showReticle: false,
+    //                                            showFrame: false});
 
-    });
+    // });
 
 });
 
@@ -116,12 +117,23 @@ Template.newObservationForm.events({
 		     }
 		 });
 
+	// load target preview
+	HTTP.get('https://sirius.stoneedgeobservatory.com:8179/preview/'+event.target.value,
+		 function (error, response) {
+		     if (error) {
+			 console.log(error);
+		     } else {
+			 // set src of visibility plot to content of response
+			 $("#target_preview").attr('src','data:image/png;base64,'+response.content);
+		     }
+		 });
+
 	// point Aladin preview at object
-	if (event.target.value) {
-	    if (aladin) {
-		aladin.gotoObject(event.target.value);
-	    }
-	}
+	// if (event.target.value) {
+	//     if (aladin) {
+	// 	aladin.gotoObject(event.target.value);
+	//     }
+	// }
 
 	event.preventDefault();
     },
