@@ -1,5 +1,5 @@
 asn1crypto==0.24.0
-astroplan==0.3
+astroplan==0.4
 astropy==2.0.2
 bcrypt==3.1.4
 certifi==2017.4.17
