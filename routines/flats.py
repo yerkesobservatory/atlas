@@ -2,10 +2,11 @@
 flats.
 """
 from astropy.io import fits
+from config import config
 import datetime
 import os
 
-def take_flats(telescope: 'Telescope', config: 'Config') -> bool:
+def take_flats(telescope: 'Telescope') -> bool:
     """ Automatically take a series of flats
 
     MORE DETAIL HERE
@@ -38,8 +39,8 @@ def take_flats(telescope: 'Telescope', config: 'Config') -> bool:
         (2,     'clear',   10)
     ]
 
-    # wait until sun is at max_sun_alt_for_flats (e.g., -1 deg)
-    telescope.wait_until_good(config.max_sun_alt_for_flats)
+    # wait until sun is at max_sun_alt_for_flats (e.g., -1 deg) in 1 minute intervals
+    telescope.wait_until_good(config.telescope.max_sun_alt_for_flats, 1)
 
     # assume telescope is already locked by atlas?
 
