@@ -2,7 +2,6 @@ import pymongo
 import importlib
 import imqueue
 import imqueue.schedulers.general as general
-from telescope import Telescope
 from typing import List, Dict
 
 
@@ -49,10 +48,11 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         # if the above does not work, use general scheduler
     except Exception as e:
         imqueue.Executor.log.warning('Unable to load desired scheduler. Using "general" scheduler...')
+        imqueue.Executor.log.debug(e)
         return scheduler.general.schedule(observations, session, program)
 
 
-def execute(observation: Dict, program: Dict, telescope: Telescope) -> bool:
+def execute(observation: Dict, program: Dict, telescope) -> bool:
     """ Observe the requested observation and save the data according to program. 
 
     This function is provided a connected Telescope() object that should be used
@@ -76,7 +76,7 @@ def execute(observation: Dict, program: Dict, telescope: Telescope) -> bool:
 
     # the normal executor
     if program.get('executor') == 'general':
-        return general.execute(observation, program, telescope, db_client)
+        return general.execute(observation, program, telescope)
 
     # asteroids
     # elif program.get('executor') == 'asteroid':

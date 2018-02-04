@@ -8,11 +8,11 @@ import astroplan.constraints as constraints
 import astroplan.scheduling as scheduling
 from astroplan import ObservingBlock, FixedTarget
 from astropy.time import Time
-from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz, Angle, get_sun
 from typing import List, Dict
 from config import config
 from routines import pinpoint, lookup
-from telescope import Telescope
+
 
 def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[ObservingBlock]:
     """ Return the next object to be imaged according to the 'general' scheduling
@@ -38,11 +38,13 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
     observatory = astroplan.Observer(latitude=config.general.latitude*units.deg,
                                      longitude=config.general.longitude*units.deg,
                                      elevation=config.general.altitude*units.m,
-                                     name="Atlas", timezone="UTC")
+                                     name=config.general.name, timezone="UTC")
 
     # build default constraints
-    global_constraints = [constraints.AltitudeConstraint(min=40*units.deg), # set minimum altitude
-                          constraints.AtNightConstraint.twilight_nautical()] # sun below -18
+    global_constraints = [constraints.AltitudeConstraint(min=config.telescope.min_alt*units.deg), # set minimum altitude
+                          constraints.AtNightConstraint.twilight_nautical(),
+                          constraints.LocalTimeConstraint(min=datetime.datetime.now().time(),
+                                                          max=session['end'].time())]
 
     # list to store observing blocks
     blocks = []
@@ -65,31 +67,27 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
         # priority - if the observation has a priority, otherwise 1
         priority = observation['options'].get('priority') or 1
 
-        # create local constraints
-        ltc = constraints.LocalTimeConstraint(min=datetime.datetime.now().time(),
-                                              max=session['end'].time())
-
         # if specified, restrict airmass, otherwise no airmass restriction
         max_airmass = observation['options'].get('airmass') or 38
         airmass = constraints.AirmassConstraint(max=max_airmass, boolean_constraint = False)  # rank by airmass
 
         # if specified, use observations moon separation, otherwise use 2 degrees
-        moon_sep = observation['options'].get('moon')*units.deg or 2*units.deg
-        moon = constraints.MoonSeparationConstraint(min=moon_sep*units.deg),
+        moon_sep = (observation['options'].get('moon') or config.queue.moon_separation)*units.deg
+        moon = constraints.MoonSeparationConstraint(min=moon_sep)
 
         # time, airmass, moon, + altitude, and at night
-        constraints = [ltc, airmass, moon]
+        local_constraints = [airmass, moon]
 
         # create observing block for this target
         blocks.append(ObservingBlock.from_exposures(target, priority, observation['exposure_time']*units.second,
                                                     observation['exposure_count']*len(observation['filters']),
                                                     config.telescope.readout_time*units.second,
                                                     configuration = observation,
-                                                    constraints = [ltc]))
+                                                    constraints = local_constraints))
 
     # we need to create a transitioner to go between blocks
     transitioner = astroplan.Transitioner(1*units.deg/units.second,
-                                          {'filter': {'default': 3*units.second}})
+                                          {'filter': {'default': 4*units.second}})
 
     # create priority scheduler
     priority_scheduler = scheduling.PriorityScheduler(constraints = global_constraints,
@@ -98,8 +96,6 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
 
     # initialize the schedule
     schedule = scheduling.Schedule(Time(session['start']), Time(session['end']))
-
-    # print(astroplan.is_observable(global_constraints, observatory, targets=target, time_range=(Time.now(), Time(session['end'])), time_grid_resolution=60*units.second))
 
     # schedule!
     schedule = priority_scheduler(blocks, schedule)
@@ -112,7 +108,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
     # return the scheduled blocks
     return schedule
 
-def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Telescope) -> bool:
+def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> bool:
     """ Observe the request observation and save the data according to the parameters of the program.
 
     This function is provided a connected Telescope() object that should be used to execute
@@ -216,7 +212,6 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope: Tel
     database.Database.observations.update({'_id': observation['_id']},
                                           {'$set':
                                            {'completed': True,
-                                            'execDate': datetime.datetime.now(),
-                                            'directory': 'http://stars.uchicago.edu/atlas/'+dirname}})
+                                            'execDate': datetime.datetime.now()}})
 
     return True
