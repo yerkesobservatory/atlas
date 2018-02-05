@@ -39,8 +39,8 @@ class Calendar(object):
         Returns:
             Credentials, the obtained credential.
         """
-        credential_path = os.path.join(os.path.dirname(__file__),
-                                       '..', 'config', 'atlas-calendar.json')
+        credential_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                       'config', 'atlas-calendar.json')
 
         store = Storage(credential_path)
         credentials = store.get()
