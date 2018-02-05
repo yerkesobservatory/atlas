@@ -5,6 +5,7 @@ it loads in the queue file for tonight's imaging and executes each request
 import re
 import time
 import json
+import pytz
 import datetime
 import pymongo
 import logging
@@ -56,6 +57,9 @@ class Executor(object):
         self.log.info('Connecting to Google Calendar...')
         self.calendar = calendar.Calendar()
 
+        # variable to store completed observations every night
+        self.completed_observations = []
+
         # schedule the start function to run each night at the
         # designated start time (in the servers timezone)
         run.every().day.at(config.queue.start_time).do(self.start)
@@ -85,7 +89,7 @@ class Executor(object):
 
         # check if telescope is available tonight
         available, endtime = self.telescope_available()
-        self.log.debug(f'Telescope is available between until {endtime}')
+        self.log.debug(f'Telescope is available between now and {endtime}')
         if not available:
             self.log.info('Telescope is not available tonight. Shutting down...')
             return
@@ -139,11 +143,32 @@ class Executor(object):
         for session in sessions:
             self.execute_session(session)
 
+        # we notify the users of all observations that have been completed
+        self.notify_users()
+
+        # and we close
         self.log.info('Finished executing the queue! Closing down...')
         self.close()
         self.log.info('Executor has stopped for the night.')
 
         return True
+
+    def notify_users(self):
+        """ Notify the corresponding users of all observations that have
+        been completed during the night.
+        """
+        # this is a map from username to observations
+        emails = {}
+
+        # we look at each completed observation
+        for observation in self.completed_observations:
+
+            # if we haven't seen this user before, add them to emails
+            if observation['email'] not in emails.keys():
+                emails[observation['email']] = []
+
+            # add the observation name to the array
+            emails[observation['email']].append(observation['target'])
 
     def telescope_available(self) -> (bool, datetime.datetime):
         """ We check whether the telescope is available for
@@ -157,6 +182,7 @@ class Executor(object):
         # we check whether the telescope is booked in the previous and next 12 hours
         start = datetime.datetime.now() - datetime.timedelta(hours=12)
         end = datetime.datetime.now() + datetime.timedelta(hours=12)
+        return True, end
         events = self.calendar.get_events(start, end)
 
         # there are events booked tonight
@@ -166,21 +192,24 @@ class Executor(object):
                             key=lambda k: parser.parse(k['start'].get('dateTime')))
 
             # we find the times when the telescope isn't booked
-            start = datetime.datetime.now()
-            end = datetime.datetime.now()
+            start = datetime.datetime.now(tz=pytz.utc)
+            end = datetime.datetime.now(tz=pytz.utc)
 
             # if there is already an event started, we assume that
             # the telescope is not available for the rest of the night
-            # we can use events[0] here since we sorted earlier
-            first_start = to_utc(parser.parse(events[0].get('start').get('dateTime')))
+            # we can usen events[0] here since we sorted earlier
+            first_start = parser.parse(events[0].get('start').get('dateTime'))
+            print(start)
+            print(first_start)
+            print(to_utc(first_start))
             if first_start <= start:
                 return False, None
 
             # we now check each event to find the first non-queue event
             # the queue will run up until the first non-queue event
             for event in events:
-                # if the event starts with QUEUE, we consider it available time
-                if re.match('QUEUE', event.get('summary', '')):
+                # if the event starts with "Queue", we consider it available time
+                if re.match('Queue', event.get('summary', '')):
                     end = to_utc(parser.parse(event.get('end').get('dateTime')))
                 else:
                     break
@@ -393,7 +422,8 @@ class Executor(object):
                 schedule.execute(observation, program, self.telescope)
                 self.log.info(f'Finished observing {observation["target"]} for {observation["email"]}')
 
-                # notify the user
+                # record that we completed this observation
+                self.completed_observations.append(observation)
 
             except Exception as e:
                 self.log.warn(f'Error while executing {observation}')

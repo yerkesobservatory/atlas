@@ -167,12 +167,13 @@ class SSHTelescope(object):
         """
         result = self.run_command(telescope.close_dome)
 
-        if re.search(telescope.close_dome_re, result):
-            self.publish({'EVENT': 'CLOSEDOWN',
-                          'TIME': datetime.datetime.now().isoformat()})
-            return True
-        else:
-            return False
+        # if re.search(telescope.close_dome_re, result):
+        self.publish({'EVENT': 'CLOSEDOWN',
+                      'TIME': datetime.datetime.now().isoformat()})
+        return True
+            # return True
+        # else:
+        #     return False
 
     def close_down(self) -> bool:
         """ Closes the dome and unlocks the telescope. Call
@@ -389,7 +390,7 @@ class SSHTelescope(object):
         ddec: float
             The final offset error in declination
         """
-
+        print("IN GOTO TARGET!")
         # check that the object is visible
         if lookup.target_visible(target) and self.target_visible(target):
 
@@ -430,12 +431,21 @@ class SSHTelescope(object):
         ddec: float
             The final offset error in declination
         """
-
+        print("IN GOTO POINT!")
         # check that the target is visible
-        if lookup.point_visible(ra, dec) and self.point_visible(ra, dec):
+        # lookup.point_visible(ra, dec)
+        # self.point_visible(ra, dec)
+        # TODO: lookup.point_visible returning incorrect altitude
+        # if lookup.point_visible(ra, dec) and self.point_visible(ra, dec):
+        if self.point_visible(ra, dec):
+            print("IN LOOKUP!")
+
+            status = self.run_command(telescope.goto.format(ra=ra, dec=dec))
+            print(f"STATUS {status}")
 
             # Do basic pointing
             if self.run_command(telescope.goto.format(ra=ra, dec=dec)):
+                self.log.info("BLAH BLAH BLAH BLAH BLAH BLAH BLAH BLAH!")
 
                 # Run pinpoint algorithm - check status of pointing
                 if pinpoint.point(ra, dec, self):
@@ -443,6 +453,8 @@ class SSHTelescope(object):
                                   'LOCATION': ra+' '+dec,
                                   'TIME': datetime.datetime.now().isoformat()})
                     return True
+        else:
+            print("FAIL!")
 
         return False, -1, -1
 
@@ -466,6 +478,7 @@ class SSHTelescope(object):
         result = self.run_command(telescope.altaz.format(ra=ra, dec=dec))
 
         alt = re.search(telescope.alt_re, result)
+        print(f'POINT_VISIBLE ALT {alt}')
 
         if alt and (float(alt.group(0)) >= config.telescope.min_alt):
             return True
@@ -812,7 +825,13 @@ class SSHTelescope(object):
         numtries = 0; exit_code = 1
         while numtries < 5 and exit_code != 0:
             try:
-                stdin, stdout, stderr = self.ssh.exec_command(command)
+                if command[0:8] == 'keepopen':
+                    try:
+                        stdin, stdout, stderr = self.ssh.exec_command(command, timeout=10)
+                    except Exception as e:
+                        pass
+                else:
+                    stdin, stdout, stderr = self.ssh.exec_command(command)
                 numtries += 1
                 result = stdout.readlines()
 

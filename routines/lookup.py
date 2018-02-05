@@ -1,5 +1,6 @@
 # This function provides utilities to convert a target name to a given RA/Dec at the telescope location
 from config import config
+from astroquery.simbad import Simbad
 import astropy.units as units
 import astropy.time as time
 import astropy.coordinates as coordinates
@@ -26,7 +27,6 @@ def lookup(target: str) -> (str, str):
 
     Notes
     -----
-    Author: apagul
     Author: rprechelt
     """
     # location of observatory
@@ -102,7 +102,7 @@ def point_visible(ra: str, dec: str) -> bool:
     -----
     Author: rprechelt
     """
-    
+
     # location of observatory
     obs_location = coordinates.EarthLocation(lat=config.general.latitude*units.deg,
                                              lon=config.general.longitude*units.deg,
@@ -111,11 +111,13 @@ def point_visible(ra: str, dec: str) -> bool:
     frame = coordinates.AltAz(obstime=obs_time, location=obs_location)
 
     # convert from (ra, dec) to (alt, az)
-    point = coordinates.SkyCoord(ra, dec, unit=units.degree)
+    print(ra, dec)
+    point = coordinates.SkyCoord(ra, dec, unit=(units.hourangle, units.degree))
     altaz = point.transform_to(frame)
 
     # extract values
     alt = altaz.alt; az = altaz.az
+    print(f"ALT: {alt}")
 
     # check that the altitude is above the minimum
     if alt >= config.telescope.min_alt*units.degree:

@@ -151,14 +151,20 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     dirname = '/'.join(['', 'home', config.telescope.username, 'data',
                         observation['email'].split('@')[0], fname])
 
-    # create directory
+    # create directories
     telescope.log.info('Making directory to store observations on telescope server...')
-    telescope.make_dir(dirname)
+    telescope.make_dir(dirname+'/raw/science')
+    telescope.make_dir(dirname+'/raw/dark')
+    telescope.make_dir(dirname+'/raw/bias')
+    telescope.make_dir(dirname+'/processed')
 
     # generate basename
-    basename = f'{dirname}/'+'_'.join([str(datetime.date.today()),
-                                       observation['email'].split('@')[0],
-                                       observation['target']])
+    filebase = '_'.join([str(datetime.date.today()),
+                                               observation['email'].split('@')[0],
+                                               observation['target']])
+    basename_science = f'{dirname}/raw/science/'+filebase
+    basename_bias = f'{dirname}/raw/bias/'+filebase
+    basename_dark = f'{dirname}/raw/dark/'+filebase
 
     # we should be pointing roughly at the right place
     # now we pinpoint
@@ -194,17 +200,17 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
         telescope.enable_tracking()
 
         # take exposures!
-        telescope.take_exposure(basename+f'_{filt}', exposure_time, exposure_count, binning, filt)
+        telescope.take_exposure(basename_science+f'_{filt}', exposure_time, exposure_count, binning, filt)
 
     # reset filter back to clear
     telescope.log.info('Switching back to clear filter')
     telescope.change_filter('clear')
 
     # take exposure_count darks
-    telescope.take_dark(basename, exposure_time, exposure_count, binning)
+    telescope.take_dark(basename_dark, exposure_time, exposure_count, binning)
 
     # take numbias*exposure_count biases
-    telescope.take_bias(basename, exposure_count, binning)
+    telescope.take_bias(basename_bias, exposure_count, binning)
 
     # we have finished the observation, let's update record
     # with execDate and mark it completed
@@ -213,5 +219,6 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
                                           {'$set':
                                            {'completed': True,
                                             'execDate': datetime.datetime.now()}})
+
 
     return True
