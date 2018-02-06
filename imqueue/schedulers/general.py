@@ -146,7 +146,7 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     # TODO: support observations which only have RA/Dec
     # TODO: replace _id[0:3] with number from program
     fname = '_'.join([str(datetime.date.today()),
-                      observation['email'].split('@')[0], observation['target'],
+                      observation['email'].split('@')[0], observation['target'].replace(' ', '_'),
                       observation['_id'][0:3]])
     dirname = '/'.join(['', 'home', config.telescope.username, 'data',
                         observation['email'].split('@')[0], fname])
@@ -161,7 +161,7 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     # generate basename
     filebase = '_'.join([str(datetime.date.today()),
                                                observation['email'].split('@')[0],
-                                               observation['target']])
+                                               observation['target'].replace(' ', '_')])
     basename_science = f'{dirname}/raw/science/'+filebase
     basename_bias = f'{dirname}/raw/bias/'+filebase
     basename_dark = f'{dirname}/raw/dark/'+filebase
