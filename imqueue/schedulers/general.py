@@ -80,7 +80,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
 
         # create observing block for this target
         blocks.append(ObservingBlock.from_exposures(target, priority, observation['exposure_time']*units.second,
-                                                    observation['exposure_count']*len(observation['filters']),
+                                                    observation['exposure_count']*(len(observation['filters'])+1),
                                                     config.telescope.readout_time*units.second,
                                                     configuration = observation,
                                                     constraints = local_constraints))
@@ -167,13 +167,16 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     basename_dark = f'{dirname}/raw/dark/'+filebase
 
     # we should be pointing roughly at the right place
+    telescope.log.info('Performing a basic point...')
+    good_pointing = telescope.goto_point(observation['RA'], observation['Dec'], rough=True)
+
     # now we pinpoint
     telescope.log.info('Starting telescope pinpointing...')
-    good_pointing = telescope.goto_point(observation['RA'], observation['Dec'])
+    pinpointable = pinpoint.pinpoint(observation['RA'], observation['Dec'], self)
 
     # let's check that pinpoint did not fail
-    if good_pointing is False:
-        telescope.log.warn('Pinpoint failed!')
+    if pinpointable is False:
+        telescope.log.warn('Pinpoint failed! Disabling pinpointing for this observation...')
 
     # extract variables
     exposure_time = observation['exposure_time']
@@ -191,13 +194,16 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
 
         # check our pointing with pinpoint again
         telescope.log.info('Re-pinpointing telescope...')
-        telescope.goto_point(observation['RA'], observation['Dec'])
+        if pinpointable:
+            pinpointable = pinpoint.pinpoint(observation['RA'], observation['Dec'], self)
+        else:
+            telescope.goto_point(observation['RA'], observation['Dec'], rough=True)
 
         # reenable tracking
         telescope.enable_tracking()
 
         # keep open for filter duration - 60 seconds for pintpoint per exposure
-        telescope.keep_open(exposure_time*exposure_count + 120)
+        telescope.keep_open(exposure_time*exposure_count + 300)
 
         # take exposures!
         telescope.take_exposure(basename_science+f'_{filt}', exposure_time, exposure_count, binning, filt)

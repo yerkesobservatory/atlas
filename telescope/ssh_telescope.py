@@ -408,7 +408,7 @@ class SSHTelescope(object):
 
         return False
 
-    def goto_point(self, ra: str, dec: str) -> (bool, float, float):
+    def goto_point(self, ra: str, dec: str, rough=False) -> (bool, float, float):
         """ Point the telescope at a given RA/Dec.
 
         Point the telescope at the given RA/Dec using the pinpoint
@@ -431,32 +431,25 @@ class SSHTelescope(object):
         ddec: float
             The final offset error in declination
         """
-        print("IN GOTO POINT!")
         # check that the target is visible
-        # lookup.point_visible(ra, dec)
-        # self.point_visible(ra, dec)
-        # TODO: lookup.point_visible returning incorrect altitude
         # if lookup.point_visible(ra, dec) and self.point_visible(ra, dec):
         if self.point_visible(ra, dec):
-            print("IN LOOKUP!")
-
-            status = self.run_command(telescope.goto.format(ra=ra, dec=dec))
-            print(f"STATUS {status}")
 
             # Do basic pointing
-            if self.run_command(telescope.goto.format(ra=ra, dec=dec)):
-                self.log.info("BLAH BLAH BLAH BLAH BLAH BLAH BLAH BLAH!")
+            status = self.run_command(telescope.goto.format(ra=ra, dec=dec)):
+            if status:
 
-                # Run pinpoint algorithm - check status of pointing
-                if pinpoint.point(ra, dec, self):
-                    self.publish({'EVENT': 'SLEW',
-                                  'LOCATION': ra+' '+dec,
-                                  'TIME': datetime.datetime.now().isoformat()})
-                    return True
-        else:
-            print("FAIL!")
+                # if we only want a rough pointing
+                if not rough:
+                    # Run pinpoint algorithm - check status of pointing
+                    status = pinpoint.point(ra, dec, self)
 
-        return False, -1, -1
+                self.publish({'EVENT': 'SLEW',
+                              'LOCATION': ra+' '+dec,
+                              'TIME': datetime.datetime.now().isoformat()})
+                return status
+
+        return False
 
     def target_visible(self, target: str) -> bool:
         """ Check whether a target is visible using
@@ -478,7 +471,6 @@ class SSHTelescope(object):
         result = self.run_command(telescope.altaz.format(ra=ra, dec=dec))
 
         alt = re.search(telescope.alt_re, result)
-        print(f'POINT_VISIBLE ALT {alt}')
 
         if alt and (float(alt.group(0)) >= config.telescope.min_alt):
             return True
