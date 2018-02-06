@@ -1,0 +1,180 @@
+[general]
+    # The name of the observatory
+    name = "Stone Edge Observatory"
+
+    # observatory latitude
+    latitude = 33.314
+
+    # observatory longitude
+    longitude = -110.5138
+
+    # observatory altitude
+    altitude = 32
+
+# configurations for telescope
+[telescope]
+    # hostname of telescope controller
+    host = "50.76.42.177"
+
+    # port for SSH control
+    port = 22
+
+    # port for telescope server
+    wsport = 27404
+
+    # username for SSH control
+    username = "mcnowinski"
+
+    # max cloud cover before shutdown
+    max_cloud = 0.35
+
+    # maximum sun altitude
+    max_sun_alt = -15
+
+    # maximum dewpoint
+    max_dew = 3.0
+
+    # minimum altitude for observing
+    min_alt = 40
+
+    # timeout (minutes)
+    timeout = 60
+
+    # the number of MINUTES to wait between weather checks
+    wait_time = 15
+
+    # the maximum number of HOURS to wait for good weather
+    max_wait_time = 4
+
+    # the CCD readout time in seconds
+    readout_time = 2
+
+    # ha for flats (hours) (easterly)
+    ha_for_flats = -10
+
+    # dome position for flats (Deg) (easterly?)
+    dome_pos_for_flats = -90
+
+    # sun max sun alt for flats (deg)
+    max_sun_alt_for_flats = -1
+
+    # starting exposure for flats in seconds
+    starting_exposure_for_flats = 1
+
+    # optimum DN count for flats
+    optimum_count_for_flats = 20000
+
+    # minimum exposure time for flats (in seconds)
+    min_exposure_for_flats = 2
+
+    # maximum exposure time for flats (in seconds)
+    max_exposure_for_flats = 60
+
+    # exposure scaling for flats (in seconds)
+    exposure_scaling_fudge_for_flats = 1.13    
+
+    # delay (s) between successive flat test images
+    delay_between_test_flats = 10
+
+# configuration of the queue
+ [queue]
+     # time to start the queue each night (in localtime)
+    start_time = "00:30"
+    
+    # the host for the database
+    database_host = "localhost"
+
+    # the port for the database connection
+    database_port = 3001
+
+    # the name of the database
+    database = "meteor"
+
+    # username to lock the queue for execution
+    username = "atlas"
+
+    # comment to lock the telescope for
+    comment = "queue_execution"
+
+    # calendar id for GCal integration
+    calendar = "vembf65n57a0k0a2iqe7k453lo@group.calendar.google.com"
+
+    # port for web resource server
+    resource_port = 8179
+
+# configuration for astrometry solving
+[astrometry]
+    # location of astrometry binary
+    bin_dir = "/home/rprechelt/astrometry/bin/"
+
+    # default binning
+    binning = 2
+
+    # exposure time for WCS images
+    exposure_time = 10
+
+    # image downsampling
+    downsample = 2
+
+    # minimum pixel scale in arcsec/pix
+    scale_low = 0.55
+
+    # maximum pixel scale in arcsec/pix
+    scale_high = 2.00
+
+    # maximum radius around header WCS to search for
+    radius = 20.0
+
+    # maximum seconds of CPU time
+    cpu_limit = 60
+
+    # the minimum RA resolution before we decide good pointing
+    min_ra_offset = 0.05
+
+    # the minimum Dec resolution before we decide good pointing
+    min_dec_offset = 0.05
+    
+    # the maximum RA resolution before we decide good pointing
+    max_ra_offset = 20.0
+    
+    # the maximum Dec resolution before we decide good pointing
+    max_dec_offset = 20.0
+
+    # the maximum number of tries before we give up
+    max_tries = 20
+
+# configure the MQTT broker connection
+[mqtt]
+    # enable mqtt publishing
+    enabled = true
+    
+    # mqtt host
+    host = 'localhost'
+
+    # mqtt port
+    port = 1883
+
+    # root mqtt topic
+    root = 'seo'
+
+# configure the logging system
+[logging]
+    # format string for logging messages
+    fmt = '%(log_color)s%(asctime)s [%(levelname)s] [name]: %(message)s%(reset)s'
+
+    # format string for date in format string
+    datefmt = '%Y-%m-%d %H:%M:%S'
+
+# configures notifications
+[notification]
+    # email for urgent error messages
+    sysadmin = 'rprechelt@gmail.com'
+
+    # enable Slack publication
+    slack = true
+
+    # Slack API token
+    slack_token = "xoxp-65734257202-86327204579-164503301747-e3cdee3de2b5d8058fa676b3031f2a10"
+
+    # DEFAULT channel for Slack communication
+    slack_channel = "#atlas"
