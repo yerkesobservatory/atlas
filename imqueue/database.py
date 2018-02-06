@@ -58,6 +58,6 @@ class Database(object):
         stream.setFormatter(formatter)
 
         # assign log method and set handler
-        cls.log = logging.getLogger('executor')
+        cls.log = logging.getLogger('database')
         cls.log.setLevel(logging.DEBUG)
         cls.log.addHandler(stream)

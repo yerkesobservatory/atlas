@@ -4,10 +4,13 @@ import io
 import astropy
 import datetime
 import matplotlib
-matplotlib.use('Agg') # to stop server crashing without backend
+# matplotlib.use('Agg') # to stop server crashing without backend
 import numpy as np
+import astroplan
+from astroplan.plots import plot_finder_image
 import astropy.units as units
 import astropy.time as time
+import astropy.coordinates as coordinates
 import matplotlib.pyplot as plt
 import astropy.coordinates as coordinates
 from config import config
@@ -20,13 +23,13 @@ def visibility_curve(target: str, **kwargs) -> matplotlib.figure.Figure:
     """ Generate the visibility curve of a target object for the next
     24 hours.
 
-    parameters
+    Parameters
     ----------
     target: str
         The name of the target.
         Will be converted to RA/Dec using the code in /lookup.
 
-    authors
+    Authors
     -------
         @mcnowinski
         @rprechelt
@@ -102,3 +105,39 @@ def visibility_curve(target: str, **kwargs) -> matplotlib.figure.Figure:
     ax.set_ylabel('Altitude [deg]')
 
     return fig
+
+
+def target_preview(target: str, **kwargs) -> matplotlib.figure.Figure:
+    """ Generate a static image preview of a target.
+
+
+    Parameters
+    ----------
+    target: str
+        The name of the target.
+
+    Authors
+    -------
+        @rprechelt
+    """
+    # lookup target with astroquery
+    target = astroplan.FixedTarget.from_name(target)
+
+    # if we have found a target
+    if target:
+
+        fig, ax = plt.subplots()
+
+        # plot the finder image with astroplan
+        ax, hdu = plot_finder_image(target, fov_radius=26*units.arcmin, ax=ax)
+
+        # disable all the extraneous jazz
+        ax.set_axis_off()
+        ax.set_title('')
+
+        # and we are done
+        return fig
+
+
+
+

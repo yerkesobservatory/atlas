@@ -5,12 +5,14 @@ import time
 import logging
 import colorlog
 import paramiko
-import random
 import datetime
 import websocket as ws
-import config.telescope as telescope
+import routines.flats as flats
+import routines.focus as focus
 import paho.mqtt.client as mqtt
-from routines import pinpoint, focus, flats, lookup
+import routines.lookup as lookup
+import config.telescope as telescope
+import routines.pinpoint as pinpoint
 from config import config
 from telescope.exception import *
 
@@ -61,7 +63,7 @@ class SSHTelescope(object):
                 self.log.info(f'Successfully connected to MQTT broker')
 
                 # create publish function
-                self.publish = lambda msg: client.publish(topic, json.dumps(msg))
+                self.publish = lambda msg: self.client.publish(topic, json.dumps(msg))
             except Exception as e:
                 self.log.warning(f'Unable to connect to MQTT broker: {e}')
                 self.publish = lambda msg: True
@@ -165,12 +167,13 @@ class SSHTelescope(object):
         """
         result = self.run_command(telescope.close_dome)
 
-        if re.search(telescope.close_dome_re, result):
-            self.publish({'EVENT': 'CLOSEDOWN',
-                          'TIME': datetime.datetime.now().isoformat()})
-            return True
-        else:
-            return False
+        # if re.search(telescope.close_dome_re, result):
+        self.publish({'EVENT': 'CLOSEDOWN',
+                      'TIME': datetime.datetime.now().isoformat()})
+        return True
+            # return True
+        # else:
+        #     return False
 
     def close_down(self) -> bool:
         """ Closes the dome and unlocks the telescope. Call
@@ -434,7 +437,7 @@ class SSHTelescope(object):
         ddec: float
             The final offset error in declination
         """
-
+        print("IN GOTO TARGET!")
         # check that the object is visible
         if lookup.target_visible(target) and self.target_visible(target):
 
@@ -469,7 +472,7 @@ class SSHTelescope(object):
         self.run_command(telescope.goto_for_flats.format(ha=ha, dec=dec))
 
 
-    def goto_point(self, ra: str, dec: str) -> (bool, float, float):
+    def goto_point(self, ra: str, dec: str, rough=False) -> (bool, float, float):
         """ Point the telescope at a given RA/Dec.
 
         Point the telescope at the given RA/Dec using the pinpoint
@@ -492,21 +495,25 @@ class SSHTelescope(object):
         ddec: float
             The final offset error in declination
         """
-
         # check that the target is visible
-        if lookup.point_visible(ra, dec) and self.point_visible(ra, dec):
+        # if lookup.point_visible(ra, dec) and self.point_visible(ra, dec):
+        if self.point_visible(ra, dec):
 
             # Do basic pointing
-            if self.run_command(telescope.goto.format(ra=ra, dec=dec)):
+            status = self.run_command(telescope.goto.format(ra=ra, dec=dec)):
+            if status:
 
-                # Run pinpoint algorithm - check status of pointing
-                if pinpoint.point(ra, dec, self):
-                    self.publish({'EVENT': 'SLEW',
-                                  'LOCATION': ra+' '+dec,
-                                  'TIME': datetime.datetime.now().isoformat()})
-                    return True
+                # if we only want a rough pointing
+                if not rough:
+                    # Run pinpoint algorithm - check status of pointing
+                    status = pinpoint.point(ra, dec, self)
 
-        return False, -1, -1
+                self.publish({'EVENT': 'SLEW',
+                              'LOCATION': ra+' '+dec,
+                              'TIME': datetime.datetime.now().isoformat()})
+                return status
+
+        return False
 
     def target_visible(self, target: str) -> bool:
         """ Check whether a target is visible using
@@ -921,25 +928,31 @@ class SSHTelescope(object):
         numtries = 0; exit_code = 1
         while numtries < 5 and exit_code != 0:
             try:
-                stdin, stdout, stderr = self.ssh.exec_command(command)
-                numtries += 1
-                result = stdout.readlines()
-
-                # check exit code
-                exit_code = stdout.channel.recv_exit_status()
-                if exit_code != 0:
-                    if command[0:8] == 'keepopen':
+                # deal with weird keepopen behavior
+                if re.search('keepopen*', command):
+                    try:
+                        self.ssh.exec_command(command, timeout=10)
                         return None
-                    self.log.warn(f'Command returned {exit_code}. Retrying in 3 seconds...')
-                    time.sleep(3)
-                    continue
+                    except Exception as e:
+                        pass
+                else:
+                    stdin, stdout, stderr = self.ssh.exec_command(command)
+                    numtries += 1
+                    result = stdout.readlines()
 
-                if result:
-                    # valid result received
-                    if len(result) > 0:
-                        result = ' '.join(result).strip()
-                        self.log.info(f'Result: {result}')
-                        return result
+                    # check exit code
+                    exit_code = stdout.channel.recv_exit_status()
+                    if exit_code != 0:
+                        self.log.warn(f'Command returned {exit_code}. Retrying in 3 seconds...')
+                        time.sleep(3)
+                        continue
+
+                    if result:
+                        # valid result received
+                        if len(result) > 0:
+                            result = ' '.join(result).strip()
+                            self.log.info(f'Result: {result}')
+                            return result
 
             except Exception as e:
                 self.log.critical(f'run_command: {e}')
