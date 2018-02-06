@@ -138,7 +138,7 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     telescope.enable_tracking()
 
     # try and point object roughly
-    if telescope.goto_point(observation['RA'], observation['Dec']) is False:
+    if telescope.goto_point(observation['RA'], observation['Dec'], rough=True) is False:
         telescope.log.warn('Object is not currently visible. Skipping...')
         return False
 
@@ -172,10 +172,10 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
 
     # now we pinpoint
     telescope.log.info('Starting telescope pinpointing...')
-    pinpointable = pinpoint.pinpoint(observation['RA'], observation['Dec'], self)
+    pinpointable = pinpoint.point(observation['RA'], observation['Dec'], telescope)
 
     # let's check that pinpoint did not fail
-    if pinpointable is False:
+    if not pinpointable:
         telescope.log.warn('Pinpoint failed! Disabling pinpointing for this observation...')
 
     # extract variables
@@ -195,7 +195,7 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
         # check our pointing with pinpoint again
         telescope.log.info('Re-pinpointing telescope...')
         if pinpointable:
-            pinpointable = pinpoint.pinpoint(observation['RA'], observation['Dec'], self)
+            pinpointable = pinpoint.pinpoint(observation['RA'], observation['Dec'], telescope)
         else:
             telescope.goto_point(observation['RA'], observation['Dec'], rough=True)
 

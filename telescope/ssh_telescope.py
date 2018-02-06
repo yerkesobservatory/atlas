@@ -390,7 +390,6 @@ class SSHTelescope(object):
         ddec: float
             The final offset error in declination
         """
-        print("IN GOTO TARGET!")
         # check that the object is visible
         if lookup.target_visible(target) and self.target_visible(target):
 
