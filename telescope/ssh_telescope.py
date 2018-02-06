@@ -457,7 +457,7 @@ class SSHTelescope(object):
         """
 
         #point scope east of zenith
-        ha = config.telescope.ha_east #eastward
+        ha = config.telescope.ha_for_flats #eastward
         dec = config.general.latitude #zenith
 
         #randomize
@@ -466,7 +466,7 @@ class SSHTelescope(object):
         ha += dHa
         dec += dDec
 
-        self.run_command(telescope.goto_for_flats.format(ha=ra, dec=dec))
+        self.run_command(telescope.goto_for_flats.format(ha=ha, dec=dec))
 
 
     def goto_point(self, ra: str, dec: str) -> (bool, float, float):
