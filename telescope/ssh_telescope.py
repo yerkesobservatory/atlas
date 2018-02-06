@@ -825,31 +825,31 @@ class SSHTelescope(object):
         numtries = 0; exit_code = 1
         while numtries < 5 and exit_code != 0:
             try:
-                if command[0:8] == 'keepopen':
+                # deal with weird keepopen behavior
+                if re.search('keepopen*', command):
                     try:
-                        stdin, stdout, stderr = self.ssh.exec_command(command, timeout=10)
+                        self.ssh.exec_command(command, timeout=10)
+                        return None
                     except Exception as e:
                         pass
                 else:
                     stdin, stdout, stderr = self.ssh.exec_command(command)
-                numtries += 1
-                result = stdout.readlines()
+                    numtries += 1
+                    result = stdout.readlines()
 
-                # check exit code
-                exit_code = stdout.channel.recv_exit_status()
-                if exit_code != 0:
-                    if command[0:8] == 'keepopen':
-                        return None
-                    self.log.warn(f'Command returned {exit_code}. Retrying in 3 seconds...')
-                    time.sleep(3)
-                    continue
+                    # check exit code
+                    exit_code = stdout.channel.recv_exit_status()
+                    if exit_code != 0:
+                        self.log.warn(f'Command returned {exit_code}. Retrying in 3 seconds...')
+                        time.sleep(3)
+                        continue
 
-                if result:
-                    # valid result received
-                    if len(result) > 0:
-                        result = ' '.join(result).strip()
-                        self.log.info(f'Result: {result}')
-                        return result
+                    if result:
+                        # valid result received
+                        if len(result) > 0:
+                            result = ' '.join(result).strip()
+                            self.log.info(f'Result: {result}')
+                            return result
 
             except Exception as e:
                 self.log.critical(f'run_command: {e}')

@@ -189,15 +189,15 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
         # if the telescope has randomly closed, open up
         telescope.open_dome()
 
-        # keep open for filter duration - 60 seconds for pintpoint per exposure
-        telescope.keep_open(exposure_time*exposure_count + 60)
-
         # check our pointing with pinpoint again
         telescope.log.info('Re-pinpointing telescope...')
         telescope.goto_point(observation['RA'], observation['Dec'])
 
         # reenable tracking
         telescope.enable_tracking()
+
+        # keep open for filter duration - 60 seconds for pintpoint per exposure
+        telescope.keep_open(exposure_time*exposure_count + 120)
 
         # take exposures!
         telescope.take_exposure(basename_science+f'_{filt}', exposure_time, exposure_count, binning, filt)
@@ -210,7 +210,7 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     telescope.take_dark(basename_dark, exposure_time, exposure_count, binning)
 
     # take numbias*exposure_count biases
-    telescope.take_bias(basename_bias, exposure_count, binning)
+    telescope.take_bias(basename_bias, 10*exposure_count, binning)
 
     # we have finished the observation, let's update record
     # with execDate and mark it completed
