@@ -405,7 +405,7 @@ class Executor(object):
                 self.log.debug('Scheduler reports no observations left for this session...')
                 break
 
-            self.log.info(f'Executing observation for {observation["email"]}...')
+            self.log.info(f'Executing observation of {observation["target"]} for {observation["email"]}...')
 
             # we wait until this observation needs to start
             start_time = observing_schedule.slots[0].start.datetime
