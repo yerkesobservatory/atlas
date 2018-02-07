@@ -51,6 +51,13 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
 
     # create targets
     for observation in observations:
+
+        # check whether observation has RA and Dec values
+        if observation.get('RA') is None:
+            continue
+        if observation.get('Dec') is None:
+            continue
+
         # target coordinates
         center = SkyCoord(observation['RA']+' '+observation['Dec'], unit=(units.hourangle, units.deg))
 
