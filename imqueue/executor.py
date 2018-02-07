@@ -413,11 +413,10 @@ class Executor(object):
             # some time elapses between scheduling and execution, must
             # account for wait times that are only a few seconds past
             # the current time
-            if (wait_time >= 23.5) and (wait_time <= 24):
+            if (wait_time >= 23.5*60*60) and (wait_time <= 24*60*60):
                 pass # we start immedatiately
             else:
-                pass
-                # self.telescope.wait(wait_time)
+                self.telescope.wait(wait_time)
 
             # make sure that the weather is still good
             self.telescope.wait_until_good()
