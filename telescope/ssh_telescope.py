@@ -436,7 +436,7 @@ class SSHTelescope(object):
         if self.point_visible(ra, dec):
 
             # Do basic pointing
-            status = self.run_command(telescope.goto.format(ra=ra, dec=dec)):
+            status = self.run_command(telescope.goto.format(ra=ra, dec=dec))
             if status:
 
                 # if we only want a rough pointing
