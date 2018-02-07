@@ -209,7 +209,7 @@ class Executor(object):
             # the queue will run up until the first non-queue event
             for event in events:
                 # if the event starts with "Queue", we consider it available time
-                if re.match('Queue', event.get('summary', '')):
+                if re.match('Queue*', event.get('summary', '')):
                     end = to_utc(parser.parse(event.get('end').get('dateTime')))
                 else:
                     break
@@ -371,9 +371,16 @@ class Executor(object):
 
             # check if observations have RA/Dec
             for observation in observations:
+                # the observation is missing RA/Dec
                 if not observation.get('RA') or not observation.get('Dec'):
-                    # the observation is missing RA/Dec
-                    ra, dec = lookup.lookup(observation.get('target'))
+
+                    # if the target name is a RA/Dec string
+                    if re.search(r'\d{2}:\d{2}:\d{2}.\d{1,2} [+-]\d{2}:\d{2}:\d{2}.\d{1,2}',
+                                 observation.get('target')):
+                        ra, dec = observation.get('target').strip().split(' ')
+                    else: # try and lookup by name
+                        ra, dec = lookup.lookup(observation.get('target'))
+
                     if not ra or not dec:
                         self.log.warning(f'Unable to compute RA/Dec for {observation.get("target")}.')
                         # TODO: set error field on observations to prevent code from running again

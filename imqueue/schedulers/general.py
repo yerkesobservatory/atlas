@@ -195,7 +195,7 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
         # check our pointing with pinpoint again
         telescope.log.info('Re-pinpointing telescope...')
         if pinpointable:
-            pinpointable = pinpoint.pinpoint(observation['RA'], observation['Dec'], telescope)
+            pinpointable = pinpoint.point(observation['RA'], observation['Dec'], telescope)
         else:
             telescope.goto_point(observation['RA'], observation['Dec'], rough=True)
 
