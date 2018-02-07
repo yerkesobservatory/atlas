@@ -15,7 +15,7 @@ import config.telescope as telescope
 import routines.pinpoint as pinpoint
 from config import config
 from telescope.exception import *
-
+import random
 
 class SSHTelescope(object):
     """ This class allows for a telescope to be remotely controlled
@@ -500,7 +500,7 @@ class SSHTelescope(object):
         if self.point_visible(ra, dec):
 
             # Do basic pointing
-            status = self.run_command(telescope.goto.format(ra=ra, dec=dec)):
+            status = self.run_command(telescope.goto.format(ra=ra, dec=dec))
             if status:
 
                 # if we only want a rough pointing
@@ -732,7 +732,7 @@ class SSHTelescope(object):
 
         return
 
-    def wait_until_good(self, sun: float = None) -> bool:
+    def wait_until_good(self, sun: float = None, wait_time: int = None) -> bool:
         """ Wait until the weather is good for observing.
 
         Waits config.wait_time minutes between each trial. Cancels execution
@@ -743,7 +743,7 @@ class SSHTelescope(object):
         max_wait: int = config.telescope.max_wait_time
 
         # time to sleep between trying the weather - in minutes
-        time_to_sleep: int = 60 * config.telescope.wait_time
+        time_to_sleep: int = 60 * wait_time if wait_time else 60 * config.telescope.wait_time
 
         # total time counter
         elapsed_time: int = 0  # total elapsed wait time
