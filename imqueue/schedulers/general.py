@@ -83,7 +83,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
         moon = constraints.MoonSeparationConstraint(min=moon_sep)
 
         # time, airmass, moon, + altitude, and at night
-        local_constraints = [airmass, moon]
+        local_constraints = [moon]
 
         # create observing block for this target
         blocks.append(ObservingBlock.from_exposures(target, priority, observation['exposure_time']*units.second,
