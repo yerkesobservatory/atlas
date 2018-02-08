@@ -405,15 +405,13 @@ class Executor(object):
                 self.log.debug('Scheduler reports no observations left for this session...')
                 break
 
-            self.log.info(f'Executing observation of {observation["target"]} for {observation["email"]}...')
-
             # we wait until this observation needs to start
             start_time = observing_schedule.slots[0].start.datetime
             wait_time = (start_time - datetime.datetime.now()).seconds
             # some time elapses between scheduling and execution, must
             # account for wait times that are only a few seconds past
-            # the current time
-            if (wait_time >= 23.5*60*60) and (wait_time <= 24*60*60):
+            # the current time. We have one-minute windows on either side
+            if (wait_time >= 24*60*60 - 60) and (wait_time <= (24*60*60 + 60):
                 pass # we start immedatiately
             else:
                 self.telescope.wait(wait_time)
@@ -425,6 +423,7 @@ class Executor(object):
             try:
                 # extract observation from ObservingBlock
                 observation = observing_schedule.scheduled_blocks[0].configuration
+                self.log.info(f'Executing observation of {observation["target"]} for {observation["email"]}...')
                 schedule.execute(observation, program, self.telescope)
                 self.log.info(f'Finished observing {observation["target"]} for {observation["email"]}')
 

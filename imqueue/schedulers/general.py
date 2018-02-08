@@ -200,13 +200,15 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
         telescope.open_dome()
 
         # check our pointing with pinpoint again
-        telescope.log.info('Re-pinpointing telescope...')
         if pinpointable:
+            telescope.log.debug('Re-pinpointing telescope...')
             pinpointable = pinpoint.point(observation['RA'], observation['Dec'], telescope)
         else:
+            telescope.log.debug('Doing a basic re-point...')
             telescope.goto_point(observation['RA'], observation['Dec'], rough=True)
 
         # reenable tracking
+        telescope.log.debug('Enabling tracking...')
         telescope.enable_tracking()
 
         # keep open for filter duration - 60 seconds for pintpoint per exposure
