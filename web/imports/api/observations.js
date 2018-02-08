@@ -17,6 +17,11 @@ if (Meteor.isServer) {
             return Observations.find({ owner: this.userId });
         }
     });
+    ReactiveTable.publish("my_observations", Observations,
+			  function () {
+			      return {"owner": this.userId};
+			  },
+			  {"disablePageCountReactivity": true});
 
     ReactiveTable.publish("completed_observations", Observations,
 			  function () {

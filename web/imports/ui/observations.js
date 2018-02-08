@@ -30,6 +30,7 @@ Template.newObservation.onCreated(function onCreated() {
 // subscribe to program stream
 Template.observations.onCreated(function onCreated() {
     Meteor.subscribe('observations');
+    Meteor.subscribe('programs');
 });
 
 // subscribe to program stream
@@ -317,7 +318,6 @@ Template.observations.helpers({
     },
     settings() {
 	return {
-	    collection: Observations,
 	    showRowCount: true,
 	    showNavigationRowsPerPage: false,
 	    noDataTmpl: Template.noObservations,
