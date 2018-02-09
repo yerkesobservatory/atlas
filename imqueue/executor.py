@@ -375,7 +375,7 @@ class Executor(object):
                 if not observation.get('RA') or not observation.get('Dec'):
 
                     # if the target name is a RA/Dec string
-                    if re.search(r'\d{2}:\d{2}:\d{2}.\d{1,2} [+-]\d{2}:\d{2}:\d{2}.\d{1,2}',
+                    if re.search(r'\d{1,2}:\d{2}:\d{1,2}.\d{1,2} [+-]\d{1,2}:\d{2}:\d{1,2}.\d{1,2}',
                                  observation.get('target')):
                         ra, dec = observation.get('target').strip().split(' ')
                     else: # try and lookup by name
@@ -407,7 +407,7 @@ class Executor(object):
 
             # we wait until this observation needs to start
             start_time = observing_schedule.slots[0].start.datetime
-            wait_time = (start_time - datetime.datetime.now()).seconds
+            wait_time = (start_time.time() - datetime.datetime.now().time()).seconds
             # some time elapses between scheduling and execution, must
             # account for wait times that are only a few seconds past
             # the current time. We have one-minute windows on either side
