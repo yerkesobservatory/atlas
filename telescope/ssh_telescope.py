@@ -124,7 +124,7 @@ class SSHTelescope(object):
             self.log.warning(f'{e}')
             return False
 
-    def open_dome(self) -> bool:
+    def open_dome(self, sun: float = None) -> bool:
         """ Checks that the weather is acceptable using `weather_ok`,
         and if the dome is not already open. opens the dome.
 
@@ -135,7 +135,7 @@ class SSHTelescope(object):
             return True
 
         # check that weather is OK to open
-        if self.weather_ok():
+        if self.weather_ok(sun):
             result = self.run_command(telescope.open_dome)
 
             if re.search(telescope.open_dome_re, result):
@@ -184,16 +184,28 @@ class SSHTelescope(object):
         return closed and unlocked
 
     def lamps_on(self) -> bool:
-        """ Turn on any dome lamps.
+        """ Turn on all dome lamps.
         """
-        # TODO
-        return True
+        result = self.run_command(telescope.dome_lamps.format(state='on'))
+
+        if re.search(telescope.dome_lamps_on_re, result):
+            self.publish({'EVENT': 'LAMPSON',
+                          'TIME': datetime.datetime.now().isoformat()})
+            return True
+
+        return False
 
     def lamps_off(self) -> bool:
-        """ Turn on any dome lamps.
+        """ Turn off all dome lamps.
         """
-        # TODO
-        return True
+        result = self.run_command(telescope.dome_lamps.format(state='off'))
+
+        if re.search(telescope.dome_lamps_off_re, result):
+            self.publish({'EVENT': 'LAMPSOFF',
+                          'TIME': datetime.datetime.now().isoformat()})
+            return True
+
+        return False
 
     def chip_temp(self, chip: str) -> bool:
         """ Return temperature (in C) of the chip with identifier
@@ -366,6 +378,22 @@ class SSHTelescope(object):
             self.log.warning(f'Unable to parse get_moon_alt: \"{result}\"')
             return 90.0
 
+    def get_mean_image_count(self, fname: str) -> float:
+        """ Get the mean count in a given FITS image.
+        """
+        # run the command
+        result = self.run_command(telescope.get_mean_image_count.format(file=fname))
+
+        # run regex
+        mean_count = re.search(telescope.get_mean_image_count_re, result)
+
+        # extract group and return
+        if mean_count:
+            return float(mean_count.group(0))
+        else:
+            self.log.warning(f'Unable to parse get_mean_image_count: \"{result}\"')
+            return -1
+
     # TODO - make one 'tx taux' call instead of 5
     def get_weather(self) -> dict:
         """ Extract all the values for the current weather
@@ -432,7 +460,7 @@ class SSHTelescope(object):
         -------
         success: bool
             Whether pinpointing was a success
-        dra: float
+        dra: lamps
             The final offset error in right-ascension
         ddec: float
             The final offset error in declination
@@ -469,7 +497,11 @@ class SSHTelescope(object):
         ha += dHa
         dec += dDec
 
+        #print ('ha=%f, dec=%f'%(ha,dec))
+
         self.run_command(telescope.goto_for_flats.format(ha=ha, dec=dec))
+
+        return True
 
 
     def goto_point(self, ra: str, dec: str, rough=False) -> (bool, float, float):
