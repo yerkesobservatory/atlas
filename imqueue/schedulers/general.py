@@ -43,7 +43,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
     # build default constraints
     global_constraints = [constraints.AltitudeConstraint(min=config.telescope.min_alt*units.deg), # set minimum altitude
                           constraints.AtNightConstraint.twilight_nautical(),
-                          constraints.LocalTimeConstraint(min=datetime.datetime.now().time(),
+                          constraints.TimeConstraint(min=datetime.datetime.now().time(),
                                                           max=session['end'].time())]
 
     # list to store observing blocks
