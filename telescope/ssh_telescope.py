@@ -51,11 +51,11 @@ class SSHTelescope(object):
             # The ismaster command is cheap and does not require auth.
             db.admin.command('ismaster')
 
-            if telescope:
-                self.update = lambda x: db.telescopes.update_one({'name': config.general.name}, {'$set': x})
-            else:
-                self.update = lambda x: True
+            # we can connect to database, let us set the update function
+            self.update = lambda x: db.telescopes.update_one({'name': config.general.name}, {'$set': x})
+
         except Exception as e:
+            self.log.warning('Unable to connect to database... Disabling updates...')
             self.update = lambda x: True
 
     def connect(self) -> bool:
