@@ -152,8 +152,14 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     # create basename for observations
     # TODO: support observations which only have RA/Dec
     # TODO: replace _id[0:3] with number from program
+    if re.search(r'\d{1,2}:\d{2}:\d{1,2}.\d{1,2} [+-]\d{1,2}:\d{2}:\d{1,2}.\d{1,2}',
+                                 observation.get('target')):
+        split_name = observation.get('target').replace(':', '').split(' ')
+        target_str = f'ra{split_name[0]}_dec{split_name[1]}'
+    else:
+        target_str = observation['target'].replace(' ', '_').replace("'", '')
     fname = '_'.join([str(datetime.date.today()),
-                      observation['email'].split('@')[0], observation['target'].replace(' ', '_'),
+                      observation['email'].split('@')[0], target_str, 
                       observation['_id'][0:3]])
     dirname = '/'.join(['', 'home', config.telescope.username, 'data',
                         observation['email'].split('@')[0], fname])
@@ -168,7 +174,7 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     # generate basename
     filebase = '_'.join([str(datetime.date.today()),
                                                observation['email'].split('@')[0],
-                                               observation['target'].replace(' ', '_')])
+                                               target_str])
     basename_science = f'{dirname}/raw/science/'+filebase
     basename_bias = f'{dirname}/raw/bias/'+filebase
     basename_dark = f'{dirname}/raw/dark/'+filebase
