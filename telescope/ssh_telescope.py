@@ -782,8 +782,6 @@ class SSHTelescope(object):
             self.log.warn('SSH is not connected. Please reconnect to the telescope server.')
             return None
 
-        self.log.info(f'Executing: {command}')
-
         # make sure the connection hasn't timed out due to sleep
         # if it has, reconnect
         try:
@@ -795,6 +793,7 @@ class SSHTelescope(object):
         numtries = 0; exit_code = 1
         while numtries < 5 and exit_code != 0:
             try:
+                self.log.info(f'Executing: {command}')
                 # deal with weird keepopen behavior
                 if re.search('keepopen*', command):
                     try:
