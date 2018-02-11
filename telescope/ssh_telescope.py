@@ -499,7 +499,7 @@ class SSHTelescope(object):
 
         #print ('ha=%f, dec=%f'%(ha,dec))
 
-        self.run_command(telescope.goto_for_flats.format(ha=ha, dec=dec))
+        self.run_command(telescope.goto_for_flats.format(ha='%0.4f'%ha, dec='%0.4f'%dec))
 
         return True
 

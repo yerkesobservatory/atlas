@@ -68,7 +68,7 @@ def take_flats(telescope: 'Telescope') -> bool:
     # open the observatory
     telescope.open_dome(-1)
 
-    telescope.keep_open(1000)
+    telescope.keep_open(3600)
 
     # at this point, CCD chip should be at operating temperature
 
@@ -122,7 +122,7 @@ def take_flats(telescope: 'Telescope') -> bool:
                 time.sleep(config.telescope.delay_between_test_flats)
             #we have our optimum exposure calculated. take a *real* flat
             exposure = optimum_exposure #update exposure
-            flatname = 'flat_%s_%dsec_bin%d_%s_%s_num%d_seo'%(filter, exposure, binning, config.telescope.username, datetime.datetime.utcnow().strftime('%Y%b%d_%Hh%Mm%Ss'), i)
+            flatname = 'flat_%s_%.2fsec_bin%d_%s_%s_num%d_seo'%(filter, exposure, binning, config.telescope.username, datetime.datetime.utcnow().strftime('%Y%b%d_%Hh%Mm%Ss'), i)
             if not telescope.take_exposure(flatname, exposure, 1, binning, filter):
                 telescope.log.error('There was an error taking an image for sky flats. Quitting...')
                 return False #should we clean up?
