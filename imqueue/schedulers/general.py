@@ -102,7 +102,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
                                                       transitioner = transitioner)
 
     # initialize the schedule
-    schedule = scheduling.Schedule(Time(session['start']), Time(session['end']))
+    schedule = scheduling.Schedule(Time.now(), Time(session['end']))
 
     # schedule!
     schedule = priority_scheduler(blocks, schedule)
