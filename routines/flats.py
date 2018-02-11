@@ -62,15 +62,13 @@ def take_flats(telescope: 'Telescope') -> bool:
             telescope.keep_open(60)
             telescope.wait(60) # wait for 60 seconds so we can cool
 
-        if count > 5:
+        if count > 25:
             telescope.log.warning('Telescope CCD unable to reach temperature')
 
     # open the observatory
     telescope.open_dome(-1)
 
-    telescope.keep_open(3600)
-
-    # at this point, CCD chip should be at operating temperature
+    telescope.keep_open(3600) #keep dome open for an hour or until told to closedown
 
     # disable tracking
     status = telescope.disable_tracking()
@@ -140,3 +138,6 @@ def take_flats(telescope: 'Telescope') -> bool:
             optimum_exposure = factor*config.telescope.exposure_scaling_fudge_for_flats*exposure
             #shimmy the scope pointing
             telescope.goto_point_for_flats()
+    
+    # all done!
+    telescope.close_dome()
