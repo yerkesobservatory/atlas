@@ -407,7 +407,7 @@ class Executor(object):
 
             # we wait until this observation needs to start
             start_time = observing_schedule.slots[0].start.datetime
-            wait_time = (start_time.time() - datetime.datetime.now().time()).seconds
+            wait_time = (start_time - datetime.datetime.now()).seconds
             # some time elapses between scheduling and execution, must
             # account for wait times that are only a few seconds past
             # the current time. We have one-minute windows on either side

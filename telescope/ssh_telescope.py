@@ -49,7 +49,7 @@ class SSHTelescope(object):
         try:
             db = database.Database()
             # The ismaster command is cheap and does not require auth.
-            db.admin.command('ismaster')
+            db.client.admin.command('ismaster')
 
             # we can connect to database, let us set the update function
             self.update = lambda x: db.telescopes.update_one({'name': config.general.name}, {'$set': x})
