@@ -412,8 +412,10 @@ class Executor(object):
             # account for wait times that are only a few seconds past
             # the current time. We have one-minute windows on either side
             #if (wait_time >= 23.5*60*60) and (wait_time <= 24*60*60):
-            if (wait_time >= (23.5*60*60)) and (wait_time <= (24*60*60 + 600)):
-                pass # we start immedatiately
+            if (wait_time >= (12*60*60)):
+                pass
+            # if (wait_time >= (23.5*60*60)) and (wait_time <= (24*60*60 + 600)):
+            #     pass # we start immedatiately
             else:
                 self.telescope.wait(wait_time)
 
