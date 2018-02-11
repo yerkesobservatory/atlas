@@ -432,10 +432,8 @@ class SSHTelescope(object):
                 if not rough:
                     # Run pinpoint algorithm - check status of pointing
                     status = pinpoint.point(ra, dec, self)
+                    self.update({'location': ra+' '+dec})
 
-                self.publish({'EVENT': 'SLEW',
-                              'LOCATION': ra+' '+dec,
-                              'TIME': datetime.datetime.now().isoformat()})
                 return status
 
         return False
@@ -684,6 +682,7 @@ class SSHTelescope(object):
                 self.log.warning('Slit closed during exposure - repeating previous exposure!')
                 self.wait_until_good()
                 self.open_dome()
+                self.keep_open(exposure_time*count)
                 continue
             else:  # this was a successful exposure - take the next one
 
