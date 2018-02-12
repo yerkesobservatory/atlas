@@ -728,6 +728,7 @@ class SSHTelescope(object):
 
             self.run_command(telescope.take_dark.format(time=0.1, binning=binning,
                                                         filename=fname))
+            time.sleep(1)
 
         self.update({'status': 'open'})
         return True
