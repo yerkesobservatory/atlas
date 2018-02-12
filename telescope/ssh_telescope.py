@@ -14,6 +14,7 @@ import routines.lookup as lookup
 import config.telescope as telescope
 import routines.pinpoint as pinpoint
 from config import config
+from imqueue import database
 from telescope.exception import *
 import random
 
@@ -44,29 +45,18 @@ class SSHTelescope(object):
         # connect to telescope
         self.connect()
 
-        # check whether MQTT publication is enabled
-        if config.mqtt.enabled:
+        # try and connect to local MongoDB
+        try:
+            db = database.Database()
+            # The ismaster command is cheap and does not require auth.
+            db.client.admin.command('ismaster')
 
-            # create MQTT client
-            self.client = mqtt.Client()
+            # we can connect to database, let us set the update function
+            self.update = lambda x: db.telescopes.update_one({'name': config.general.name}, {'$set': x})
 
-            # MQTT topic
-            topic = '/'.join(['', config.mqtt.root, 'telescope'])
-
-            # broker info
-            host = config.mqtt.host or 'localhost'
-            port = config.mqtt.port or 1883
-
-            # connect to message broker
-            try:
-                self.client.connect(host, port, 60)
-                self.log.info(f'Successfully connected to MQTT broker')
-
-                # create publish function
-                self.publish = lambda msg: self.client.publish(topic, json.dumps(msg))
-            except Exception as e:
-                self.log.warning(f'Unable to connect to MQTT broker: {e}')
-                self.publish = lambda msg: True
+        except Exception as e:
+            self.log.warning('Unable to connect to database... Disabling updates...')
+            self.update = lambda x: True
 
     def connect(self) -> bool:
         """ Create a SSH connection to the telescope control server.
@@ -136,11 +126,11 @@ class SSHTelescope(object):
 
         # check that weather is OK to open
         if self.weather_ok(sun):
+            self.update({'slit': 'opening', 'status': 'opening'})
             result = self.run_command(telescope.open_dome)
 
             if re.search(telescope.open_dome_re, result):
-                self.publish({'EVENT': 'OPENUP',
-                              'TIME': datetime.datetime.now().isoformat()})
+                self.update({'slit': 'open', 'status': 'open'})
                 return True
 
         # in any other scenario, return False
@@ -165,11 +155,11 @@ class SSHTelescope(object):
         """ Closes the dome, but leaves the session connected. Returns
         True if successful in closing down, False otherwise.
         """
+        self.update({'slit': 'closing', 'status': 'closing'})
         result = self.run_command(telescope.close_dome)
+        self.update({'slit': 'closed', 'status': 'closed'})
 
         # if re.search(telescope.close_dome_re, result):
-        self.publish({'EVENT': 'CLOSEDOWN',
-                      'TIME': datetime.datetime.now().isoformat()})
         return True
             # return True
         # else:
@@ -255,9 +245,9 @@ class SSHTelescope(object):
 
         # check that we were successful
         if re.search(telescope.lock_re, result):
-            self.publish({'EVENT': 'LOCK',
-                          'TIME': datetime.datetime.now().isoformat()})
+            self.update({'user': user})
             return True
+
         return False
 
     def unlock(self) -> bool:
@@ -266,9 +256,9 @@ class SSHTelescope(object):
         result = self.run_command(telescope.unlock)
 
         if re.search(telescope.unlock_re, result):
-            self.publish({'EVENT': 'UNLOCK',
-                          'TIME': datetime.datetime.now().isoformat()})
+            self.update({'user': None})
             return True
+
         return False
 
     def locked(self) -> (bool, str):
@@ -309,6 +299,7 @@ class SSHTelescope(object):
 
         # extract group and return
         if cloud:
+            self.update({'weather.cloud': cloud.group(0)})
             return float(cloud.group(0))
         else:
             self.log.warning(f'Unable to parse get_cloud: \"{result}\"')
@@ -325,6 +316,7 @@ class SSHTelescope(object):
 
         # extract group and return
         if dew:
+            self.update({'weather.dew': dew.group(0)})
             return float(dew.group(0))
         else:
             self.log.warning(f'Unable to parse get_dew: \"{result}\"')
@@ -341,6 +333,7 @@ class SSHTelescope(object):
 
         # extract group and return
         if rain:
+            self.update({'weather.rain': rain.group(0)})
             return float(rain.group(0))
         else:
             self.log.warning(f'Unable to parse get_rain: \"{result}\"')
@@ -357,6 +350,7 @@ class SSHTelescope(object):
 
         # extract group and return
         if alt:
+            self.update({'weather.sun': float(alt.group(0))})
             return float(alt.group(0))
         else:
             self.log.warning(f'Unable to parse get_sun_alt: \"{result}\"')
@@ -373,6 +367,7 @@ class SSHTelescope(object):
 
         # extract group and return
         if alt:
+            self.update({'weather.sun': float(alt.group(0))})
             return float(alt.group(0))
         else:
             self.log.warning(f'Unable to parse get_moon_alt: \"{result}\"')
@@ -413,34 +408,31 @@ class SSHTelescope(object):
         """
         # get the current weather
         weather = self.get_weather()
-        self.publish({'EVENT': 'WEATHER',
-                      'SUN': weather.get('sun'),
-                      'MOON': weather.get('moon'),
-                      'CLOUD': weather.get('cloud'),
-                      'RAIN': weather.get('rain'),
-                      'DEW': weather.get('dew'),
-                      'TIME': datetime.datetime.now().isoformat()})
 
         # check sun is at proper altitude
         desired_sun_alt = sun or config.telescope.max_sun_alt
         if weather.get('sun') > desired_sun_alt:
             if self.dome_open():
                 self.close_dome()
+            self.update({'weather.good': False})
             return False
 
         # check that it isn't raining
         if weather.get('rain') != 0:
             if self.dome_open():
                 self.close_dome()
+            self.update({'weather.good': False})
             return False
 
         # check cloud cover is below 35%
         if weather.get('cloud') >= config.telescope.max_cloud:
             if self.dome_open():
                 self.close_dome()
+            self.update({'weather.good': False})
             return False
 
         # weather is good!
+        self.update({'weather.good': True})
         return True
 
     def goto_target(self, target: str) -> (bool, float, float):
@@ -465,7 +457,6 @@ class SSHTelescope(object):
         ddec: float
             The final offset error in declination
         """
-        print("IN GOTO TARGET!")
         # check that the object is visible
         if lookup.target_visible(target) and self.target_visible(target):
 
@@ -474,14 +465,32 @@ class SSHTelescope(object):
 
                 # convert name to ra/dec
                 ra, dec = lookup.lookup(target)
+                self.update({'location': ra+' '+dec})
 
-                if pinpoint.pinpoint(ra, dec, self):
-                    self.publish({'EVENT': 'SLEW',
-                                  'LOCATION': ra+' '+dec,
-                                  'TIME': datetime.datetime.now().isoformat()})
-                    return True
+                return pinpoint.pinpoint(ra, dec, self)
 
         return False
+
+    def goto_point_for_flats(self) -> bool:
+        """ Point the telescope east of zenith with a bit of wiggle.
+        """
+
+        #point scope east of zenith
+        ha = config.telescope.ha_for_flats #eastward
+        dec = config.general.latitude #zenith
+
+        #randomize
+        dHa = 0.5*random.random()
+        dDec = 0.5*random.random()
+        ha += dHa
+        dec += dDec
+
+        #print ('ha=%f, dec=%f'%(ha,dec))
+
+        self.run_command(telescope.goto_for_flats.format(ha='%0.4f'%ha, dec='%0.4f'%dec))
+
+        return True
+
 
     def goto_point_for_flats(self) -> bool:
         """ Point the telescope east of zenith with a bit of wiggle.
@@ -534,15 +543,14 @@ class SSHTelescope(object):
             # Do basic pointing
             status = self.run_command(telescope.goto.format(ra=ra, dec=dec))
             if status:
+                self.update({'location': ra+' '+dec})
 
                 # if we only want a rough pointing
                 if not rough:
                     # Run pinpoint algorithm - check status of pointing
                     status = pinpoint.point(ra, dec, self)
+                    self.update({'location': ra+' '+dec})
 
-                self.publish({'EVENT': 'SLEW',
-                              'LOCATION': ra+' '+dec,
-                              'TIME': datetime.datetime.now().isoformat()})
                 return status
 
         return False
@@ -623,6 +631,7 @@ class SSHTelescope(object):
         """ Enable the tracking motor for the telescope.
         """
         result = self.run_command(telescope.enable_tracking)
+        self.update({'tracking': 'on'})
 
         return (re.search(telescope.enable_tracking_re, result) and True) or False
 
@@ -704,6 +713,7 @@ class SSHTelescope(object):
         """ Return the string name of the current filter.
         """
         result = self.run_command(telescope.current_filter)
+        self.update({'filter': result})
 
         return result
 
@@ -716,9 +726,9 @@ class SSHTelescope(object):
         current_filter = self.current_filter()
 
         if (current_filter == name):
-            self.publish({'EVENT': 'FILTER',
-                          'FILTER': current_filter,
-                          'TIME': datetime.datetime.now().isoformat()})
+            self.update({'filter': current_filter})
+            return True
+
         return False
 
     def make_dir(self, dirname: str) -> bool:
@@ -753,10 +763,12 @@ class SSHTelescope(object):
                 self.close_down()
 
             # sleep
+            self.update({'status': 'sleeping'})
             time.sleep(wait)
 
             # reconnect to telescope and open up
             self.open_dome()
+            self.update({'status': 'open'})
 
         # we aren't going to sleep while we wait
         else:
@@ -787,6 +799,7 @@ class SSHTelescope(object):
             self.log.info('Waiting until weather is good...')
 
             # sleep for specified wait time
+            self.update({'status': 'sleeping'})
             self.wait(time_to_sleep) # TODO: Should this be changed to avoid repeatedly opening the dome?
             elapsed_time += time_to_sleep
 
@@ -812,6 +825,7 @@ class SSHTelescope(object):
 
         # take exposure_count exposures
         i: int = 0
+        self.update({'status': 'exposing'})
         while i < count:
 
             # create filename
@@ -823,6 +837,7 @@ class SSHTelescope(object):
             self.log.info(f'Taking exposure {i+1}/{count} with name: {fname}')
 
             # take exposure
+
             self.run_command(telescope.take_exposure.format(time=exposure_time, binning=binning,
                                                             filename=fname))
 
@@ -831,25 +846,20 @@ class SSHTelescope(object):
                 self.log.warning('Slit closed during exposure - repeating previous exposure!')
                 self.wait_until_good()
                 self.open_dome()
+                self.keep_open(exposure_time*count)
                 continue
             else:  # this was a successful exposure - take the next one
-                i += 1 # increment counter
-                # notify (or not) the MQTT broker
-                self.publish({'EVENT': 'EXPOSURE',
-                              'TYPE': 'SCIENCE',
-                              'TIME': exposure_time,
-                              'FILTER': filt,
-                              'BINNING': binning,
-                              'REMOTE': config.telescope.host,
-                              'PATH': fname,
-                              'TIME': datetime.datetime.now().isoformat()})
 
+                i += 1 # increment counter
+
+        self.update({'status': 'open'})
         return True
 
     def take_dark(self, filename: str, exposure_time: int, count: int = 1, binning: int = 2) -> bool:
         """ Take a full set of dark frames for a given session. Takes exposure_count
         dark frames.
         """
+        self.update({'status': 'exposing'})
         for n in range(0, count):
 
             # create filename
@@ -857,17 +867,11 @@ class SSHTelescope(object):
 
             self.log.info(f'Taking dark {n+1}/{count} with name: {fname}')
 
+
             self.run_command(telescope.take_dark.format(time=exposure_time, binning=binning,
                                                         filename=fname))
-            # publish to MQTT
-            self.publish({'EVENT': 'EXPOSURE',
-                          'TYPE': 'DARK',
-                          'TIME': exposure_time,
-                          'BINNING': binning,
-                          'REMOTE': config.telescope.host,
-                          'PATH': fname,
-                          'TIME': datetime.datetime.now().isoformat()})
 
+        self.update({'status': 'open'})
         return True
 
     def take_bias(self, filename: str, count: int = 1, binning: int = 2) -> bool:
@@ -879,22 +883,18 @@ class SSHTelescope(object):
         self.log.info(f'Taking {count} biases with name: {filename}_N.fits')
 
         # take biases
+        self.update({'status': 'exposing'})
         for n in range(0, count):
 
             # create filename
             fname = filename + f'_bias_{n}.fits'
 
+
             self.run_command(telescope.take_dark.format(time=0.1, binning=binning,
                                                         filename=fname))
-            # publish to MQTT (or not)
-            self.publish({'EVENT': 'EXPOSURE',
-                          'TYPE': 'BIAS',
-                          'TIME': 0.1,
-                          'BINNING': binning,
-                          'REMOTE': config.telescope.host,
-                          'PATH': fname,
-                          'TIME': datetime.datetime.now().isoformat()})
+            time.sleep(1)
 
+        self.update({'status': 'open'})
         return True
 
     def copy_remote_to_local(self, remotepath: str, localpath: str = '') -> bool:
@@ -947,8 +947,6 @@ class SSHTelescope(object):
             self.log.warn('SSH is not connected. Please reconnect to the telescope server.')
             return None
 
-        self.log.info(f'Executing: {command}')
-
         # make sure the connection hasn't timed out due to sleep
         # if it has, reconnect
         try:
@@ -960,6 +958,7 @@ class SSHTelescope(object):
         numtries = 0; exit_code = 1
         while numtries < 5 and exit_code != 0:
             try:
+                self.log.info(f'Executing: {command}')
                 # deal with weird keepopen behavior
                 if re.search('keepopen*', command):
                     try:

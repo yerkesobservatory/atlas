@@ -209,7 +209,7 @@ class Executor(object):
             # the queue will run up until the first non-queue event
             for event in events:
                 # if the event starts with "Queue", we consider it available time
-                if re.match('Queue', event.get('summary', '')):
+                if re.match('Queue*', event.get('summary', '')):
                     end = to_utc(parser.parse(event.get('end').get('dateTime')))
                 else:
                     break
@@ -371,9 +371,16 @@ class Executor(object):
 
             # check if observations have RA/Dec
             for observation in observations:
+                # the observation is missing RA/Dec
                 if not observation.get('RA') or not observation.get('Dec'):
-                    # the observation is missing RA/Dec
-                    ra, dec = lookup.lookup(observation.get('target'))
+
+                    # if the target name is a RA/Dec string
+                    if re.search(r'\d{1,2}:\d{2}:\d{1,2}.\d{1,2} [+-]\d{1,2}:\d{2}:\d{1,2}.\d{1,2}',
+                                 observation.get('target')):
+                        ra, dec = observation.get('target').strip().split(' ')
+                    else: # try and lookup by name
+                        ra, dec = lookup.lookup(observation.get('target'))
+
                     if not ra or not dec:
                         self.log.warning(f'Unable to compute RA/Dec for {observation.get("target")}.')
                         # TODO: set error field on observations to prevent code from running again
@@ -398,19 +405,19 @@ class Executor(object):
                 self.log.debug('Scheduler reports no observations left for this session...')
                 break
 
-            self.log.info(f'Executing observation for {observation["email"]}...')
-
             # we wait until this observation needs to start
             start_time = observing_schedule.slots[0].start.datetime
             wait_time = (start_time - datetime.datetime.now()).seconds
             # some time elapses between scheduling and execution, must
             # account for wait times that are only a few seconds past
-            # the current time
-            if (wait_time >= 23.5) and (wait_time <= 24):
-                pass # we start immedatiately
-            else:
+            # the current time. We have one-minute windows on either side
+            #if (wait_time >= 23.5*60*60) and (wait_time <= 24*60*60):
+            if (wait_time >= (12*60*60)):
                 pass
-                # self.telescope.wait(wait_time)
+            # if (wait_time >= (23.5*60*60)) and (wait_time <= (24*60*60 + 600)):
+            #     pass # we start immedatiately
+            else:
+                self.telescope.wait(wait_time)
 
             # make sure that the weather is still good
             self.telescope.wait_until_good()
@@ -419,6 +426,7 @@ class Executor(object):
             try:
                 # extract observation from ObservingBlock
                 observation = observing_schedule.scheduled_blocks[0].configuration
+                self.log.info(f'Executing observation of {observation["target"]} for {observation["email"]}...')
                 schedule.execute(observation, program, self.telescope)
                 self.log.info(f'Finished observing {observation["target"]} for {observation["email"]}')
 

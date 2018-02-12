@@ -120,7 +120,7 @@ def point(ra: str, dec: str, telescope: 'Telescope') -> bool:
 
         # if they are valid offsets, apply them to the scope
         if abs(ra_offset) <= max_ra_offset and abs(dec_offset) <=max_dec_offset:
-            telescope.log.info('dRA={} deg dDEC={} deg'.format(ra_offset, dec_offset))
+            telescope.log.info('dRA={} arcsec dDEC={} arcsec'.format(ra_offset*3600, dec_offset*3600))
             telescope.offset(ra_offset, dec_offset)
         else:
             telescope.log.warning('Calculated offsets too large '

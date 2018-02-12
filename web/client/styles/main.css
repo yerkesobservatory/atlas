@@ -400,7 +400,7 @@ input[type=text], input[type=number], input[type=time], input[type=date], #progr
 
 html, body {
     font-family: "Muli";
-    font-style: "Medium"
+    font-style: "Medium";
     max-width: 100%;
     overflow-x: hidden;
 }

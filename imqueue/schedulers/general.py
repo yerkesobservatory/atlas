@@ -1,3 +1,4 @@
+import re
 import pymongo
 import datetime
 import astroplan
@@ -43,14 +44,21 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
     # build default constraints
     global_constraints = [constraints.AltitudeConstraint(min=config.telescope.min_alt*units.deg), # set minimum altitude
                           constraints.AtNightConstraint.twilight_nautical(),
-                          constraints.LocalTimeConstraint(min=datetime.datetime.now().time(),
-                                                          max=session['end'].time())]
+                          constraints.TimeConstraint(min=Time(datetime.datetime.now()),
+                                                          max=Time(session['end']))]
 
     # list to store observing blocks
     blocks = []
 
     # create targets
     for observation in observations:
+
+        # check whether observation has RA and Dec values
+        if observation.get('RA') is None:
+            continue
+        if observation.get('Dec') is None:
+            continue
+
         # target coordinates
         center = SkyCoord(observation['RA']+' '+observation['Dec'], unit=(units.hourangle, units.deg))
 
@@ -76,7 +84,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
         moon = constraints.MoonSeparationConstraint(min=moon_sep)
 
         # time, airmass, moon, + altitude, and at night
-        local_constraints = [airmass, moon]
+        local_constraints = [moon]
 
         # create observing block for this target
         blocks.append(ObservingBlock.from_exposures(target, priority, observation['exposure_time']*units.second,
@@ -95,7 +103,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
                                                       transitioner = transitioner)
 
     # initialize the schedule
-    schedule = scheduling.Schedule(Time(session['start']), Time(session['end']))
+    schedule = scheduling.Schedule(Time.now(), Time(session['end']))
 
     # schedule!
     schedule = priority_scheduler(blocks, schedule)
@@ -138,15 +146,21 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     telescope.enable_tracking()
 
     # try and point object roughly
-    if telescope.goto_point(observation['RA'], observation['Dec']) is False:
+    if telescope.goto_point(observation['RA'], observation['Dec'], rough=True) is False:
         telescope.log.warn('Object is not currently visible. Skipping...')
         return False
 
     # create basename for observations
     # TODO: support observations which only have RA/Dec
     # TODO: replace _id[0:3] with number from program
+    if re.search(r'\d{1,2}:\d{2}:\d{1,2}.\d{1,2} [+-]\d{1,2}:\d{2}:\d{1,2}.\d{1,2}',
+                                 observation.get('target')):
+        split_name = observation.get('target').replace(':', '').split(' ')
+        target_str = f'ra{split_name[0]}_dec{split_name[1]}'
+    else:
+        target_str = observation['target'].replace(' ', '_').replace("'", '')
     fname = '_'.join([str(datetime.date.today()),
-                      observation['email'].split('@')[0], observation['target'].replace(' ', '_'),
+                      observation['email'].split('@')[0], target_str, 
                       observation['_id'][0:3]])
     dirname = '/'.join(['', 'home', config.telescope.username, 'data',
                         observation['email'].split('@')[0], fname])
@@ -161,7 +175,7 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     # generate basename
     filebase = '_'.join([str(datetime.date.today()),
                                                observation['email'].split('@')[0],
-                                               observation['target'].replace(' ', '_')])
+                                               target_str])
     basename_science = f'{dirname}/raw/science/'+filebase
     basename_bias = f'{dirname}/raw/bias/'+filebase
     basename_dark = f'{dirname}/raw/dark/'+filebase
@@ -172,10 +186,10 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
 
     # now we pinpoint
     telescope.log.info('Starting telescope pinpointing...')
-    pinpointable = pinpoint.pinpoint(observation['RA'], observation['Dec'], self)
+    pinpointable = pinpoint.point(observation['RA'], observation['Dec'], telescope)
 
     # let's check that pinpoint did not fail
-    if pinpointable is False:
+    if not pinpointable:
         telescope.log.warn('Pinpoint failed! Disabling pinpointing for this observation...')
 
     # extract variables
@@ -193,13 +207,15 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
         telescope.open_dome()
 
         # check our pointing with pinpoint again
-        telescope.log.info('Re-pinpointing telescope...')
         if pinpointable:
-            pinpointable = pinpoint.pinpoint(observation['RA'], observation['Dec'], self)
+            telescope.log.debug('Re-pinpointing telescope...')
+            pinpointable = pinpoint.point(observation['RA'], observation['Dec'], telescope)
         else:
+            telescope.log.debug('Doing a basic re-point...')
             telescope.goto_point(observation['RA'], observation['Dec'], rough=True)
 
         # reenable tracking
+        telescope.log.debug('Enabling tracking...')
         telescope.enable_tracking()
 
         # keep open for filter duration - 60 seconds for pintpoint per exposure
