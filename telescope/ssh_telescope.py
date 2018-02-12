@@ -16,7 +16,7 @@ import routines.pinpoint as pinpoint
 from config import config
 from imqueue import database
 from telescope.exception import *
-
+import random
 
 class SSHTelescope(object):
     """ This class allows for a telescope to be remotely controlled
@@ -114,7 +114,7 @@ class SSHTelescope(object):
             self.log.warning(f'{e}')
             return False
 
-    def open_dome(self) -> bool:
+    def open_dome(self, sun: float = None) -> bool:
         """ Checks that the weather is acceptable using `weather_ok`,
         and if the dome is not already open. opens the dome.
 
@@ -125,7 +125,7 @@ class SSHTelescope(object):
             return True
 
         # check that weather is OK to open
-        if self.weather_ok():
+        if self.weather_ok(sun):
             self.update({'slit': 'opening', 'status': 'opening'})
             result = self.run_command(telescope.open_dome)
 
@@ -172,6 +172,65 @@ class SSHTelescope(object):
         closed = self.close_dome()
         unlocked = self.unlock()
         return closed and unlocked
+
+    def lamps_on(self) -> bool:
+        """ Turn on all dome lamps.
+        """
+        result = self.run_command(telescope.dome_lamps.format(state='on'))
+
+        if re.search(telescope.dome_lamps_on_re, result):
+            self.publish({'EVENT': 'LAMPSON',
+                          'TIME': datetime.datetime.now().isoformat()})
+            return True
+
+        return False
+
+    def lamps_off(self) -> bool:
+        """ Turn off all dome lamps.
+        """
+        result = self.run_command(telescope.dome_lamps.format(state='off'))
+
+        if re.search(telescope.dome_lamps_off_re, result):
+            self.publish({'EVENT': 'LAMPSOFF',
+                          'TIME': datetime.datetime.now().isoformat()})
+            return True
+
+        return False
+
+    def chip_temp(self, chip: str) -> bool:
+        """ Return temperature (in C) of the chip with identifier
+        'chip'
+        """
+        # TODO
+        return True
+
+    #mcn
+    def chip_temp_ok(self) -> bool:
+        """ Compare current chip temperature to the set temperature.
+        If the same, return True; else, return False
+        """
+        result = self.run_command(telescope.get_ccd_status)
+    
+        # search for chip and setpoint temperatures
+        tchip = re.search(telescope.tchip_ccd_re, result)
+        setpoint = re.search(telescope.setpoint_ccd_re, result)
+
+        # extract group and return
+        if tchip and setpoint:  
+          return float(tchip.group(0))-float(setpoint.group(0)) < 1 #within 1 degree is good enough
+        #else:
+        #    self.log.warning(f'Unable to parse get_ccd_status: \"{result}\"')
+        #    return False  # return the safest value        
+
+        return False
+
+    #mcn
+    def cool_ccd(self) -> bool:
+        """ Cool the CCD
+        """
+        result = self.run_command(telescope.cool_ccd)        
+
+        return True
 
     def lock(self, user: str, comment: str = 'observing') -> bool:
         """ Lock the telescope with the given username.
@@ -314,6 +373,22 @@ class SSHTelescope(object):
             self.log.warning(f'Unable to parse get_moon_alt: \"{result}\"')
             return 90.0
 
+    def get_mean_image_count(self, fname: str) -> float:
+        """ Get the mean count in a given FITS image.
+        """
+        # run the command
+        result = self.run_command(telescope.get_mean_image_count.format(file=fname))
+
+        # run regex
+        mean_count = re.search(telescope.get_mean_image_count_re, result)
+
+        # extract group and return
+        if mean_count:
+            return float(mean_count.group(0))
+        else:
+            self.log.warning(f'Unable to parse get_mean_image_count: \"{result}\"')
+            return -1
+
     # TODO - make one 'tx taux' call instead of 5
     def get_weather(self) -> dict:
         """ Extract all the values for the current weather
@@ -377,7 +452,7 @@ class SSHTelescope(object):
         -------
         success: bool
             Whether pinpointing was a success
-        dra: float
+        dra: lamps
             The final offset error in right-ascension
         ddec: float
             The final offset error in declination
@@ -395,6 +470,48 @@ class SSHTelescope(object):
                 return pinpoint.pinpoint(ra, dec, self)
 
         return False
+
+    def goto_point_for_flats(self) -> bool:
+        """ Point the telescope east of zenith with a bit of wiggle.
+        """
+
+        #point scope east of zenith
+        ha = config.telescope.ha_for_flats #eastward
+        dec = config.general.latitude #zenith
+
+        #randomize
+        dHa = 0.5*random.random()
+        dDec = 0.5*random.random()
+        ha += dHa
+        dec += dDec
+
+        #print ('ha=%f, dec=%f'%(ha,dec))
+
+        self.run_command(telescope.goto_for_flats.format(ha='%0.4f'%ha, dec='%0.4f'%dec))
+
+        return True
+
+
+    def goto_point_for_flats(self) -> bool:
+        """ Point the telescope east of zenith with a bit of wiggle.
+        """
+
+        #point scope east of zenith
+        ha = config.telescope.ha_for_flats #eastward
+        dec = config.general.latitude #zenith
+
+        #randomize
+        dHa = 0.5*random.random()
+        dDec = 0.5*random.random()
+        ha += dHa
+        dec += dDec
+
+        #print ('ha=%f, dec=%f'%(ha,dec))
+
+        self.run_command(telescope.goto_for_flats.format(ha='%0.4f'%ha, dec='%0.4f'%dec))
+
+        return True
+
 
     def goto_point(self, ra: str, dec: str, rough=False) -> (bool, float, float):
         """ Point the telescope at a given RA/Dec.
@@ -518,10 +635,54 @@ class SSHTelescope(object):
 
         return (re.search(telescope.enable_tracking_re, result) and True) or False
 
+    def disable_tracking(self) -> bool:
+        """ Disable the tracking motor for the telescope.
+        """
+        result = self.run_command(telescope.disable_tracking)
+
+        return (re.search(telescope.disable_tracking_re, result) and True) or False
+
+    def move_dome(self, daz: float) -> bool:
+        """ Move the dome to az=daz
+        """
+        result = self.run_command(telescope.move_dome.format(az=daz))
+
+        return (re.search(telescope.move_dome_re, result) and True) or False
+
+    def home_dome(self) -> bool:
+        """ Calibrate the dome motor
+        """        
+        result = self.run_command(telescope.home_dome)
+
+        return (re.search(telescope.home_dome_re, result) and True) or False        
+
+    def home_ha(self) -> bool:
+        """ Calibrate the HA motor
+        """  
+        result = self.run_command(telescope.home_ha)
+
+        return (re.search(telescope.home_ha_re, result) and True) or False   
+
+    def home_dec(self) -> bool:
+        """ Calibrate the DEC motor
+        """          
+        result = self.run_command(telescope.home_dec)
+
+        return (re.search(telescope.home_dec_re, result) and True) or False   
+
     def calibrate_motors(self) -> bool:
         """ Run the motor calibration routine.
         """
-        return False
+        if not self.home_dome():
+            return False
+
+        if not self.home_ha():
+            return False
+
+        if not self.home_dec():
+            return False                        
+
+        return True
 
     # TODO
     def get_focus(self) -> float:
@@ -615,7 +776,7 @@ class SSHTelescope(object):
 
         return
 
-    def wait_until_good(self, sun: float = None) -> bool:
+    def wait_until_good(self, sun: float = None, wait_time: int = None) -> bool:
         """ Wait until the weather is good for observing.
 
         Waits config.wait_time minutes between each trial. Cancels execution
@@ -626,7 +787,7 @@ class SSHTelescope(object):
         max_wait: int = config.telescope.max_wait_time
 
         # time to sleep between trying the weather - in minutes
-        time_to_sleep: int = 60 * config.telescope.wait_time
+        time_to_sleep: int = 60 * wait_time if wait_time else 60 * config.telescope.wait_time
 
         # total time counter
         elapsed_time: int = 0  # total elapsed wait time
@@ -668,7 +829,10 @@ class SSHTelescope(object):
         while i < count:
 
             # create filename
-            fname = filename + f'_{i}.fits'
+            if count == 1: #don't add count if just one exposure
+                fname = filename + f'.fits'
+            else:
+               fname = filename + f'_{i}.fits'                
 
             self.log.info(f'Taking exposure {i+1}/{count} with name: {fname}')
 
