@@ -161,9 +161,9 @@ class SSHTelescope(object):
 
         # if re.search(telescope.close_dome_re, result):
         return True
-            # return True
-        # else:
-        #     return False
+    # return True
+    # else:
+    #     return False
 
     def close_down(self) -> bool:
         """ Closes the dome and unlocks the telescope. Call
@@ -200,17 +200,17 @@ class SSHTelescope(object):
         If the same, return True; else, return False
         """
         result = self.run_command(telescope.get_ccd_status)
-    
+
         # search for chip and setpoint temperatures
         tchip = re.search(telescope.tchip_ccd_re, result)
         setpoint = re.search(telescope.setpoint_ccd_re, result)
 
         # extract group and return
-        if tchip and setpoint:  
+        if tchip and setpoint:
           return float(tchip.group(0))-float(setpoint.group(0)) < 1 #within 1 degree is good enough
-        #else:
-        #    self.log.warning(f'Unable to parse get_ccd_status: \"{result}\"')
-        #    return False  # return the safest value        
+      #else:
+      #    self.log.warning(f'Unable to parse get_ccd_status: \"{result}\"')
+      #    return False  # return the safest value
 
         return False
 
@@ -218,7 +218,7 @@ class SSHTelescope(object):
     def cool_ccd(self) -> bool:
         """ Cool the CCD
         """
-        result = self.run_command(telescope.cool_ccd)        
+        result = self.run_command(telescope.cool_ccd)
 
         return True
 
@@ -404,21 +404,21 @@ class SSHTelescope(object):
         if weather.get('sun') > desired_sun_alt:
             if self.dome_open():
                 self.close_dome()
-            self.update({'weather.good': False})
+                self.update({'weather.good': False})
             return False
 
         # check that it isn't raining
         if weather.get('rain') != 0:
             if self.dome_open():
                 self.close_dome()
-            self.update({'weather.good': False})
+                self.update({'weather.good': False})
             return False
 
         # check cloud cover is below 35%
         if weather.get('cloud') >= config.telescope.max_cloud:
             if self.dome_open():
                 self.close_dome()
-            self.update({'weather.good': False})
+                self.update({'weather.good': False})
             return False
 
         # weather is good!
@@ -641,38 +641,29 @@ class SSHTelescope(object):
 
     def home_dome(self) -> bool:
         """ Calibrate the dome motor
-        """        
+        """
         result = self.run_command(telescope.home_dome)
 
-        return (re.search(telescope.home_dome_re, result) and True) or False        
+        return (re.search(telescope.home_dome_re, result) and True) or False
 
     def home_ha(self) -> bool:
         """ Calibrate the HA motor
-        """  
+        """
         result = self.run_command(telescope.home_ha)
 
-        return (re.search(telescope.home_ha_re, result) and True) or False   
+        return (re.search(telescope.home_ha_re, result) and True) or False
 
     def home_dec(self) -> bool:
         """ Calibrate the DEC motor
-        """          
+        """
         result = self.run_command(telescope.home_dec)
 
-        return (re.search(telescope.home_dec_re, result) and True) or False   
+        return (re.search(telescope.home_dec_re, result) and True) or False
 
     def calibrate_motors(self) -> bool:
         """ Run the motor calibration routine.
         """
-        if not self.home_dome():
-            return False
-
-        if not self.home_ha():
-            return False
-
-        if not self.home_dec():
-            return False                        
-
-        return True
+        return self.home_dome() and self.home_ha() and self.home_dec()
 
     # TODO
     def get_focus(self) -> float:
@@ -822,7 +813,7 @@ class SSHTelescope(object):
             if count == 1: #don't add count if just one exposure
                 fname = filename + f'.fits'
             else:
-               fname = filename + f'_{i}.fits'                
+                fname = filename + f'_{i}.fits'
 
             self.log.info(f'Taking exposure {i+1}/{count} with name: {fname}')
 
@@ -1005,5 +996,3 @@ class SSHTelescope(object):
         cls.log.addHandler(stream)
 
         return True
-
-    

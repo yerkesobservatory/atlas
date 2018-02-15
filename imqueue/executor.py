@@ -114,8 +114,7 @@ class Executor(object):
 
         # attempt to auto-calibrate the system
         self.log.info('Starting calibration routines...')
-        self.log.debug('No calibration routines are being run.')
-        # self.calibrate()
+        self.calibrate()
 
         # we attempt to load any sessions that are scheduled and end
         # by the end of the telescope availability
@@ -278,41 +277,53 @@ class Executor(object):
             msg += f'use the telescope until you have been notified that the telescope is ready for use'
             self.log.info(msg)
 
+            # calibrate the motors and dome
+            self.telescope.home_dome()
+
             # take flats
-            alt: float = telescope.get_sun_alt()
-            if (alt <= 0) and (alt >= - 12):
-                self.log.info('Starting to take telescope flats...')
-                self.telescope.take_flats()
-            else:
-                self.log.warning(f'Altitude of {alt} is not within the ' \
-                                 'acceptable range for flats. Skipping flat calibration...')
-
-            # wait until sun is at -12
-            self.telescope.wait_until_good(sun=-12)
-
-            # TODO: use routines.lookup to find appropriate star field?
-            ra = 'hh:mm:ss'
-            dec = 'dd:mm:ss'
-
-            # let's enable tracking just to be safe
-            self.telescope.enable_tracking()
-
-            # pinpoint telescope to target (this will fix pointing too!)
-            self.telescope.goto_point(ra, dec)
-
-            # run auto-focus routine
-            self.telescope.auto_focus()
-
-            # let's try pointing again - save final offsets
-            result, dra, ddec = self.telescope.goto_point(ra, dec)
-
-            # send final dra, ddec values to slack
-            msg = f'{config.general.name} is now ready for use! The final error in pointing is RA: {3600*dra}, Dec: {3600*ddec}'
-            self.log.info(msg)
+            self.telescope.take_flats()
         except Exception as e:
-            msg = f'An error occured while auto-calibrating {config.general.name}. Please use care when '
-            msg += f'using the telescope'
-            self.log.warning(msg)
+            self.log.warning('An error occured during calibration')
+            self.log.warning(e)
+            return False
+
+        return True
+
+            # take flats
+        #     alt: float = telescope.get_sun_alt()
+        #     if (alt <= 0) and (alt >= - 12):
+        #         self.log.info('Starting to take telescope flats...')
+        #         self.telescope.take_flats()
+        #     else:
+        #         self.log.warning(f'Altitude of {alt} is not within the ' \
+        #                          'acceptable range for flats. Skipping flat calibration...')
+
+        #     # wait until sun is at -12
+        #     self.telescope.wait_until_good(sun=-12)
+
+        #     # TODO: use routines.lookup to find appropriate star field?
+        #     ra = 'hh:mm:ss'
+        #     dec = 'dd:mm:ss'
+
+        #     # let's enable tracking just to be safe
+        #     self.telescope.enable_tracking()
+
+        #     # pinpoint telescope to target (this will fix pointing too!)
+        #     self.telescope.goto_point(ra, dec)
+
+        #     # run auto-focus routine
+        #     self.telescope.auto_focus()
+
+        #     # let's try pointing again - save final offsets
+        #     result, dra, ddec = self.telescope.goto_point(ra, dec)
+
+        #     # send final dra, ddec values to slack
+        #     msg = f'{config.general.name} is now ready for use! The final error in pointing is RA: {3600*dra}, Dec: {3600*ddec}'
+        #     self.log.info(msg)
+        # except Exception as e:
+        #     msg = f'An error occured while auto-calibrating {config.general.name}. Please use care when '
+        #     msg += f'using the telescope'
+        #     self.log.warning(msg)
 
         return True
 
