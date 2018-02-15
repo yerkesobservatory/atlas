@@ -10,6 +10,7 @@ import datetime
 import pymongo
 import logging
 import colorlog
+import astroplan
 import telescope
 import schedule as run
 import telescope.exception as exception
@@ -276,6 +277,9 @@ class Executor(object):
             msg = f'{config.general.name} is starting its auto-calibration routine. Please do not '
             msg += f'use the telescope until you have been notified that the telescope is ready for use'
             self.log.info(msg)
+
+            # download new scheduling data files
+            astroplan.download_IERS_A()
 
             # calibrate the motors and dome
             self.telescope.home_dome()
