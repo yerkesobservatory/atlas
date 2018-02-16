@@ -786,7 +786,7 @@ class SSHTelescope(object):
 
             # shut down after max_time hours of continuous waiting
             if elapsed_time >= 60 * 60 * max_wait:
-                self.log.warning(f'Bad weather for {max_wait} hours. Shutting down the queue...', color='magenta')
+                self.log.warning(f'Bad weather for {max_wait} hours...')
                 raise WeatherException
 
             # update weather
