@@ -282,7 +282,7 @@ class Executor(object):
             astroplan.download_IERS_A()
 
             # calibrate the motors and dome
-            self.telescope.home_dome()
+            self.telescope.calibrate_motors()
 
             # take flats
             self.telescope.take_flats()
@@ -292,15 +292,6 @@ class Executor(object):
             return False
 
         return True
-
-            # take flats
-        #     alt: float = telescope.get_sun_alt()
-        #     if (alt <= 0) and (alt >= - 12):
-        #         self.log.info('Starting to take telescope flats...')
-        #         self.telescope.take_flats()
-        #     else:
-        #         self.log.warning(f'Altitude of {alt} is not within the ' \
-        #                          'acceptable range for flats. Skipping flat calibration...')
 
         #     # wait until sun is at -12
         #     self.telescope.wait_until_good(sun=-12)
