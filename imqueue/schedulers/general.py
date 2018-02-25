@@ -228,6 +228,9 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     telescope.log.info('Switching back to clear filter')
     telescope.change_filter('clear')
 
+    # we are done taking science frames, let's take some bias frames to clear the CCD of any residual charge
+    telescope.take_bias('/tmp/clear.fits', 10, binning)
+
     # take exposure_count darks
     telescope.take_dark(basename_dark, exposure_time, exposure_count, binning)
 
