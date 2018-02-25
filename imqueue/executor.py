@@ -18,7 +18,6 @@ import imqueue.calendar as calendar
 import imqueue.database as database
 import imqueue.schedule as schedule
 from config import config
-from routines import lookup
 from typing import List, Dict
 from slacker_log_handler import SlackerLogHandler
 from dateutil import parser, tz
@@ -374,33 +373,6 @@ class Executor(object):
             if not len(observations):
                 self.log.debug('No uncompleted observations left in program...')
                 return
-
-            # check if observations have RA/Dec
-            for observation in observations:
-                # the observation is missing RA/Dec
-                if not observation.get('RA') or not observation.get('Dec'):
-
-                    # if the target name is a RA/Dec string
-                    if re.search(r'\d{1,2}:\d{2}:\d{1,2}.\d{1,2} [+-]\d{1,2}:\d{2}:\d{1,2}.\d{1,2}',
-                                 observation.get('target')):
-                        ra, dec = observation.get('target').strip().split(' ')
-                    else: # try and lookup by name
-                        ra, dec = lookup.lookup(observation.get('target'))
-
-                    if not ra or not dec:
-                        self.log.warning(f'Unable to compute RA/Dec for {observation.get("target")}.')
-                        # TODO: set error field on observations to prevent code from running again
-                        continue
-
-                    # save the RA/Dec
-                    self.log.info(f'Adding RA/Dec information to observation {observation["_id"]}')
-                    self.db.observations.update({'_id': observation['_id']},
-                                                {'$set':
-                                                 {'RA': ra,
-                                                  'Dec': dec}})
-
-            # we need to refresh observations since we updated the RA/Dec
-            observations, program = self.load_observations(session)
 
             # run the scheduler and get the next observation to complete
             self.log.debug(f'Calling the {program.get("executor")} scheduler...')

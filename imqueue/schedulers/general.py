@@ -7,12 +7,13 @@ import astropy.units as units
 import imqueue.database as database
 import astroplan.constraints as constraints
 import astroplan.scheduling as scheduling
-from astroplan import ObservingBlock, FixedTarget
-from astropy.time import Time
-from astropy.coordinates import SkyCoord, EarthLocation, AltAz, Angle, get_sun
-from typing import List, Dict
 from config import config
+from typing import List, Dict
+from astropy.time import Time
 from routines import pinpoint, lookup
+from astroplan import ObservingBlock, FixedTarget
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz, Angle, get_sun
+
 
 
 def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[ObservingBlock]:
@@ -42,16 +43,43 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
                                      name=config.general.name, timezone="UTC")
 
     # build default constraints
-    global_constraints = [constraints.AltitudeConstraint(min=config.telescope.min_alt*units.deg), # set minimum altitude
-                          constraints.AtNightConstraint.twilight_nautical(),
-                          constraints.TimeConstraint(min=Time(datetime.datetime.now()),
-                                                          max=Time(session['end']))]
+    global_constraints = [constraints.AltitudeConstraint(min=config.telescope.min_alt*units.deg, boolean_constraint=False), # rank objects by altitude
+                          constraints.AtNightConstraint.twilight_astronomical(), # must be darker than astronomical
+                          constraints.TimeConstraint(min=Time(datetime.datetime.now()), # and occur between now and the end of the session
+                                                     max=Time(session['end']))]
 
     # list to store observing blocks
     blocks = []
 
     # create targets
     for observation in observations:
+
+        # the observation is missing RA/Dec
+        if not observation.get('RA') or not observation.get('Dec'):
+
+            # if the target name is a RA/Dec string
+            if re.search(r'\d{1,2}:\d{2}:\d{1,2}.\d{1,2} [+-]\d{1,2}:\d{2}:\d{1,2}.\d{1,2}',
+                         observation.get('target')):
+                ra, dec = observation.get('target').strip().split(' ')
+                observation['RA'] = ra; observation['Dec'] = dec;
+            else: # try and lookup by name
+                ra, dec = lookup.lookup(observation.get('target'))
+
+                if not ra or not dec:
+                    print(f'Unable to compute RA/Dec for {observation.get("target")}.')
+                    if database.Database.is_connected:
+                        database.Database.observations.update({'_id': observation['_id']},
+                                                              {'$set':
+                                                               {'error': 'lookup'}})
+                    continue
+
+                # save the RA/Dec
+                observation['RA'] = ra; observation['Dec'] = dec;
+                if database.Database.is_connected:
+                    database.Database.observations.update({'_id': observation['_id']},
+                                                          {'$set':
+                                                           {'RA': ra,
+                                                            'Dec': dec}})
 
         # check whether observation has RA and Dec values
         if observation.get('RA') is None:
@@ -72,19 +100,24 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
         # create astroplan traget
         target = FixedTarget(coord=coord, name=observation['target'])
 
+        # list to store local constraints
+        local_constraints = []
+
         # priority - if the observation has a priority, otherwise 1
         priority = observation['options'].get('priority') or 1
 
         # if specified, restrict airmass, otherwise no airmass restriction
-        max_airmass = observation['options'].get('airmass') or 38
-        airmass = constraints.AirmassConstraint(max=max_airmass, boolean_constraint = False)  # rank by airmass
+        if observation['options'].get('airmass'):
+            local_constraints.append(constraints.AirmassConstraint(max=observation['options'].get('airmass'),
+                                                                   boolean_constraint = False))
+
+        # if specified, restrict maximum moon illumination, otherwise no restriction
+        if observation['options'].get('moon_illumination'):
+            local_constraints.append(constraints.MoonIlluminationConstraint(max=observation['options'].get('moon_illumination')))
 
         # if specified, use observations moon separation, otherwise use 2 degrees
         moon_sep = (observation['options'].get('moon') or config.queue.moon_separation)*units.deg
-        moon = constraints.MoonSeparationConstraint(min=moon_sep)
-
-        # time, airmass, moon, + altitude, and at night
-        local_constraints = [moon]
+        local_constraints.append(constraints.MoonSeparationConstraint(min=moon_sep))
 
         # create observing block for this target
         blocks.append(ObservingBlock.from_exposures(target, priority, observation['exposure_time']*units.second,
@@ -92,6 +125,10 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
                                                     config.telescope.readout_time*units.second,
                                                     configuration = observation,
                                                     constraints = local_constraints))
+
+    # check if we were able to make at least one block
+    if len(blocks) < 1:
+        return None # we were unable to schedule any blocks
 
     # we need to create a transitioner to go between blocks
     transitioner = astroplan.Transitioner(1*units.deg/units.second,

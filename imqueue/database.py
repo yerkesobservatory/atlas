@@ -8,8 +8,10 @@ class Database(object):
     """ Manages connection to MongoDB and provides a number of utility
     functions for accessing/finding/querying the database.
     """
+    is_connected = False
 
     try:
+
         # database client
         client = pymongo.MongoClient(host=config.queue.database_host,
                                      port=config.queue.database_port,
@@ -27,6 +29,7 @@ class Database(object):
 
         telescopes = database.telescopes
 
+
     except Exception as e:
         errmsg = 'Unable to connect or authenticate to database. Exiting...'
         self.log.critical(errmsg)
@@ -38,10 +41,21 @@ class Database(object):
     def __init__(self):
         """ Right now, this just attempts to initialize the logging system
         """
-
         # initialize logging system
         if not Database.log:
             Database.__init_log()
+
+        try:
+            # test whether the database is connected
+            self.client.admin.command('ismaster')
+
+            # we are connected
+            self.is_connected = True
+        except Exception as e:
+            errmsg = 'Unable to connect or authenticate to database. Exiting...'
+            self.log.critical(errmsg)
+            raise ConnectionException(errmsg)
+
 
     @classmethod
     def __init_log(cls) -> bool:
