@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import astropy.coordinates as coordinates
 from config import config
 from routines import lookup
+from astropy.coordinates import Angle
 
 # load our matplotlib stylesheet from config/
 plt.style.use(os.path.join(os.path.split(os.path.dirname(__file__))[0], os.path.join('config', 'matplotlibrc')))
@@ -38,7 +39,7 @@ def visibility_curve(target: str, **kwargs) -> matplotlib.figure.Figure:
     # convert target name to RA/Dec and make SkyCoord object
     try:
         ra, dec = lookup.lookup(target)
-        target_coord = coordinates.SkyCoord(ra, dec, unit='deg')
+        target_coord = coordinates.SkyCoord(Angle(ra,units.hourangle), Angle(dec,units.degree))
     except Exception as e:
         print('An error occured locating the object')
         return None
