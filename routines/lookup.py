@@ -4,6 +4,7 @@ from astroquery.simbad import Simbad
 import astropy.units as units
 import astropy.time as time
 import astropy.coordinates as coordinates
+import datetime
 
 def lookup(target: str) -> (str, str):
     """ Convert a target name 'M31', 'NGC6946', to a RA/Dec pair using the location
@@ -33,7 +34,9 @@ def lookup(target: str) -> (str, str):
     obs_location = coordinates.EarthLocation(lat=config.general.latitude*units.deg,
                                              lon=config.general.longitude*units.deg,
                                              height=config.general.altitude*units.m)
-    obs_time = time.Time.now()
+    
+    obs_time = time.Time(datetime.datetime.utcnow(), scale='utc')
+    #obs_time = time.Time.now()
     frame = coordinates.AltAz(obstime=obs_time, location=obs_location)
 
     # planetary bodies - TODO: Add moons
