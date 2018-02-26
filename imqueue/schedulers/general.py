@@ -147,7 +147,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
 
     # print(schedule.to_table())
     # print(f'observing_blocks: {schedule.observing_blocks}')
-    # print(f'open_slots: {schedule.open_slots}')
+    # print(f'open_slots: {schedule.open_slots}
     # print(f'scheduled_blocks: {schedule.scheduled_blocks}')
 
     # return the scheduled blocks
@@ -188,16 +188,17 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
         return False
 
     # create basename for observations
-    # TODO: support observations which only have RA/Dec
     # TODO: replace _id[0:3] with number from program
     if re.search(r'\d{1,2}:\d{2}:\d{1,2}.\d{1,2} [+-]\d{1,2}:\d{2}:\d{1,2}.\d{1,2}',
                                  observation.get('target')):
         split_name = observation.get('target').replace(':', '').split(' ')
-        target_str = f'ra{split_name[0]}_dec{split_name[1]}'
+        ra = split_name[0].replace(':', 'h', 1).replace(':', 'm', 1)+'s'
+        dec = split_name[0].replace(':', 'd', 1).replace(':', 'm', 1)+'s'
+        target_str = f'{ra}_{dec}'
     else:
         target_str = observation['target'].replace(' ', '_').replace("'", '')
     fname = '_'.join([str(datetime.date.today()),
-                      observation['email'].split('@')[0], target_str, 
+                      observation['email'].split('@')[0], target_str,
                       observation['_id'][0:3]])
     dirname = '/'.join(['', 'home', config.telescope.username, 'data',
                         observation['email'].split('@')[0], fname])
