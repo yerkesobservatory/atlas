@@ -128,7 +128,7 @@ Template.forgotPassword.onRendered(function() {
             email: {
                 required: true,
                 minlength: 4,
-                maxlength: 32
+                maxlength: 80
             },
         },
     });
