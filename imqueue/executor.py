@@ -113,8 +113,8 @@ class Executor(object):
             return
 
         # attempt to auto-calibrate the system
-        self.log.info('Starting calibration routines...')
-        self.calibrate()
+        # self.log.info('Starting calibration routines...')
+        # self.calibrate()
 
         # we attempt to load any sessions that are scheduled and end
         # by the end of the telescope availability
