@@ -49,7 +49,8 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     except Exception as e:
         imqueue.Executor.log.warning('Unable to load desired scheduler. Using "general" scheduler...')
         imqueue.Executor.log.debug(e)
-        return scheduler.general.schedule(observations, session, program)
+        return general.schedule(observations, session, program)
+        #return scheduler.general.schedule(observations, session, program)
 
 
 def execute(observation: Dict, program: Dict, telescope) -> bool:
