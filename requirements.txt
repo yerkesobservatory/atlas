@@ -1,5 +1,5 @@
 asn1crypto==0.24.0
--e git+https://github.com/rprechelt/astroplan.git@fc76be1dace786d5201fddf57dcd917b01426380#egg=astroplan
+-e git+https://github.com/yerkesobservatory/astroplan.git@cb4a76fee31e438f4fffaa5476ffdc102e263f3b#egg=astroplan
 astropy==3.0
 astroquery==0.3.7
 bcrypt==3.1.4
