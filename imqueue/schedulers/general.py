@@ -241,8 +241,11 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     exposure_count = observation['exposure_count']
     binning = observation['binning']
 
+    # do we want to take darks
+    take_darks = 'dark' in observation['filters']
+
     # for each filter
-    for filt in observation['filters']:
+    for filt in observation['filters'].remove('dark'):
 
         # check weather - wait until weather is good
         telescope.wait_until_good()
@@ -276,7 +279,8 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     telescope.take_bias('/tmp/clear.fits', 10, binning)
 
     # take exposure_count darks
-    telescope.take_dark(basename_dark, exposure_time, exposure_count, binning)
+    if take_darks:
+        telescope.take_dark(basename_dark, exposure_time, exposure_count, binning)
 
     # take numbias*exposure_count biases
     telescope.take_bias(basename_bias, 10*exposure_count, binning)
