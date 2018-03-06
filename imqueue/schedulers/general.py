@@ -104,20 +104,26 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
         local_constraints = []
 
         # priority - if the observation has a priority, otherwise 1
-        priority = observation['options'].get('priority') or 1
+        if observation['options'].get('priority'):
+            priority = float(observation['options'].get('priority'))
+        else:
+            priority = 1.
 
         # if specified, restrict airmass, otherwise no airmass restriction
         if observation['options'].get('airmass'):
-            local_constraints.append(constraints.AirmassConstraint(max=observation['options'].get('airmass'),
+            local_constraints.append(constraints.AirmassConstraint(max=float(observation['options'].get('airmass')),
                                                                    boolean_constraint = False))
 
         # if specified, restrict maximum moon illumination, otherwise no restriction
         if observation['options'].get('moon_illumination'):
-            local_constraints.append(constraints.MoonIlluminationConstraint(max=observation['options'].get('moon_illumination')))
+            local_constraints.append(constraints.MoonIlluminationConstraint(max=float(observation['options'].get('moon_illumination'))))
 
         # if specified, use observations moon separation, otherwise use 2 degrees
-        moon_sep = (observation['options'].get('moon') or config.queue.moon_separation)*units.deg
-        local_constraints.append(constraints.MoonSeparationConstraint(min=moon_sep))
+        if observation['options'].get('moon'):
+            moon_sep = float(observation['options'].get('moon'))
+        else:
+            moon_sep = config.queue.moon_separation
+        local_constraints.append(constraints.MoonSeparationConstraint(min=moon_sep*units.deg))
 
         # create observing block for this target
         blocks.append(ObservingBlock.from_exposures(target, priority, observation['exposure_time']*units.second,
