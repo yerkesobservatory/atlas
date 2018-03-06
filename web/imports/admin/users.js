@@ -31,14 +31,19 @@ Template.adminUsers.helpers({
                 {key: '',
                  label: 'Email',
                  fn: function (value, object, key) {
-                     return object.emails[0].address;
+                     if (object.emails[0].verified) {
+                         return object.emails[0].address;
+                     }
+                     else {
+                         return Spacebars.SafeString('<p style="color:red">'+object.emails[0].address+'</p>');
+                     }
                  }},
                 {key: 'profile.firstName',
                  label: 'First'},
                 {key: 'profile.lastName',
                  label: 'Last'},
                 {key: 'profile.affiliation',
-                 label: 'Affiliation',
+                 label: 'Affiliation'
                 },
                 {key: 'profile.minor',
                  label: 'Under 18?',
@@ -51,7 +56,7 @@ Template.adminUsers.helpers({
                  }
                 },
                 {key: '_id',
-                 label: 'ID',
+                 label: 'ID'
                 },
                 {key: 'roles',
                  label: 'Roles'},
@@ -59,7 +64,7 @@ Template.adminUsers.helpers({
                  tmpl: Template.userAction
                 }
             ]
-        }
+        };
     }
 });
 
