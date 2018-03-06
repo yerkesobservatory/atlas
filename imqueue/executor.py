@@ -138,6 +138,11 @@ class Executor(object):
         # wait until the weather is good to observe
         self.telescope.wait_until_good()
 
+        # we take a 5 minute dark so that observations that don't have darks can
+        # still find a dark to use for processing
+        self.telescope.take_dark('/'.join(['', 'home', config.telescope.username, 'data', 'darks',
+                                           str(datetime.datetime.now().date())+'_dark_300.fits']), 300, 1, 2)
+
         # for each session scheduled to start tonight
         for session in sessions:
             self.execute_session(session)
