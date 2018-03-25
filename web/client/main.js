@@ -1,5 +1,5 @@
 // import routing
-import '../imports/router.js'
+import '../imports/router.js';
 
 import { Template } from 'meteor/templating';
 
@@ -35,7 +35,7 @@ import '../imports/ui/control.js';
 
 // ==== admin === //
 import '../imports/admin/admin.js';
-import '../imports/admin/affiliations.js';
+import '../imports/admin/groups.js';
 
 // deny client side updates to users
 Meteor.users.deny({

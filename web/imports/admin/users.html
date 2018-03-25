@@ -1,88 +1,115 @@
 <template name="adminUsers">
-  <h2> User Management </h2>
+    <h2> User Management </h2>
 
-  <div class="container-fluid">
-    <div class="row">
-      <div class="panel panel-default">
-      	<div class="panel-heading">New User</div>
-      	<div class="panel-body">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="panel panel-default">
+                <div class="panel-heading">New User</div>
+                <div class="panel-body">
 
-      	  <form class="form-inline new-user">
-      	    <fieldset>
+                    <form class="form-inline new-user">
+                        <fieldset>
 
-      	      	<!-- Email -->
-      		<div class="form-group" id="form-email">
-      		  <label for="email" class="col-md-2 control-label">Email</label>
-      		  <div class="col-md-10">
-      		    <input class="form-control" id="email" placeholder="Email" name="email" type="email" required>
-      		  </div>
-      		</div>
+                            <!-- Email -->
+                            <div class="form-group" id="form-email">
+                                <label for="email" class="col-md-2 control-label">Email</label>
+                                <div class="col-md-10">
+                                    <input class="form-control" id="email" placeholder="Email" name="email" type="email" required>
+                                </div>
+                            </div>
 
-		<!-- Name -->
-      		<div class="form-group" id="form-email">
-      		  <label for="name" class="col-md-2 control-label">Name</label>
-      		  <div class="col-md-10">
-      		    <input class="form-control" id="name" placeholder="FirstName LastName" name="name" required>
-      		  </div>
-      		</div>
+                            <!-- Name -->
+                            <div class="form-group" id="form-email">
+                                <label for="name" class="col-md-2 control-label">Name</label>
+                                <div class="col-md-10">
+                                    <input class="form-control" id="name" placeholder="FirstName LastName" name="name" required>
+                                </div>
+                            </div>
 
-      		<div class="form-group">
-      		  <label for="select" class="col-md-3 control-label">Affiliation</label>
-      		  <div class="col-md-9">
-      		    <select class="form-control" id="affiliation">
-      		      {{#each affiliations}}
-      		      <option value="{{name}}">{{name}}</option>
-      		      {{/each}}
-      		    </select>
-      		  </div>
-      		</div>
+                            <div class="form-group">
+                                <label for="select" class="col-md-3 control-label">Group</label>
+                                <div class="col-md-9">
+                                    <select class="form-control" id="group">
+                                        {{#each groups}}
+                                        <option value="{{name}}">{{name}}</option>
+                                        {{/each}}
+                                    </select>
+                                </div>
+                            </div>
 
-      		<div class="form-group" >
-      		  <div class="col-md-2">
-      		    <div class="checkbox">
-      		      <label>
-      			<input type="checkbox" name="minor"> Minor
-      		      </label>
-      		    </div>
-      		  </div>
-      		</div>
+                            <div class="form-group" >
+                                <div class="col-md-2">
+                                    <div class="checkbox">
+                                        <label>
+                                            <input type="checkbox" name="minor"> Minor
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
 
-      		<div class="form-group">
-      		  <div class="col-md-10 col-md-offset-2">
-      		    <button type="reset" class="btn btn-warning">Cancel</button>
-      		    <button type="submit" class="btn btn-success">Submit</button>
-      		  </div>
-      		</div>
+                            <div class="form-group">
+                                <div class="col-md-10 col-md-offset-2">
+                                    <button type="reset" class="btn btn-warning">Cancel</button>
+                                    <button type="submit" class="btn btn-success">Submit</button>
+                                </div>
+                            </div>
 
-      	    </fieldset>
-      	    </form>
+                        </fieldset>
+                    </form>
 
-      	</div>
-      </div>
-  </div> <!-- row -->
+                </div>
+            </div>
+        </div> <!-- row -->
 
 
-    <div class="row" style="padding-top:20px;">
-      {{> reactiveTable settings=settings}}
-      </div>
-  </div>
+        <div class="row" style="padding-top:20px;">
+            {{> reactiveTable settings=settings}}
+        </div>
+    </div>
 </template>
 
 <template name="userAction">
-  <!-- modal for editing users -->
-  {{> editProfile user=this}}
-<div class="btn-group">
-  <a href="#" class="btn btn-info">Actions</a>
-  <a href="#" class="btn btn-info dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></a>
-  <ul class="dropdown-menu">
-    {{#if isAdmin _id}}
-    <li><a href="#" class="remove-admin">Remove from Admins</a></li>
-    {{else}}
-    <li><a href="#" class="make-admin">Add to Admins</a></li>
-    {{/if}}
-    <li><a href="#" class="edit-user">Edit User</a></li>
-    <li class="divider"></li>
-    <li><a href="#" class="action-delete">Delete</a></li>
-  </ul>
-</div>
+    <!-- modal for editing users -->
+    {{> editProfile user=this}}
+    <div class="btn-group">
+        <a href="#" class="btn btn-info">Actions</a>
+        <a href="#" class="btn btn-info dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></a>
+        <ul class="dropdown-menu">
+            {{#if isAdmin _id}}
+            <li><a href="#" class="remove-admin">Remove from Admins</a></li>
+            {{else}}
+            <li><a href="#" class="make-admin">Add to Admins</a></li>
+            {{/if}}
+            <li><a href="#" class="edit-user">Edit User</a></li>
+            <li class="divider"></li>
+            <li><a href="#" class="action-delete">Delete</a></li>
+        </ul>
+    </div>
+</template>
+
+
+<template name="editUser">
+    <div class="modal fade" id="editProfileModal" role="document">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal_profile" style="font-size:24px;">EDIT PROFILE</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                {{#with profile}}
+                <p><b>FIRST NAME: </b> {{> editableText collection="users" field="firstName" textarea="true"}}</p>
+                <p><b>LAST NAME: </b> {{> editableText collection="users" field="lastName"}}</p>
+                {{/with}}
+                <p><b>ROLES: </b> {{> editableList collection="users" field="roles"}}</p>
+                <p><b>QUEUE ALLOWANCE (s): </b> {{> editableText collection="users" field="maxQueueTime"}}</p>
+
+            </div>
+            <div class="modal-footer">
+                <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
+                <!-- <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button> -->
+            </div>
+        </div>
+    </div>
 </template>

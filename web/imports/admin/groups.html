@@ -1,0 +1,100 @@
+<template name="adminGroups">
+
+    {{#if isInRole 'admin'}}
+
+    <h2> Groups </h2>
+
+    <!-- form to create a new group -->
+    <div class="row">
+        <div class="col-md-4">
+            <form class="form-horizontal new-group" style="padding-top:30px;">
+                <fieldset>
+
+                    <!-- Program Name -->
+                    <div class="form-group">
+                        <label for="group" class="col-lg-3 control-label">Group</label>
+                        <div class="col-lg-9">
+                            <input class="form-control" id="name" placeholder="Name" name="name" type="text" required>
+                        </div>
+
+                        <!-- priority -->
+                        <label for="priority" class="col-lg-3 control-label">Priority</label>
+                        <div class="col-lg-9">
+                            <input class="form-control" id="priority" placeholder="Group Priority" name="priority" type="number" value="1" min="1" max="5" required>
+                        </div>
+
+                        <!-- default priority -->
+                        <label for="defpriority" class="col-lg-3 control-label">Default User Priority</label>
+                        <div class="col-lg-9">
+                            <input class="form-control" id="defpriority" placeholder="Default User Priority" name="defpriority" type="number" value="1" min="1" max="5" required>
+                        </div>
+
+                        <!-- default max queue time -->
+                        <label for="defmaxtime" class="col-lg-4 control-label">Default Allowance (s)</label>
+                        <div class="col-lg-8">
+                            <input class="form-control" id="defmaxtime" placeholder="Default Queue Credits (s)" name="defmaxtime" type="number" value="14400" required>
+                        </div>
+
+                    </div>
+                    <!-- submit buttons -->
+                    <div class="form-group" >
+                        <div class="col-lg-12 col-lg-offset-3" style="padding-top: 10px;">
+                            <button type="reset" class="btn btn-warning">Cancel</button>
+                            <button type="submit" class="btn btn-success">Submit</button>
+                        </div>
+                    </div>
+
+                </fieldset>
+            </form>
+        </div> <!-- col-md-4 -->
+
+        <div class="col-md-8" style="padding-top:20px;">
+            <!-- display existing sessions -->
+            {{> reactiveTable settings=settings}}
+        </div>
+
+    </div>
+    {{/if}}
+</template>
+
+<template name="noGroups">
+    <h4> Looks like there are no groups... </h4>
+</template>
+
+
+<template name="editGroup">
+    <div class="modal fade" id="editGroupModal" role="document">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal_profile" style="font-size:24px;">Edit Group</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- {{#with group}} -->
+                <p><b>NAME: </b> {{> editableText collection="groups" field="name" textarea="true"}}</p>
+                <p><b>PRIORITY: </b> {{> editableText collection="groups" field="priority"}}</p>
+                <p><b>DEFAULT PRIORITY: </b> {{> editableText collection="groups" field="defaultPriority"}}</p>
+                <p><b>DEFAULT QUEUE ALLOWANCE: </b> {{> editableText collection="groups" field="defaultMaxQueueTime"}}</p>
+                <!-- {{/with}} -->
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</template>
+
+<template name="groupAction">
+    <!-- modal for editing users -->
+    {{> editGroup group=this}}
+    <div class="btn-group">
+        <a href="#" class="btn btn-info">Actions</a>
+        <a href="#" class="btn btn-info dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></a>
+        <ul class="dropdown-menu">
+            <li><a href="#" class="edit-group">Edit Group</a></li>
+            <li class="divider"></li>
+            <li><a href="#" class="action-delete">Delete</a></li>
+        </ul>
+    </div>
+</template>

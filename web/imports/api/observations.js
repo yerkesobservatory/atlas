@@ -6,6 +6,25 @@ import { Programs } from './programs.js';
 
 export const Observations = new Mongo.Collection('observations');
 
+function availableTime() {
+    var observations = Observations.find({owner: Meteor.userId(), completed: false }).fetch();
+
+    // total time of observations that the user has in the queue
+    totalTime =  _.reduce(observations, function(sum, next) {
+        return sum + next.totalTime;
+    }, 0);
+
+    // get the number of credits that the user has
+    user = Meteor.user();
+    if (user) {
+        allowedTime = Meteor.user().maxQueueTime;
+        // return how many seconds the user is allowed left
+        return allowedTime - totalTime;
+    } else {
+        return "Unknown";
+    }
+}
+
 
 // publish the observations
 if (Meteor.isServer) {
@@ -18,22 +37,22 @@ if (Meteor.isServer) {
         }
     });
     ReactiveTable.publish("my_observations", Observations,
-			  function () {
-			      return {"owner": this.userId};
-			  },
-			  {"disablePageCountReactivity": true});
+                          function () {
+                              return {"owner": this.userId};
+                          },
+                          {"disablePageCountReactivity": true});
 
     ReactiveTable.publish("completed_observations", Observations,
-			  function () {
-			      return {"owner": this.userId, "completed": true};
-			  },
-			  {"disablePageCountReactivity": true});
+                          function () {
+                              return {"owner": this.userId, "completed": true};
+                          },
+                          {"disablePageCountReactivity": true});
 
     ReactiveTable.publish("pending_observations", Observations,
-			  function () {
-			      return {"owner": this.userId, "completed": false};
-			  },
-			  {"disablePageCountReactivity": true});
+                          function () {
+                              return {"owner": this.userId, "completed": false};
+                          },
+                          {"disablePageCountReactivity": true});
 
 }
 
@@ -54,6 +73,11 @@ Meteor.methods({
             throw new Meteor.Error('not-authorized');
         }
 
+        // check that the user has enough available credits
+        if (Number(exptime)*Number(expcount)*filters.length > availableTime()) {
+            throw new Meteor.Error('not-enough-credits');
+        }
+
         // insert the observation
         const obsId = Observations.insert({
             program: progId,
@@ -62,11 +86,12 @@ Meteor.methods({
             exposure_count: Number(expcount),
             binning: Number(binning),
             filters: filters,
-	    options: options,
+            options: options,
             owner: Meteor.userId(),
             email: Meteor.user().emails[0]["address"],
             completed: false,
             execDate: null,
+            totalTime: Number(exptime)*Number(expcount)*filters.length
         });
 
         // add the observation to the program
@@ -102,4 +127,7 @@ Meteor.methods({
         Observations.update(obsId, {$set: {completed: completed}});
     },
 
+    'observations.totalAvailableTime'() {
+        return availableTime();
+    }
 });

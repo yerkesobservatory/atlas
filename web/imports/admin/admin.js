@@ -1,6 +1,6 @@
 import './admin.html';
 import './users.js';
-import './affiliations.js';
+import './groups.js';
 
 import { Observations } from '../api/observations.js';
 import { Programs } from '../api/programs.js';
@@ -24,48 +24,51 @@ Template.adminObservations.helpers({
             noDataTmpl: Template.noObservations,
             fields: [
                 {key: 'email',
-                 label: 'User',
+                 label: 'User'
                 },
                 {key: 'program',
                  label: 'Program',
                  fn: function (value, object, key) {
-		     program = Programs.findOne(value);
-		     if (program) {
-			 return program.name;
-		     }
-                }},
-            {key: 'target',
-             label: 'Target'},
-            {key: 'exposure_time',
-             label: 'Exposure Time (s)'},
-            {key: 'exposure_count',
-             label: 'Exposure Count'},
-            {key: 'filters',
-             label: 'Filters',
-             fn: function (value, object, key) {
-                 return value.join(', ');
-             }},
-            {key: 'binning',
-             label: 'Binning'},
-            // {key: 'submitDate',
-            //  label: 'Date Submitted'},
-            {key: 'completed',
-             label: 'Completed',
-             fn: function (value, object, key) {
-                 if (value === true) {
-                     return "Yes";
-                 } else {
-                     return "No";
+                     program = Programs.findOne(value);
+                     if (program) {
+                         return program.name;
+                     }
+                         else {
+                             return "";
+                         }
+                     }},
+                {key: 'target',
+                 label: 'Target'},
+                {key: 'exposure_time',
+                 label: 'Exposure Time (s)'},
+                {key: 'exposure_count',
+                 label: 'Exposure Count'},
+                {key: 'filters',
+                 label: 'Filters',
+                 fn: function (value, object, key) {
+                     return value.join(', ');
+                 }},
+                {key: 'binning',
+                 label: 'Binning'},
+                // {key: 'submitDate',
+                //  label: 'Date Submitted'},
+                {key: 'completed',
+                 label: 'Completed',
+                 fn: function (value, object, key) {
+                     if (value === true) {
+                         return "Yes";
+                     } else {
+                         return "No";
+                     }
                  }
-             }
-            },
-            {label: '',
-             tmpl: Template.observationAction
-            }
-        ]
-    };
-}
-				  });
+                },
+                {label: '',
+                 tmpl: Template.observationAction
+                }
+            ]
+        };
+    }
+});
 
 
 Template.adminObservations.events({

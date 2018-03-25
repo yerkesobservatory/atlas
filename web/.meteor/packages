@@ -32,3 +32,4 @@ peppelg:bootstrap-3-modal
 babrahams:editable-list
 http@1.4.0
 reactive-dict@1.2.0
+session

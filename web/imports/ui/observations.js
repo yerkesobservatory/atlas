@@ -2,12 +2,14 @@ import './observations.html';
 
 import { Meteor } from 'meteor/meteor';
 import { ReactiveDict } from 'meteor/reactive-dict';
+import { Session } from 'meteor/session';
 import { Observations } from '../api/observations.js';
 import { Programs } from '../api/programs.js';
 import $ from 'jquery';
 
 // global variable to store dSS preview
 aladin = null;
+
 
 // load sky preview
 Template.newObservation.onCreated(function onCreated() {
@@ -36,6 +38,11 @@ Template.observations.onCreated(function onCreated() {
 // subscribe to program stream
 Template.newObservationForm.onCreated(function onCreated() {
     Meteor.subscribe('programs');
+
+    // compute the current observation time and update the Session variable
+    Meteor.call('observations.totalAvailableTime', function(error, total) {
+        Session.set('totalAvailableTime', total);
+    });
 
     // reactive dict to store observation properties
     if (!this.obsProperties) {
@@ -69,10 +76,9 @@ Template.newObservationForm.helpers({
             xframe = obsProperties.get('xframe');
             yframe = obsProperties.get('yframe');
 
-            // the +1 on numfilters is for darks
             totalTime = expcount*exptime*(numfilters)*xframe*yframe;
 
-            if (totalTime <= 300) { // return time in seconds
+            if (totalTime <= 900) { // return time in seconds
                 time = parseFloat(totalTime).toFixed(0);
                 return time + " s";
             }  else if (totalTime <= 60*60) { // return time in minutes
@@ -85,6 +91,21 @@ Template.newObservationForm.helpers({
             }
         } else {
             return "0 s";
+        }
+    },
+    totalAvailableTime() {
+        availableTime =  Session.get('totalAvailableTime');
+
+        if (availableTime <= 900) { // return time in seconds
+            time = parseFloat(availableTime).toFixed(0);
+            return time + " s";
+        }  else if (availableTime <= 60*60) { // return time in minutes
+            time = parseFloat(availableTime/60).toFixed(1);
+            return time + " mins";
+        }
+        else { // return time in hours
+            time = parseFloat(availableTime/(60*60)).toFixed(1);
+            return time + " hours";
         }
     },
 
@@ -138,7 +159,7 @@ Template.newObservationForm.events({
 
         event.preventDefault();
     },
-    'submit .new-observation'(event) {
+    'submit .new-observation'(event, instance) {
 
         // prevent default browser
         event.preventDefault();
@@ -184,7 +205,14 @@ Template.newObservationForm.events({
 
         // check that at least one filter is selected
         if (filters.length == 0) {
-            CoffeeAlerts.warning('Your observation needs at least one filter.');
+            CoffeeAlerts.error('Your observation needs at least one filter.');
+            return;
+        }
+
+        // check the time allowed is sufficient
+        availableTime =  Session.get('totalAvailableTime');
+        if (availableTime < Number(exptime)*Number(expcount)*filters.length) {
+            CoffeeAlerts.error('You do not have enough credits to submit this observation');
             return;
         }
 
@@ -195,6 +223,18 @@ Template.newObservationForm.events({
 
         // submit new observation
         Meteor.call('observations.insert', progId, target_name, exptime, expcount, binning, filters, options);
+
+        // update the users available time
+        Meteor.call('observations.totalAvailableTime', function(error, total) {
+            Session.set('totalAvailableTime', total);
+        });
+
+        // reset the observation properties
+        instance.obsProperties.set('expcount', 0); // exp count
+        instance.obsProperties.set('exptime',  0); // exp time in seconds
+        instance.obsProperties.set('numfilters', 1); // total number of filters
+        instance.obsProperties.set('xframe', 1); // number of x-frames in mosaic
+        instance.obsProperties.set('yframe', 1); // number of y-frames in mosaic
 
         // alert the user
         CoffeeAlerts.success('Your observation has successfully been added');
@@ -243,7 +283,7 @@ Template.newObservationForm.events({
         }
         event.preventDefault();
         CoffeeAlerts.clearSeen();
-    },
+    }
 });
 
 // build rules for form validation

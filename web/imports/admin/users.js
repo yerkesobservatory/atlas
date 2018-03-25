@@ -2,25 +2,25 @@ import './users.html';
 // import '../ui/profile.html';
 
 import { Programs } from '../api/programs.js';
-import { Affiliations } from '../api/users.js';
+import { Groups } from '../api/groups.js';
 import $ from 'jquery';
 
 // subscribe to users
 Template.adminUsers.onCreated(function onCreated() {
     Meteor.subscribe('users');
-    Meteor.subscribe('affiliations');
+    Meteor.subscribe('groups');
 });
 
 Template.userAction.helpers({
     isAdmin(userId) {
         return Roles.userIsInRole(userId, 'admin');
-    },
+    }
 });
 
 
 Template.adminUsers.helpers({
-    affiliations() {
-        return Affiliations.find({});
+    groups() {
+        return Groups.find({});
     },
     settings() {
         return {
@@ -42,9 +42,8 @@ Template.adminUsers.helpers({
                  label: 'First'},
                 {key: 'profile.lastName',
                  label: 'Last'},
-                {key: 'profile.affiliation',
-                 label: 'Affiliation'
-                },
+                {key: 'group',
+                 label: 'Group'},
                 {key: 'profile.minor',
                  label: 'Under 18?',
                  fn: function (value, object, key) {
@@ -81,20 +80,19 @@ Template.adminUsers.events({
         // extract values
         const target = event.target;
         const email = target.email.value;
-	const name = target.name.value.split(' ');
-	const affiliation = target.affiliation.value;
-	const minor = target.minor.checked;
+        const name = target.name.value.split(' ');
+        const group = target.group.value;
+        const minor = target.minor.checked;
 
-	// create new user
-	const profile =  {
-	    affiliation: affiliation,
-	    minor: minor,
-	    firstName: name[0].trim(),
-	    lastName: name[1].trim()
-	}
+        // create new user
+        const profile =  {
+            minor: minor,
+            firstName: name[0].trim(),
+            lastName: name[1].trim()
+        };
 
-	// insert user
-	Meteor.call('users.insert', email, profile);
+        // insert user
+        Meteor.call('users.insert', email, group, profile);
 
         // reset form
         $('.new-user')[0].reset();
@@ -109,23 +107,23 @@ Template.adminUsers.events({
             // delete user
             Meteor.call('users.remove', this._id);
         } else if (event.target.className.includes('make-admin')) {
-	    // toggle admin state
+            // toggle admin state
             Meteor.call('users.addToRole', this._id, 'admin');
         } else if (event.target.className.includes('remove-admin')) {
             // toggle admin state
             Meteor.call('users.removeFromRole', this._id, 'admin');
         }
-	else if (event.target.className.includes('edit-user')) {
-	    // show the modal for the user
-	    const id = this._id;
-	    Modal.show('editProfile', function () {
-		// Under no circumstances, replace `id` below
-		// with this._id(). MAJOR BUG.
-		// See comment by Soitech:
-		// https://github.com/PeppeL-G/bootstrap-3-modal/issues/5
-	    	return Meteor.users.findOne(id);
-	    });
-	}
+        else if (event.target.className.includes('edit-user')) {
+            // show the modal for the user
+            const id = this._id;
+            Modal.show('editUser', function () {
+                // Under no circumstances, replace `id` below
+                // with this._id(). MAJOR BUG.
+                // See comment by Soitech:
+                // https://github.com/PeppeL-G/bootstrap-3-modal/issues/5
+                return Meteor.users.findOne(id);
+            });
+        }
 
     }
 });
@@ -148,15 +146,15 @@ Template.adminUsers.onRendered(function() {
                 required: true,
                 minlength: 5,
                 maxlength: 48},
-            affiliation: {
+            group: {
                 required: true,
                 minlength: 5,
                 maxlength: 32
-            },
+            }
         },
         messages: {
             email: {
-                required: "Every user needs an email address!",
+                required: "Every user needs an email address!"
             }
         }
     });

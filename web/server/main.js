@@ -3,7 +3,7 @@ import { Random } from 'meteor/random';
 import { Programs } from '../imports/api/programs.js';
 
 // import routing
-import '../imports/router.js'
+import '../imports/router.js';
 
 // import API code
 import '../imports/api/observations.js';
@@ -11,6 +11,7 @@ import '../imports/api/sessions.js';
 import '../imports/api/programs.js';
 import '../imports/api/telescopes.js';
 import '../imports/api/users.js';
+import '../imports/api/groups.js';
 import '../imports/api/announcements.js';
 
 Meteor.startup(() => {
@@ -41,7 +42,7 @@ Meteor.startup(() => {
                 completed: false,
                 sessions: [],
                 observations: [],
-                createdAt: new Date(),
+                createdAt: new Date()
             });
         }
 
