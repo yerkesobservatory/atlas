@@ -8,7 +8,7 @@ import { Programs } from '../api/programs.js';
 import $ from 'jquery';
 
 // global variable to store dSS preview
-aladin = null;
+var aladin = null;
 
 
 // load sky preview
@@ -120,7 +120,7 @@ Template.newObservationForm.helpers({
             }
         }
         return false;
-    },
+    }
 });
 
 // event handlers
@@ -180,6 +180,7 @@ Template.newObservationForm.events({
         const offset_dec = target.offset_dec.value;
         const xframe = target.x_frame.value;
         const yframe = target.y_frame.value;
+        const priority = target.obs-priority.value;
 
         // build filter list
         const filterNames = ['filter_clear', 'filter_dark', 'filter_u', 'filter_g',
@@ -210,16 +211,16 @@ Template.newObservationForm.events({
         }
 
         // check the time allowed is sufficient
-        availableTime =  Session.get('totalAvailableTime');
+        const availableTime =  Session.get('totalAvailableTime');
         if (availableTime < Number(exptime)*Number(expcount)*filters.length) {
             CoffeeAlerts.error('You do not have enough credits to submit this observation');
             return;
         }
 
         // optional parameters
-        options = {'lunar': lunar, 'airmass': airmass,
-                   'offset_ra': offset_ra, 'offset_dec': offset_dec,
-                   'xframe': xframe, 'yframe': yframe};
+        const options = {'lunar': lunar, 'airmass': airmass,
+                         'offset_ra': offset_ra, 'offset_dec': offset_dec,
+                         'xframe': xframe, 'yframe': yframe, 'priority': priority};
 
         // submit new observation
         Meteor.call('observations.insert', progId, target_name, exptime, expcount, binning, filters, options);
@@ -301,7 +302,7 @@ Template.newObservation.onRendered(function() {
         },
         rules: {
             program: {
-                required: true,
+                required: true
             },
             target: {
                 required: true,
@@ -349,7 +350,7 @@ Template.newObservation.onRendered(function() {
                 max: "A CCD binning over 8 is excessive - please lower the binning",
                 digits: "This needs to be an integer!"
             }
-        },
+        }
     });
 });
 
@@ -372,7 +373,8 @@ Template.observations.helpers({
                      if (program) {
                          return program.name;
                      }
-                 }},
+                 }
+                },
                 {key: 'target',
                  label: 'Target'},
                 {key: 'exposure_time',
