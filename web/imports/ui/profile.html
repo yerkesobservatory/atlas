@@ -56,12 +56,6 @@
         {{#with profile}}
         <p><b>FIRST NAME: </b> {{> editableText collection="users" field="firstName" textarea="true"}}</p>
         <p><b>LAST NAME: </b> {{> editableText collection="users" field="lastName"}}</p>
-        {{/with}}
-        {{#if isInRole 'admin'}}
-        <!-- TODO: roles throws exception when document is none -->
-        <p><b>ROLES: </b> {{> editableList collection="users" field="roles"}}</p>
-        {{/if}}
-        {{#with profile}}
         <p><b> CHANGE YOUR PASSWORD </b></p>
         {{> changePassword}}
         {{/with}}
