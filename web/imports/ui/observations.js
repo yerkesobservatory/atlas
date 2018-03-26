@@ -1,4 +1,5 @@
 import './observations.html';
+import './coordinates.js'; // provides coordinate validation for RA/Dec
 
 import { Meteor } from 'meteor/meteor';
 import { ReactiveDict } from 'meteor/reactive-dict';
@@ -307,7 +308,8 @@ Template.newObservation.onRendered(function() {
             target: {
                 required: true,
                 minlength: 2,
-                maxlength: 18
+                maxlength: 32,
+                validCoordinate: true
             },
             exptime: {
                 required: true,
@@ -330,7 +332,7 @@ Template.newObservation.onRendered(function() {
         messages: {
             target: {
                 required: "Please enter a target for your observation!",
-                minlength: "That doesn't look like a real target...",
+                minlength: "That target name seems a little too short...",
                 maxlength: "That's not a valid target name - please enter an identifier i.e. 'M31', 'NGC6946'"
             },
             exptime: {
@@ -373,6 +375,7 @@ Template.observations.helpers({
                      if (program) {
                          return program.name;
                      }
+                     return "";
                  }
                 },
                 {key: 'target',
