@@ -181,7 +181,7 @@ Template.newObservationForm.events({
         const offset_dec = target.offset_dec.value;
         const xframe = target.x_frame.value;
         const yframe = target.y_frame.value;
-        const priority = target.obs-priority.value;
+        const priority = target.obs_priority.value;
 
         // build filter list
         const filterNames = ['filter_clear', 'filter_dark', 'filter_u', 'filter_g',
