@@ -7,6 +7,7 @@ import { Session } from 'meteor/session';
 import { Observations } from '../api/observations.js';
 import { Programs } from '../api/programs.js';
 import $ from 'jquery';
+// import { ClipboardJS } from 'clipboard';
 
 // global variable to store dSS preview
 var aladin = null;
@@ -56,9 +57,17 @@ Template.newObservationForm.onCreated(function onCreated() {
     };
 });
 
-// Template.observationAction.onRendered(function() {
-//     var clipboard = new Clipboard('.copy-link');
-// });
+Template.observationAction.onRendered(function() {
+    var clipboard = new Clipboard('.copy-link');
+
+    // clipboard.on('success', function(e) {
+    //     console.info('Action:', e.action);
+    //     console.info('Text:', e.text);
+    //     console.info('Trigger:', e.trigger);
+
+    //     e.clearSelection();
+    // });
+});
 
 // helpers for the new observation form
 Template.newObservationForm.helpers({
@@ -423,5 +432,10 @@ Template.observations.events({
             // mark program completed
             Meteor.call('observations.setCompleted', this._id, ! this.completed);
         }
+        else if (event.target.className.includes('copy-text')) {
+            // mark program completed
+
+        }
+
     }
 });

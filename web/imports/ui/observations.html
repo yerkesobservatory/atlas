@@ -207,7 +207,7 @@
     <!-- submit buttons -->
       <div class="form-group" >
         <div class="col-xs-12" style="padding-top: 10px;">
-          <button type="submit" id="submit_obs" class="btn btn-success">SUBMIT</button>
+            <button type="submit" id="submit_obs" class="btn btn-success">SUBMIT</button>
         </div>
       </div>
 
@@ -217,6 +217,8 @@
 
 <!-- template for the observation page -->
 <template name="observations">
+    <!-- Copy to clipboard -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>
   <style>body {background-color: #192231;}</style>
   <p id="home_message" style="font-size: 25px; margin-top: 50px; margin-left:0px;">OBSERVATIONS</p>
   <!-- form to submit new observation -->
@@ -242,8 +244,8 @@
       {{#unless completed}}
       <li><a href="#" class="action-completed">Mark Completed</a></li>
       {{else}}
-      <li><a href="#" class="action-completed">Mark Uncompleted</a></li>
-      <!-- <li><a href="#" class="copy-link" data-clipboard-text={{directory}}>Copy Link to Files</a></li> -->
+      <li><a href="#" class="action-completed">Re-execute</a></li>
+      <li><a href="#" class="copy-link" data-clipboard-text="https://queue.stoneedgeobservatory.com/data/{{directory}}">Copy Link to Files</a></li>
       {{/unless}}
       <li class="divider"></li>
       <li><a href="#" class="action-delete">Delete</a></li>
