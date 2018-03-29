@@ -11,5 +11,23 @@
     "clipboard": "^1.7.1",
     "jquery": "^3.0.0",
     "meteor-node-stubs": "~0.2.4"
-  }
+  },
+  "devDependencies": {
+    "@meteorjs/eslint-config-meteor": "^1.0.5",
+    "babel-eslint": "^8.2.2",
+    "eslint": "^4.19.1",
+    "eslint-config-airbnb": "^16.1.0",
+    "eslint-import-resolver-meteor": "^0.4.0",
+    "eslint-plugin-import": "^2.9.0",
+    "eslint-plugin-jsx-a11y": "^6.0.3",
+    "eslint-plugin-meteor": "^4.2.0",
+    "eslint-plugin-react": "^7.7.0"
+  },
+    "scripts": {
+	"lint": "eslint .",
+	"pretest": "npm run lint --silent"
+    },
+    "eslintConfig": {
+	"extends": "@meteorjs/eslint-config-meteor"
+    }
 }
