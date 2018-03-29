@@ -58,7 +58,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
         if not observation.get('RA') or not observation.get('Dec'):
 
             # if the target name is a RA/Dec string
-            if re.search(r'\d{1,2}:\d{2}:\d{1,2}.\d{1,2} [+-]\d{1,2}:\d{2}:\d{1,2}.\d{1,2}',
+            if re.search(r'\d{1,2}:\d{2}:\d{1,2}.\d{1,2}\s[+-]\d{1,2}:\d{2}:\d{1,2}.\d{1,2}',
                          observation.get('target')):
                 ra, dec = observation.get('target').strip().split(' ')
                 observation['RA'] = ra; observation['Dec'] = dec;
@@ -203,11 +203,13 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
         target_str = f'{ra}_{dec}'
     else:
         target_str = observation['target'].replace(' ', '_').replace("'", '')
-    fname = '_'.join([str(datetime.date.today()),
-                      observation['email'].split('@')[0], target_str,
-                      observation['_id'][0:3]])
-    dirname = '/'.join(['', 'home', config.telescope.username, 'data',
-                        observation['email'].split('@')[0], fname])
+
+    fname = '_'.join([target_str, '{filter}', observation.get('exptime'), 's',
+                      'bin', observation.get('binning'), str(datetime.date.today()),
+                      'seo', observation['email'].split('@')[0]])
+    rawdirname = '/'.join([observation['email'].split('@')[0], fname.replace('{filter}_', '')]).strip('/')
+    dirname = '/'.join(['', 'home', config.telescope.username, 'data', rawdirname])
+
 
     # create directories
     telescope.log.info('Making directory to store observations on telescope server...')
@@ -218,11 +220,11 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
 
     # generate basename
     filebase = '_'.join([str(datetime.date.today()),
-                                               observation['email'].split('@')[0],
-                                               target_str])
-    basename_science = f'{dirname}/raw/science/'+filebase
-    basename_bias = f'{dirname}/raw/bias/'+filebase
-    basename_dark = f'{dirname}/raw/dark/'+filebase
+                         observation['email'].split('@')[0],
+                         target_str])
+    basename_science = f'{dirname}/raw/science/'+fname
+    basename_bias = f'{dirname}/raw/bias/'+fname.replace('{filter}', 'bias')
+    basename_dark = f'{dirname}/raw/dark/'+fname.replace('{filter}', 'dark')
 
     # we should be pointing roughly at the right place
     telescope.log.info('Performing a basic point...')
@@ -269,7 +271,8 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
         telescope.keep_open(exposure_time*exposure_count + 300)
 
         # take exposures!
-        telescope.take_exposure(basename_science+f'_{filt}', exposure_time, exposure_count, binning, filt)
+        telescope.take_exposure(basename_science.replace('{filter}', filt), exposure_time, exposure_count, binning, filt)
+        database.Database.observations.update({'_id': observation['_id']}, {'$push': {'filenames': basename_science.replace('{filter}', filt)}})
 
     # reset filter back to clear
     telescope.log.info('Switching back to clear filter')
@@ -284,6 +287,9 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
 
     # take numbias*exposure_count biases
     telescope.take_bias(basename_bias, 10*exposure_count, binning)
+
+    # we set the directory for the observations
+    database.Database.observations.update({'_id': observation['_id']}, {'$set': {'directory': f'{rawdirname}'}})
 
     # we have finished the observation, let's update record
     # with execDate and mark it completed
