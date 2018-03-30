@@ -50,7 +50,11 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
 
     # list to store observing blocks
     blocks = []
-
+    
+    # list solar system objects
+    solar_system = ['mercury','venus','moon','mars','jupiter','saturn','uranus','neptune','pluto']
+    too_bright = False
+    
     # create targets
     for observation in observations:
 
@@ -63,6 +67,8 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
                 ra, dec = observation.get('target').strip().split(' ')
                 observation['RA'] = ra; observation['Dec'] = dec;
             else: # try and lookup by name
+                if observation.get('target') in solar_system:
+                    too_bright = True
                 ra, dec = lookup.lookup(observation.get('target'))
 
                 if not ra or not dec:
@@ -232,7 +238,11 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
 
     # now we pinpoint
     telescope.log.info('Starting telescope pinpointing...')
-    pinpointable = pinpoint.point(observation['RA'], observation['Dec'], telescope)
+    if too_bright:
+        pinpointable = False
+        telescope.log.warn('Can\'t pinpoint to solar system object!')
+    else:
+        pinpointable = pinpoint.point(observation['RA'], observation['Dec'], telescope)
 
     # let's check that pinpoint did not fail
     if not pinpointable:
