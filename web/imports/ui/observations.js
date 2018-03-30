@@ -423,6 +423,9 @@ Template.observations.helpers({
 Template.observations.events({
     // on press of the action button
     'click .reactive-table tbody tr': function (event) {
+        if (event.target.className.include('download')) {
+            return;
+        }
         event.preventDefault();
         // checks if the actual clicked element has the class `delete`
         if (event.target.className.includes('action-delete')) {

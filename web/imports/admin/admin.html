@@ -1,5 +1,6 @@
 <template name="admin">
-  <style>body {background-color: #192231;}</style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.7.1/clipboard.min.js"></script>
+    <style>body {background-color: #192231;}</style>
   {{#if isInRole 'admin'}}
 
   <!-- start navigation -->
@@ -30,7 +31,7 @@
 
     <!-- users -->
     <div class="tab-pane fade in" id="groups">
-      {{> adminGroups}}
+        {{> adminGroups}}
     </div>
 
   </div>
@@ -39,7 +40,7 @@
 </template>
 
 <template name="adminObservations">
-  <h2> Observations </h2>
+    <h2> Observations </h2>
   {{> reactiveTable settings=settings}}
 </template>
 
