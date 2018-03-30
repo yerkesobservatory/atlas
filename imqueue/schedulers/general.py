@@ -67,7 +67,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
                 ra, dec = observation.get('target').strip().split(' ')
                 observation['RA'] = ra; observation['Dec'] = dec;
             else: # try and lookup by name
-                if observation.get('target') in solar_system:
+                if observation.get('target').lower() in solar_system:
                     too_bright = True
                 ra, dec = lookup.lookup(observation.get('target'))
 
