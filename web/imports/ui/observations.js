@@ -322,8 +322,8 @@ Template.newObservation.onRendered(function() {
             },
             exptime: {
                 required: true,
-                min: 0.1,
-                max: 900
+                min: 0.001,
+                max: 1200
             },
             expcount: {
                 required: true,
