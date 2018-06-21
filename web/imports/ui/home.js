@@ -138,7 +138,7 @@ Template.body.onRendered(
 			intro.setOption('doneLabel', 'Back to home').start().oncomplete(function() { 
 			window.location.href = 'home';});
         }
-    }, 500);});
+    }, 2500);});
 
 
 Template.home.events({
@@ -157,6 +157,7 @@ Template.home.events({
               { 
               	element: document.querySelector('#step3'), 
                 intro: 'Your observations will be listed here'
+                position: 'left'
               },
               { 
               	element: document.querySelector('#observations'), 
