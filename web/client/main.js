@@ -40,7 +40,7 @@ import '../imports/admin/groups.js';
 // deny client side updates to users
 Meteor.users.deny({
     update() { return true; }
-});x
+});
 
 
 
