@@ -156,7 +156,7 @@ Template.home.events({
               },
               { 
               	element: document.querySelector('#step3'), 
-                intro: 'Your observations will be listed here'
+                intro: 'Your observations will be listed here',
                 position: 'left'
               },
               { 
