@@ -42,14 +42,14 @@
     <link rel="stylesheet" property="stylesheet" href="aladin.min.css">
 </template>
 
+
 <!-- form to create new observation -->
 <template name="newObservationForm">
-
   <form class="form-horizontal new-observation">
     <fieldset>
 
       <!-- program -->
-      <div class="form-group" id="form-program" >
+      <div class="form-group" id="form-program">
         <label for="program" class="col-lg-3 control-label" style="font-family:Futura; " >PROGRAM</label>
         <div class="col-lg-9">
           <select class="form-control" id="program" name="program" required>
@@ -71,7 +71,7 @@
       <!-- Target Name -->
       <div class="form-group" id="form-target">
         <label for="target" class="col-lg-3 control-label" style="font-family:Futura;">TARGET</label>
-        <div class="col-lg-9">
+        <div class="col-lg-9" >
           <input class="form-control" id="target" placeholder="Target Name or hh:mm:ss dd:mm:ss" name="target" type="text" required>
         </div>
       </div>
@@ -149,7 +149,7 @@
         </div>
       </div>
       
-      <button type="button" class="btn btn-info collapsed" style="border-color: rgba(0,0,0,0); background-color:#859BA0; border-radius:0px; font-family: Futura; width:100%; margin-top:20px; margin-bottom:20px;" data-toggle="collapse" data-target="#advanced">
+      <button type="button" class="btn btn-info collapsed" style="border-color: rgba(0,0,0,0); background-color:#859BA0; border-radius:0px; font-family: Futura; width:100%; margin-top:20px; margin-bottom:20px;" data-toggle="collapse" data-target="#advanced" id="advanced-options" >
         ADVANCED OPTIONS <i class="icon-large toggle-arrow" style="color:white;"></i>
     </button>
       <div id="advanced" class="collapse">
@@ -200,17 +200,17 @@
         </div>
       </div>
 
-    </div>
+      </div>
+      
     <br>
-    <p style="font-size:18px;">TOTAL OBSERVATION TIME: <b>{{totalObservationTime}}</b></p>
+    <p style="font-size:18px;" >TOTAL OBSERVATION TIME: <b>{{totalObservationTime}}</b></p>
     <p style="font-size:18px;">AVAILABLE CREDITS: <b>{{totalAvailableTime}}</b></p>
     <!-- submit buttons -->
-      <div class="form-group" >
-        <div class="col-xs-12" style="padding-top: 10px;">
-            <button type="submit" id="submit_obs" class="btn btn-success">SUBMIT</button>
-        </div>
+    <div class="form-group"  >
+      <div class="col-xs-12" style="padding-top: 10px;" >
+        <button type="submit" id="submit_obs" class="btn btn-success" >SUBMIT</button>
       </div>
-
+    </div>
     </fieldset>
   </form>
 </template>
