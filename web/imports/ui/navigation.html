@@ -15,14 +15,14 @@
       <div class="navbar-collapse collapse">
         <!-- navbar LEFT -->
         <ul class="nav navbar-nav">
-          <li><a href="{{pathFor route='home'}}">HOME</a></li>
+          <li><a href="{{pathFor route='home'}}" >HOME</a></li>
           {{#if currentUser}}
-          <li><a href="{{pathFor route='programs'}}">PROGRAMS</a></li>
-          <li><a href="{{pathFor route='sessions'}}">SESSIONS</a></li>
-          <li class="dropdown">
+          <li><a href="{{pathFor route='programs'}}" id = "programs">PROGRAMS</a></li>
+          <li><a href="{{pathFor route='sessions'}}" id = "sessions">SESSIONS</a></li>
+          <li class="dropdown" id = "observations">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">OBSERVATIONS<span class="caret"></span></a>
             <ul class="dropdown-menu">
-              <li><a href="{{pathFor route='newObservation'}}">SUBMIT AN OBSERVATION</a></li>
+              <li><a href="{{pathFor route='newObservation'}}" >SUBMIT AN OBSERVATION</a></li>
               <li><a href="{{pathFor route='observations'}}">MY OBSERVATIONS</a></li>
             </ul>
           </li>
