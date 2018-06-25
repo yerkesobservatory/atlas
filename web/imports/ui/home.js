@@ -71,7 +71,26 @@ Tracker.autorun(function () {
 });
 
 
+Template.history.helpers({
+  settings: function() {
+    return {
+      rowsPerPage: 10,
+      showNavigationRowsPerPage: false,
+      multiColumnSort: false,
+      showNavigation: "never",
+      showFilter: false,
+      fields: [
+        {key:'', label:'Start Time'},
+        {key:'', label:'End Time'},
+        {key:'', label:'Object'},
+        {key:'', label:'Priority'},
+        {key:'', label:'Exposure'},
+        {key:'', label:'Errors'}]
+    }
+  },
+});
 
+//intro.js walkthrough
 Template.body.onRendered(
 	function() { setTimeout(function() { 
 		if (RegExp('multipage=2', 'gi').test(window.location.search)) {
