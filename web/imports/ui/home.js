@@ -160,7 +160,7 @@ Template.home.events({
                 position: 'left'
               },
               { 
-              	element: document.querySelector('#observations'), 
+              	element: document.querySelector('#observations_dropdown'), 
                 intro: 'Now click here learn to submit your first observation! Select "SUBMIT AN OBSERVATION" in the dropdown bar and press "next step" to continue.' ,
                 position: 'right'
               }
