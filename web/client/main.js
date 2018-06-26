@@ -26,9 +26,13 @@ import '../imports/ui/sessions.js';
 // programs
 import '../imports/ui/programs.js';
 
+// contact
+import '../imports/ui/contact.js';
+
 // auth
 import '../imports/auth/login.js';
 import '../imports/auth/reset-password.js';
+
 
 // gui
 import '../imports/ui/control.js';
