@@ -61,7 +61,10 @@ SimpleChat.configure ({
         room: 'room at'
 
     },
-    limit: 5,
+    roomId: 'First Room!',
+    username: Meteor.userId(),
+    name: Meteor.userId(),
+    limit: 10,
     beep: true, 
     showViewed: true,
     showReceived: true,

@@ -111,6 +111,7 @@ SimpleChat.configure ({
     showViewed: true,
     showReceived: true,
     showJoined: true,
+    roomId: 'First Room!'
     /*
     publishChats: function(roomId, limi){ //server
        //here the context is the same for a Publications, that mean you have access to this.userId who are asking for subscribe.
@@ -132,7 +133,7 @@ SimpleChat.configure ({
     },
     onLeft:function(roomId, username, name,date) { //server
     },
-    height: '300px', // Configure the height of the chat
+     // Configure the height of the chat
     inputTemplate: 'SimpleChatInput', // In case you want to overwrite the template
     loadMoreTemplate: 'LoadMore', // In case you want to overwrite the template*/
 });
