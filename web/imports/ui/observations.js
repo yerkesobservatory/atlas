@@ -423,19 +423,19 @@ Template.observations.helpers({
 Template.observations.events({
     // on press of the action button
     'click .reactive-table tbody tr': function (event) {
-        if (event.target.className.include('download')) {
+        if (event.target.className == ('download')) {
             return;
         }
         event.preventDefault();
         // checks if the actual clicked element has the class `delete`
-        if (event.target.className.includes('action-delete')) {
+        if (event.target.className == ('action-delete')) {
             // delete program
             Meteor.call('observations.remove', this._id);
-        } else if (event.target.className.includes('action-completed')) {
+        } else if (event.target.className == ('action-completed')) {
             // mark program completed
             Meteor.call('observations.setCompleted', this._id, ! this.completed);
         }
-        else if (event.target.className.includes('copy-text')) {
+        else if (event.target.className == ('copy-text')) {
             // mark program completed
 
         }
