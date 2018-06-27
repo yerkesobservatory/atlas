@@ -63,14 +63,12 @@ Template.contacts_user.helpers({
   },
 });
 
-/*
+
 Template.chatAction.events({
-	'click .reactive-table tbody tr': 
-	function (event) {
-		event.preventDefault();
-		if (event.target.className == 'chat') {
-			window.location.href = 'message';
+	'click #message': 
+	function () {
+			window.location.href = 'message?' + '/id='+Meteor.userId() +'/name=' +Meteor.user().firstName;
 		}
-	},
-});*/
+	}
+);
 
