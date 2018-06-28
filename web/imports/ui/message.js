@@ -12,22 +12,23 @@ import {SimpleChat} from 'meteor/cesarve:simple-chat/config'
 Template.message.onCreated(function onCreated() {
     Meteor.subscribe('users');
     Meteor.subscribe('groups');
+    
 });
 
-
+Template.message.helpers({
+    'roomId':function () {
+        return Router.current().params.roomId
+    },
+    'username': function () {
+        return Router.current().params.username
+    },
+    'othername': function () {
+        return Router.current().params.othername
+    },
+}
+)
 
 SimpleChat.configure ({
-    texts:{
-        loadMore: 'Load More',
-        placeholder: 'Type message ...',
-        button: 'send',
-        join: 'joined the',
-        left: 'left',
-        room: 'room at'
-
-    },
-    roomId: "room",//A function that returns the user id
-    username: this.userId,//Get user first name and last name
     limit: 20,
     beep: true, 
     showViewed: true,
@@ -60,3 +61,7 @@ SimpleChat.configure ({
     inputTemplate: 'SimpleChatInput', // In case you want to overwrite the template
     loadMoreTemplate: 'LoadMore', // In case you want to overwrite the template*/
 });
+
+
+
+

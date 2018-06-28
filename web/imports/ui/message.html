@@ -2,7 +2,7 @@
 	<div class=" col-md-8 col-md-offset-2" >
         <div class="box box-info direct-chat direct-chat-info">
             <div class="box-header with-border">
-                <h3 class="box-title">Room: {{roomId}}</h3>
+                <h3 class="box-title">Conversation with {{othername}}</h3>
                 <!--
                 <div class="box-tools pull-right">
                     <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
@@ -12,7 +12,7 @@
                 </div> -->
             </div>
             <!-- /.box-header -->
-            {{>SimpleChatWindow  beep=true height= '600px' }}
+            {{>SimpleChatWindow  beep=true height= '600px' username=username roomId=roomId}}
         </div>
     </div>
 </template>
