@@ -42,9 +42,9 @@ Template.contacts_admin.helpers({
 });
 
 Template.contacts_user.helpers({
-  settings: function() {
+  	settings: function() {
     return {
-      collection: Meteor.users,
+      collection: Meteor.users.find({roles:'admin'}),
       rowsPerPage: 10,
       showNavigationRowsPerPage: false,
       multiColumnSort: false,

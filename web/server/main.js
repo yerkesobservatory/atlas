@@ -97,21 +97,9 @@ Meteor.startup(() => {
 
 
 SimpleChat.configure ({
-    texts:{
-        loadMore: 'Load More',
-        placeholder: 'Type message ...',
-        button: 'send',
-        join: 'joined the',
-        left: 'left',
-        room: 'room at'
-
+    onNewMessage: function(msg){  //both
     },
-    limit: 10,
-    beep: true, 
-    showViewed: true,
-    showReceived: true,
-    showJoined: true,
-    roomId: 'First Room!'
+    
     /*
     publishChats: function(roomId, limi){ //server
        //here the context is the same for a Publications, that mean you have access to this.userId who are asking for subscribe.
