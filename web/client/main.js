@@ -44,11 +44,19 @@ import '../imports/ui/control.js';
 import '../imports/admin/admin.js';
 import '../imports/admin/groups.js';
 
+import {SimpleChat} from 'meteor/cesarve:simple-chat/config'
 
 // deny client side updates to users
 Meteor.users.deny({
     update() { return true; }
 });
+/*
+SimpleChat.configure({
+    beep: false,
+    showViewed: true,
+    showReceived: true,
+    showJoined: true,
+})*/
 
 
 

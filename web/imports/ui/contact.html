@@ -2,11 +2,11 @@
 	<h1>CONTACTS</h1>
         <div>
         {{#if isInRole 'admin'}}
-            <h2>Contact individual users and admins</h2>
-            {{> contacts_admin}}
+            {{> contacts_admins}}
+            {{> contacts_users}}
         {{else}}
             <h2>Contact admins</h2>
-            {{> contacts_user}}
+            {{> contacts_admins}}
         {{/if}}
         </div>
 
@@ -17,11 +17,13 @@
         </div>
 </template>
 
-<template name="contacts_admin" >
+<template name="contacts_admins" >
+    <h3>Administrators</h3>
     {{> reactiveTable settings=settings class="table table-striped table-hover" }}
 </template>
 
-<template name="contacts_user" >
+<template name="contacts_users" >
+    <h3>Users</h3>
     {{> reactiveTable settings=settings class="table table-striped table-hover" }}
 </template>
 
