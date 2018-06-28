@@ -27,11 +27,8 @@ Template.contacts_users.helpers({
   settings: function() {
     return {
       collection: Meteor.users.find({roles:'user'}),
-      rowsPerPage: 10,
-      showNavigationRowsPerPage: false,
-      multiColumnSort: false,
-      showNavigation: "never",
-      showFilter: false,
+        showRowCount: true,
+        showNavigationRowsPerPage: false,
       fields: [
         {key:'profile.firstName', label:'First'},
         {key:'profile.lastName', label:'Last'},
@@ -48,13 +45,10 @@ Template.contacts_users.helpers({
 Template.contacts_admins.helpers({
   	settings: function() {
     return {
-      collection: Meteor.users.find({roles:'admin'}),
-      rowsPerPage: 10,
-      showNavigationRowsPerPage: false,
-      multiColumnSort: false,
-      showNavigation: "never",
-      showFilter: false,
-      fields: [
+      	collection: Meteor.users.find({roles:'admin'}),
+        showRowCount: true,
+        showNavigationRowsPerPage: false,
+      	fields: [
         {key:'profile.firstName', label:'First'},
         {key:'profile.lastName', label:'Last'},
         {key:'group', label:'Group'},
@@ -84,7 +78,7 @@ Template.contact.events({
         	} else {
         		roomid = Meteor.userId() + this._id;
         	}
-            window.location.href = 'message' + '/'+roomid+'/'+Meteor.user().profile.firstName+'/'+this.profile.firstName ;
+            window.location.href = 'message' + '/'+roomid+'/'+Meteor.userId()+'/'+this.profile.firstName+this.profile.lastName ;
         }
     },
 });
