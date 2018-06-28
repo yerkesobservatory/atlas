@@ -17,14 +17,14 @@ if (Meteor.isServer) {
 
     // users
     Meteor.publish('users', function() {
-        if (Roles.userIsInRole(Meteor.user(), 'admin')) {
+        //if (Roles.userIsInRole(Meteor.user(), 'admin')) {
             // publish all users
             return Meteor.users.find({}, {fields: {profile: 1, emails: 1, roles: 1, group: 1,
                                                    maxQueueTime: 1}});
-        } else {
+        //} else {
             // publish only our user
-            return Meteor.users.find({}, {fields: {profile: 1, emails: 1}});
-        }
+        //    return Meteor.users.find({}, {fields: {profile: 1, emails: 1}});
+        //}
     });
 
     // TODO: Don't know why this isn't working?
