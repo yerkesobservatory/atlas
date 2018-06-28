@@ -20,7 +20,10 @@ Template.message.helpers({
         return Router.current().params.roomId
     },
     'username': function () {
-        return Router.current().params.username
+        return Meteor.userId()
+    },
+    'name': function () {
+        return Meteor.user().profile.firstName
     },
     'othername': function () {
         return Router.current().params.othername

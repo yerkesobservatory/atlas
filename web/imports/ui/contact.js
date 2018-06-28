@@ -8,6 +8,11 @@ import { Groups } from '../api/groups.js';
 import $ from 'jquery';
 import {SimpleChat} from 'meteor/cesarve:simple-chat/config'
 
+Template.contact.onCreated(function onCreated() {
+    Meteor.subscribe('users');
+    Meteor.subscribe('groups');
+});
+/*
 Template.contacts_admins.onCreated(function onCreated() {
     Meteor.subscribe('users');
     Meteor.subscribe('groups');
@@ -21,7 +26,7 @@ Template.contacts_users.onCreated(function onCreated() {
 Template.chatAction.onCreated(function onCreated() {
     Meteor.subscribe('users');
     Meteor.subscribe('groups');
-});
+});*/
 
 Template.contacts_users.helpers({
   settings: function() {
@@ -78,7 +83,7 @@ Template.contact.events({
         	} else {
         		roomid = Meteor.userId() + this._id;
         	}
-            window.location.href = 'message' + '/'+roomid+'/'+Meteor.userId()+'/'+this.profile.firstName+this.profile.lastName ;
+            window.location.href = 'message' + '/'+roomid+'/'+this.profile.firstName+' '+this.profile.lastName;
         }
     },
 });
