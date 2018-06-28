@@ -70,6 +70,27 @@ Tracker.autorun(function () {
     }
 });
 
+
+Template.history.helpers({
+  settings: function() {
+    return {
+      rowsPerPage: 10,
+      showNavigationRowsPerPage: false,
+      multiColumnSort: false,
+      showNavigation: "never",
+      showFilter: false,
+      fields: [
+        {key:'', label:'Start Time'},
+        {key:'', label:'End Time'},
+        {key:'', label:'Object'},
+        {key:'', label:'Priority'},
+        {key:'', label:'Exposure'},
+        {key:'', label:'Errors'}]
+    }
+  },
+});
+
+//intro.js walkthrough
 Template.body.onRendered(
 	function() { setTimeout(function() { 
 		if (RegExp('multipage=2', 'gi').test(window.location.search)) {
@@ -169,5 +190,15 @@ Template.home.events({
 
           intro.setOption('doneLabel', 'Next page').start().oncomplete(function() { 
 			window.location.href = 'newObservation?multipage=2';});
-    }
+    },
+  'click #button_side':
+  function () {
+    document.getElementById("mySidenav").style.width = "750px";
+    document.getElementById("main").style.marginLeft = "750px";
+  },
+  'click #close_side':
+  function () {
+    document.getElementById("mySidenav").style.width = "0";
+    document.getElementById("main").style.marginLeft = "0";
+}
 });

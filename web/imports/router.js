@@ -33,6 +33,8 @@ Router.route('/newObservation');
 Router.route('/observations');
 Router.route('/sessions');
 Router.route('/programs');
+Router.route('/contact');
+Router.route('/message');
 Router.route('/admin', {
     onBeforeAction: function () {
 	if (Roles.userIsInRole(Meteor.userId(), 'admin')) {

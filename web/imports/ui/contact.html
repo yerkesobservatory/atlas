@@ -1,0 +1,32 @@
+<template name="contact">
+	<h1>CONTACTS</h1>
+        <div>
+        {{#if isInRole 'admin'}}
+            <h2>Contact individual users and admins</h2>
+            {{> contacts_admin}}
+        {{else}}
+            <h2>Contact admins</h2>
+            {{> contacts_user}}
+        {{/if}}
+        </div>
+
+
+
+	    <div class="row">
+            
+        </div>
+</template>
+
+<template name="contacts_admin" >
+    {{> reactiveTable settings=settings class="table table-striped table-hover" }}
+</template>
+
+<template name="contacts_user" >
+    {{> reactiveTable settings=settings class="table table-striped table-hover" }}
+</template>
+
+<template name='chatAction'>
+    <div class='btn-group'>
+        <a class="btn btn-info" id='message'>Message!</a>
+    </div>
+</template>

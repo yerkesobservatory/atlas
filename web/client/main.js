@@ -26,9 +26,16 @@ import '../imports/ui/sessions.js';
 // programs
 import '../imports/ui/programs.js';
 
+// contact
+import '../imports/ui/contact.js';
+
+// message
+import '../imports/ui/message.js';
+
 // auth
 import '../imports/auth/login.js';
 import '../imports/auth/reset-password.js';
+
 
 // gui
 import '../imports/ui/control.js';
@@ -37,10 +44,14 @@ import '../imports/ui/control.js';
 import '../imports/admin/admin.js';
 import '../imports/admin/groups.js';
 
+
 // deny client side updates to users
 Meteor.users.deny({
     update() { return true; }
 });
+
+
+
 
 
 
