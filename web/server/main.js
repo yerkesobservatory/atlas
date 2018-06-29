@@ -16,6 +16,9 @@ import '../imports/api/announcements.js';
 import '../imports/api/message.js';
 //somewhere in both (client and  server) 
 import {SimpleChat} from 'meteor/cesarve:simple-chat/config'
+import { UserStatus } from 'meteor/mizzao:user-status';
+
+
 
 Meteor.startup(() => {
     // code to run on server at startup
@@ -95,13 +98,15 @@ Meteor.startup(() => {
 })();
 
 
-
+/*
 
 SimpleChat.configure ({
-    onNewMessage: function(msg){  //both
-    },
+    beep: true, 
+    showViewed: true,
+    showReceived: true,
+    showJoined: true,
+    room: 'conversation',
     
-    /*
     publishChats: function(roomId, limi){ //server
        //here the context is the same for a Publications, that mean you have access to this.userId who are asking for subscribe.
        // for example
@@ -124,5 +129,5 @@ SimpleChat.configure ({
     },
      // Configure the height of the chat
     inputTemplate: 'SimpleChatInput', // In case you want to overwrite the template
-    loadMoreTemplate: 'LoadMore', // In case you want to overwrite the template*/
-});
+    loadMoreTemplate: 'LoadMore', // In case you want to overwrite the template
+});*/

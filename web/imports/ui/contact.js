@@ -7,10 +7,12 @@ import { Programs } from '../api/programs.js';
 import { Groups } from '../api/groups.js';
 import $ from 'jquery';
 import {SimpleChat} from 'meteor/cesarve:simple-chat/config'
+import { UserStatus } from 'meteor/mizzao:user-status';
 
 Template.contact.onCreated(function onCreated() {
     Meteor.subscribe('users');
     Meteor.subscribe('groups');
+    Meteor.subscribe('userStatus');
 });
 /*
 Template.contacts_admins.onCreated(function onCreated() {
@@ -27,11 +29,11 @@ Template.chatAction.onCreated(function onCreated() {
     Meteor.subscribe('users');
     Meteor.subscribe('groups');
 });*/
-
-Template.contacts_users.helpers({
+/*
+Template.contact.helpers({
   settings: function() {
     return {
-      collection: Meteor.users.find({roles:'user'}),
+      collection: Meteor.users.find({newMessage: 1}),
         showRowCount: true,
         showNavigationRowsPerPage: false,
       fields: [
@@ -39,26 +41,61 @@ Template.contacts_users.helpers({
         {key:'profile.lastName', label:'Last'},
         {key:'group', label:'Group'},
         {key:'roles', label:'Role'},
-        {key:'', label:'Status'},
+        {key:'newMessage', label:'Status',
+    		fn: function(value, object, key) {
+    			var status = Meteor.user().newMessage
+    			if (status) {
+    				if (status.includes(this.userId)) {
+    					return 'new!'
+    				}
+    			} 
+    			return 'No new message'
+    		}},
         {label: '',
                  tmpl: Template.chatAction
                 }]
     }
   },
-});
+});*/
 
-Template.contacts_admins.helpers({
+
+Template.contact.helpers({
+	hasNewMessage: function() {
+		if (Meteor.users.find({newMessageTo: Meteor.userId()}) != null) {
+			return false;
+		}
+		return false;
+	},
+	newMessageSettings: function() {
+		return {
+			collection: Meteor.users.find({newMessageTo: Meteor.userId()}),
+        	showRowCount: true,
+        	showNavigationRowsPerPage: false,
+      		fields: [
+        		{key:'profile.firstName', label:'First'},
+        		{key:'profile.lastName', label:'Last'},
+        		{key:'group', label:'Group'},
+        		{label: '',
+                 tmpl: Template.chatAction
+                }]
+    	}
+	},
+	userAdmins: function() { 
+      			return Meteor.users.find({roles:'admin'});
+      		},
+    userUsers: function() { 
+      			return Meteor.users.find({roles:'user'});
+      		},
   	settings: function() {
     return {
-      	collection: Meteor.users.find({roles:'admin'}),
         showRowCount: true,
         showNavigationRowsPerPage: false,
       	fields: [
         {key:'profile.firstName', label:'First'},
         {key:'profile.lastName', label:'Last'},
         {key:'group', label:'Group'},
-        {key:'roles', label:'Role'},
-        {key:'', label:'Status'},
+        {key:'', label:'Status', tmpl: Template.online,
+    	},
         {label: '',
                  tmpl: Template.chatAction
                 }]
@@ -68,10 +105,6 @@ Template.contacts_admins.helpers({
 
 
 Template.contact.events({
-	/*'click #message': 
-	function () {
-			window.location.href = 'message' + '/'+'roomID' +'/'+Meteor.user().firstName;
-		}*/
 	'click .reactive-table tbody tr': 
 	function (event) {
         event.preventDefault();
@@ -83,8 +116,14 @@ Template.contact.events({
         	} else {
         		roomid = Meteor.userId() + this._id;
         	}
-            window.location.href = 'message' + '/'+roomid+'/'+this.profile.firstName+' '+this.profile.lastName;
+            window.location.href = 'message' + '/'+roomid+'/'+this.profile.firstName+' '+this.profile.lastName+'/'+this._id;
         }
+    },
+});
+
+Template.online.helpers({ 
+	isOnLine: function () {
+        return this.status.online
     },
 });
 

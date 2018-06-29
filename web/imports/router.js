@@ -35,7 +35,7 @@ Router.route('/sessions');
 Router.route('/programs');
 Router.route('/contact');
 Router.route('/message', {
-    path: '/message/:roomId/:othername',
+    path: '/message/:roomId/:othername/:otherId',
     //template: 'message'
 });
 Router.route('/admin', {

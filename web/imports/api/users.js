@@ -27,6 +27,10 @@ if (Meteor.isServer) {
         //}
     });
 
+    Meteor.publish("userStatus", function() {
+        return Meteor.users.find({}, {fields: {username : 1, status : 1}});
+    });
+
     // TODO: Don't know why this isn't working?
     // // Allow users to only edit their own profiles
     // Meteor.users.deny({

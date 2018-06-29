@@ -28,42 +28,55 @@ Template.message.helpers({
     'othername': function () {
         return Router.current().params.othername
     },
-}
-)
+    'room': function () {
+        return 'conversation'
+    },
+});
+
 
 SimpleChat.configure ({
-    limit: 20,
-    beep: true, 
-    showViewed: true,
-    showReceived: true,
-    showJoined: true,
-    //onNewMessage:function(msg){  //both
-    //},
-    /*
-    publishChats: function(roomId, limi){ //server
-       //here the context is the same for a Publications, that mean you have access to this.userId who are asking for subscribe.
-       // for example
-       //return isLoggedAndHasAccessToSeeMessage(this.userId)
-    },
-    allow: function(message, roomId, username, avatar, name){
-       //here the context is the same for a Methods, thats mean you hace access to this.userId also
-       // for example
-       //return isLoggedAndHasAccessSendMessages(this.userId)
-        return true
-    },
-    onNewMessage:function(msg){  //both
-    },
-    onReceiveMessage:function(id, message, room){ //server
-        
-    },
-    onJoin:function(roomId, username, name,date){  //server
-    },
-    onLeft:function(roomId, username, name,date) { //server
-    },
-    height: '300px', // Configure the height of the chat
-    inputTemplate: 'SimpleChatInput', // In case you want to overwrite the template
-    loadMoreTemplate: 'LoadMore', // In case you want to overwrite the template*/
-});
+    texts: {
+            loadMore: 'Load More',
+            placeholder: 'Type message ...',
+            button: 'send',
+            join: 'joined the',
+            left: 'left',
+            room: 'room at',
+
+        },
+        limit: 50,
+        beep: true,
+        showViewed: false,
+        showReceived: false,
+        showJoined: false,
+        publishChats: function (roomId, limit) {
+            return true;
+        },
+        allow: function (message, roomId, username, avatar, name) {
+            return true;
+        },
+        onNewMessage: function (msg) {
+            var otherId = Router.current().params.otherId;
+            console.log(otherId);
+            console.log(this._id);
+            Meteor.users.update(this._id, {'$addToSet': {newMessageTo: otherId}});
+            console.log(msg);
+        },
+        onReceiveMessage: function () {
+            //add new message button
+        },
+        onJoin: function (roomId, username, name,date) {
+            //server
+        },
+        onLeft: function (roomId, username, name,date) {
+            //server
+            //clear new message
+        },
+        height: '600px',
+        inputTemplate: 'SimpleChatInput',
+        loadMoreTemplate: 'LoadMore',
+    
+})
 
 
 
