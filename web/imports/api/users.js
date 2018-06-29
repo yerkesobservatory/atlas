@@ -8,9 +8,9 @@ import { Observations } from './observations.js';
 import { Sessions } from './sessions.js';
 import { Groups } from './groups.js';
 
-Meteor.users.deny({
-    update() { return true; }
-});
+//Meteor.users.deny({
+    //update() { return true; }
+//});
 
 // publish users
 if (Meteor.isServer) {
@@ -196,5 +196,9 @@ Meteor.methods({
                 }
             }
         }
-    }
+    },
+
+    'users.newMessageTo'(userId, otherId) {
+        Meteor.users.update(id, {'$addToSet': { 'newMessageTo': otherId}});
+    },
 });

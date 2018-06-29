@@ -13,6 +13,7 @@ Template.contact.onCreated(function onCreated() {
     Meteor.subscribe('users');
     Meteor.subscribe('groups');
     Meteor.subscribe('userStatus');
+    console.log(Meteor.user());
 });
 /*
 Template.contacts_admins.onCreated(function onCreated() {
@@ -62,13 +63,13 @@ Template.contact.helpers({
 Template.contact.helpers({
 	hasNewMessage: function() {
 		if (Meteor.users.find({newMessageTo: Meteor.userId()}) != null) {
-			return false;
+			return true;
 		}
 		return false;
 	},
 	newMessageSettings: function() {
 		return {
-			collection: Meteor.users.find({newMessageTo: Meteor.userId()}),
+			collection: Meteor.users.find({'newMessageTo': Meteor.userId()}),
         	showRowCount: true,
         	showNavigationRowsPerPage: false,
       		fields: [
