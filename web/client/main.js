@@ -47,9 +47,9 @@ import '../imports/admin/groups.js';
 import {SimpleChat} from 'meteor/cesarve:simple-chat/config'
 
 // deny client side updates to users
-Meteor.users.deny({
-    update() { return true; }
-});
+//Meteor.users.deny({
+    //update() { return true; }
+//});
 /*
 SimpleChat.configure({
     beep: false,

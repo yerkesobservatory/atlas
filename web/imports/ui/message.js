@@ -3,7 +3,8 @@ import './message.html'
 import { Meteor } from 'meteor/meteor';
 import { Tracker } from 'meteor/tracker';
 import { Accounts } from 'meteor/accounts-base';
-
+import { Programs } from '../api/programs.js';
+import { Groups } from '../api/groups.js';
 import $ from 'jquery';
 
 //chatbox
@@ -12,7 +13,7 @@ import {SimpleChat} from 'meteor/cesarve:simple-chat/config'
 Template.message.onCreated(function onCreated() {
     Meteor.subscribe('users');
     Meteor.subscribe('groups');
-    
+    console.log(Meteor.user());
 });
 
 Template.message.helpers({
@@ -45,7 +46,7 @@ SimpleChat.configure ({
 
         },
         limit: 50,
-        beep: true,
+        beep: false,
         showViewed: false,
         showReceived: false,
         showJoined: false,
@@ -57,17 +58,13 @@ SimpleChat.configure ({
         },
         onNewMessage: function (msg) {
             var otherId = Router.current().params.otherId;
-            console.log(otherId);
-            console.log(this._id);
-            Meteor.users.update(this._id, {'$addToSet': {newMessageTo: otherId}});
+            var userId = Meteor.userId();
+            //Meteor.users.update(userId, {'$addToSet': {'newMessageTo': otherId}});
+            Meteor.call('users.newMessageTo', userId, otherId);
+            console.log(Meteor.user());
             console.log(msg);
         },
-        onReceiveMessage: function () {
-            //add new message button
-        },
-        onJoin: function (roomId, username, name,date) {
-            //server
-        },
+        
         onLeft: function (roomId, username, name,date) {
             //server
             //clear new message

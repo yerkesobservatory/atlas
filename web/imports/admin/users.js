@@ -58,7 +58,14 @@ Template.adminUsers.helpers({
                  label: 'ID'
                 },
                 {key: 'roles',
-                 label: 'Roles'},
+                 label: 'Roles',
+                 fn: function (value, object, key) {
+                     if (Roles.userIsInRole(object, 'admin')){
+                        return 'admin';
+                     }
+                     return 'user';
+                 }
+                },
                 {label: '',
                  tmpl: Template.userAction
                 }

@@ -8,9 +8,9 @@ import { Observations } from './observations.js';
 import { Sessions } from './sessions.js';
 import { Groups } from './groups.js';
 
-Meteor.users.deny({
-    update() { return true; }
-});
+//Meteor.users.deny({
+    //update() { return true; }
+//});
 
 // publish users
 if (Meteor.isServer) {
@@ -196,5 +196,26 @@ Meteor.methods({
                 }
             }
         }
-    }
+    },
+
+    'users.newMessageTo'(userId, otherId) {
+        if (Meteor.isServer) {
+            console.log('newMessageTo');
+            Roles.addUsersToRoles(userId, otherId);
+            //Meteor.users.update(Meteor.userId(), {'$addToSet': { 'profile': {'newMessageTo':'brighter'}}});
+        }        
+    },
+    'users.newMessageRead'(userId, otherId) {
+        if (Meteor.isServer) {
+            console.log('newMessageTo');
+            Roles.removeUsersFromRoles(otherId, userId);
+            //Meteor.users.update(Meteor.userId(), {'$addToSet': { 'profile': {'newMessageTo':'brighter'}}});
+        }        
+    },
+    'sendEmail'(to,subject,text) {
+        if (Meteor.isServer) {
+            this.unblock();
+            Email.send({ to, subject, text });
+        }        
+    },
 });
