@@ -15,69 +15,28 @@ Template.contact.onCreated(function onCreated() {
     Meteor.subscribe('userStatus');
     console.log(Meteor.user());
 });
-/*
-Template.contacts_admins.onCreated(function onCreated() {
-    Meteor.subscribe('users');
-    Meteor.subscribe('groups');
-});
-
-Template.contacts_users.onCreated(function onCreated() {
-    Meteor.subscribe('users');
-    Meteor.subscribe('groups');
-});
-
-Template.chatAction.onCreated(function onCreated() {
-    Meteor.subscribe('users');
-    Meteor.subscribe('groups');
-});*/
-/*
-Template.contact.helpers({
-  settings: function() {
-    return {
-      collection: Meteor.users.find({newMessage: 1}),
-        showRowCount: true,
-        showNavigationRowsPerPage: false,
-      fields: [
-        {key:'profile.firstName', label:'First'},
-        {key:'profile.lastName', label:'Last'},
-        {key:'group', label:'Group'},
-        {key:'roles', label:'Role'},
-        {key:'newMessage', label:'Status',
-    		fn: function(value, object, key) {
-    			var status = Meteor.user().newMessage
-    			if (status) {
-    				if (status.includes(this.userId)) {
-    					return 'new!'
-    				}
-    			} 
-    			return 'No new message'
-    		}},
-        {label: '',
-                 tmpl: Template.chatAction
-                }]
-    }
-  },
-});*/
 
 
 Template.contact.helpers({
 	hasNewMessage: function() {
-		if (Meteor.users.find({newMessageTo: Meteor.userId()}) != null) {
+		if (Meteor.users.find({roles: Meteor.userId()}) != null) {
 			return true;
 		}
 		return false;
 	},
 	newMessageSettings: function() {
 		return {
-			collection: Meteor.users.find({'newMessageTo': Meteor.userId()}),
+			collection: Meteor.users.find({roles: Meteor.userId()}),
         	showRowCount: true,
         	showNavigationRowsPerPage: false,
       		fields: [
-        		{key:'profile.firstName', label:'First'},
-        		{key:'profile.lastName', label:'Last'},
+        		{key:'profile', label:'Name',
+        		fn: function(value, object, key){
+        			return object.profile.firstName +' ' +object.profile.lastName;
+        		} },
         		{key:'group', label:'Group'},
         		{label: '',
-                 tmpl: Template.chatAction
+                 tmpl: Template.newMessage
                 }]
     	}
 	},
@@ -117,7 +76,20 @@ Template.contact.events({
         	} else {
         		roomid = Meteor.userId() + this._id;
         	}
-            window.location.href = 'message' + '/'+roomid+'/'+this.profile.firstName+' '+this.profile.lastName+'/'+this._id;
+        	//console.log('before newMessageTo');
+        	Meteor.call('users.newMessageTo', Meteor.userId(), this._id);
+        	var othername = this.profile.firstName +' '+ this.profile.lastName
+        	var url = 'message' + '/'+roomid+'/'+othername+'/'+this._id
+        	if (this.status.online != true){
+        		var to = this.emails[0];
+        		var subject = 'New Message from '+othername+ ' in Stone Edge Observatory. '
+        		var text = subject + 'Click here to view '+'https://queue.stoneedgeobservatory.com/'+url;
+        		Meteor.call('sendEmail',to,subject,text);
+        	}
+        	Meteor.call('users.newMessageRead', Meteor.userId(), this._id);
+        	//console.log('after newMessageTo');
+        	//console.log(Meteor.user());
+            window.location.href = url;
         }
     },
 });

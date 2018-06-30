@@ -4,7 +4,7 @@
     <div class="col-xs-6">
     <h1>NEW MESSAGES</h1>
     {{#if hasNewMessage}}
-    <h4 style="font-size: 50; color: grey">New messages from ...</h4>
+    <h5 style="font-size: 50; color: grey">(It means that these people have at least read your messages)</h5>
         {{> reactiveTable settings=newMessageSettings class="table table-striped table-hover" }}
     {{else}}
     <div class="panel panel-default" style="border-style: none;">
@@ -43,11 +43,17 @@
     </div>
 </template>
 
+<template name='newMessage'>
+    <div class='btn-group'>
+        <a class="btn btn-info" id='message'>New Message!</a>
+    </div>
+</template>
+
 <template name='online'>
     {{#if isOnLine}}
-    <a class="btn btn-info" id='message' style='background-color: green;border-width: 0'>Online</a>
+    <a class="btn btn-info" style='background-color: green;border-width: 0'>Online</a>
     {{else}}
-    <a class="btn btn-info" id='message' style='background-color: maroon;border-width: 0'>Offline</a>
+    <a class="btn btn-info" style='background-color: maroon;border-width: 0'>Offline</a>
     {{/if}}
 </template>
 

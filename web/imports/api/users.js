@@ -199,6 +199,23 @@ Meteor.methods({
     },
 
     'users.newMessageTo'(userId, otherId) {
-        Meteor.users.update(id, {'$addToSet': { 'newMessageTo': otherId}});
+        if (Meteor.isServer) {
+            console.log('newMessageTo');
+            Roles.addUsersToRoles(userId, otherId);
+            //Meteor.users.update(Meteor.userId(), {'$addToSet': { 'profile': {'newMessageTo':'brighter'}}});
+        }        
+    },
+    'users.newMessageRead'(userId, otherId) {
+        if (Meteor.isServer) {
+            console.log('newMessageTo');
+            Roles.removeUsersFromRoles(otherId, userId);
+            //Meteor.users.update(Meteor.userId(), {'$addToSet': { 'profile': {'newMessageTo':'brighter'}}});
+        }        
+    },
+    'sendEmail'(to,subject,text) {
+        if (Meteor.isServer) {
+            this.unblock();
+            Email.send({ to, subject, text });
+        }        
     },
 });

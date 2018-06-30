@@ -5,8 +5,6 @@ import { Tracker } from 'meteor/tracker';
 import { Accounts } from 'meteor/accounts-base';
 import { Programs } from '../api/programs.js';
 import { Groups } from '../api/groups.js';
-
-
 import $ from 'jquery';
 
 //chatbox
@@ -60,20 +58,13 @@ SimpleChat.configure ({
         },
         onNewMessage: function (msg) {
             var otherId = Router.current().params.otherId;
-            console.log(otherId);
-            var thisId = Meteor.userId();
-            console.log(thisId);
-            Meteor.users.update(thisId, {'$addToSet': {'newMessageTo': otherId}});
-            //Meteor.call('users.insert', thisId, otherId);
+            var userId = Meteor.userId();
+            //Meteor.users.update(userId, {'$addToSet': {'newMessageTo': otherId}});
+            Meteor.call('users.newMessageTo', userId, otherId);
             console.log(Meteor.user());
             console.log(msg);
         },
-        onReceiveMessage: function () {
-            //add new message button
-        },
-        onJoin: function (roomId, username, name,date) {
-            //server
-        },
+        
         onLeft: function (roomId, username, name,date) {
             //server
             //clear new message
