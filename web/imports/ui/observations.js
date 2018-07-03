@@ -92,14 +92,15 @@ Template.newObservationForm.helpers({
                 time = parseFloat(totalTime).toFixed(0);
                 return time + " s";
             }  else if (totalTime <= 60*60) { // return time in minutes
-                time = parseFloat(totalTime/60).toFixed(1);
-                return time + " mins";
+                minutes = parseFloat(Math.floor(totalTime/60)).toFixed(0);
+                seconds = parseFloat(totalTime-minutes*60).toFixed(0);
+                return minutes + " mins " + seconds + " sec";
             }
             else { // return time in hours
                 hours = parseFloat(Math.floor(totalTime/(60*60))).toFixed(0);
                 minutes = parseFloat(Math.floor(totalTime/(60)-hours*60)).toFixed(0);
-                seconds = parseFloat(Math.floor(totalTime-hours*3600-minutes*60)).toFixed(0);
-                return hours + " hours " + minutes + " mins " + seconds + " seconds";
+                seconds = parseFloat(totalTime-hours*3600-minutes*60).toFixed(0);
+                return hours + " hours " + minutes + " mins " + seconds + " sec";
 "hour"            }
         } else {
             return "0 s";
