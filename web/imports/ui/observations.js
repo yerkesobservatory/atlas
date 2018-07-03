@@ -96,9 +96,11 @@ Template.newObservationForm.helpers({
                 return time + " mins";
             }
             else { // return time in hours
-                time = parseFloat(totalTime/(60*60)).toFixed(1);
-                return time + " hours";
-            }
+                hours = parseFloat(Math.floor(totalTime/(60*60))).toFixed(0);
+                minutes = parseFloat(Math.floor(totalTime/(60)-hours*60)).toFixed(0);
+                seconds = parseFloat(Math.floor(totalTime-hours*3600-minutes*60)).toFixed(0);
+                return hours + " hours " + minutes + " mins " + seconds + " seconds";
+"hour"            }
         } else {
             return "0 s";
         }
