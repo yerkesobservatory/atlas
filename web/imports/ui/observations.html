@@ -54,15 +54,15 @@
         <div class="col-lg-9">
           <select class="form-control" id="program" name="program" required>
             {{#each program in programs}}
-	    {{#unless isEqual progam "General" "Asteroids" "Variables" "Solar System"}}
-	        <option value="{{program._id}}">{{program.name}}</option>
-	    {{else}}
-	      {{#if isEqual program "General"}}
-                <option value="{{program._id}}" selected="selected"><b>{{program.name}}</b></option>
-              {{else}}
-                <option value="{{program._id}}"><b>{{program.name}}</b></option>
-              {{/if}}
-	    {{/unless}}
+	               {{#if isEqual program "General"}}
+                    <option value="{{program._id}}" selected="selected"><b>{{program.name}}</b></option>
+                    {{else}}
+                      {{#if isEqual program "Asteroids" "Variable Stars" "Solar System"}}
+                        <option disabled value="{{program._id}}"><b>{{program.name}}</b></option>
+                          {{else}}
+                            <option value="{{program._id}}">{{program.name}}</option>
+                      {{/if}}
+                  {{/if}}
             {{/each}}
           </select>
         </div>
@@ -148,7 +148,7 @@
           </div>
         </div>
       </div>
-      
+
       <button type="button" class="btn btn-info collapsed" style="border-color: rgba(0,0,0,0); background-color:#859BA0; border-radius:0px; font-family: Futura; width:100%; margin-top:20px; margin-bottom:20px;" data-toggle="collapse" data-target="#advanced" id="advanced-options" >
         ADVANCED OPTIONS <i class="icon-large toggle-arrow" style="color:white;"></i>
     </button>
@@ -201,7 +201,7 @@
       </div>
 
       </div>
-      
+
     <br>
     <p style="font-size:18px;" >TOTAL OBSERVATION TIME: <b>{{totalObservationTime}}</b></p>
     <p style="font-size:18px;">AVAILABLE CREDITS: <b>{{totalAvailableTime}}</b></p>

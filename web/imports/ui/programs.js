@@ -149,18 +149,18 @@ Template.programs.events({
 	event.preventDefault();
         Modal.show('programDetailsModal', Programs.findOne({'name': 'General'}));
     },
-    'click #button_asteroid'(event, instance) {
-	event.preventDefault();
-        Modal.show('programDetailsModal', Programs.findOne({'name': 'Asteroids'}));
-    },
-    'click #button_variable'(event, instance) {
-	event.preventDefault();
-        Modal.show('programDetailsModal', Programs.findOne({'name': 'Variable Stars'}));
-    },
-    'click #button_solar'(event, instance) {
-	event.preventDefault();
-        Modal.show('programDetailsModal', Programs.findOne({'name': 'Solar System'}));
-    },
+//    'click #button_asteroid'(event, instance) {
+//	event.preventDefault();
+//        Modal.show('programDetailsModal', Programs.findOne({'name': 'Asteroids'}));
+//    },
+//    'click #button_variable'(event, instance) {
+//	event.preventDefault();
+//        Modal.show('programDetailsModal', Programs.findOne({'name': 'Variable Stars'}));
+//    },
+//    'click #button_solar'(event, instance) {
+//	event.preventDefault();
+//        Modal.show('programDetailsModal', Programs.findOne({'name': 'Solar System'}));
+//    },
     'click #new_program_div'(event, instance) {
     	event.preventDefault();
     	Modal.show('newProgramModal');

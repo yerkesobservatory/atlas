@@ -14,7 +14,7 @@ import '../imports/api/users.js';
 import '../imports/api/groups.js';
 import '../imports/api/announcements.js';
 import '../imports/api/message.js';
-//somewhere in both (client and  server) 
+//somewhere in both (client and  server)
 import {SimpleChat} from 'meteor/cesarve:simple-chat/config'
 import { UserStatus } from 'meteor/mizzao:user-status';
 
@@ -54,9 +54,9 @@ Meteor.startup(() => {
 
         // creating public programs
         insertProgram('General', 'general');
-        insertProgram('Asteroids', 'asteroid');
-        insertProgram('Variable Stars', 'variable');
-        insertProgram('Solar System', 'solarsystem');
+//        insertProgram('Asteroids', 'asteroid');
+//        insertProgram('Variable Stars', 'variable');
+//        insertProgram('Solar System', 'solarsystem');
     }
 });
 
