@@ -196,8 +196,8 @@ Template.newObservationForm.events({
         const priority = target.obs_priority.value;
 
         // build filter list
-        const filterNames = ['filter_clear', 'filter_dark', 'filter_u', 'filter_g',
-                             'filter_r', 'filter_i', 'filter_z',
+        const filterNames = ['filter_clear', 'filter_dark', 'filter_oiii', 'filter_g',
+                             'filter_r', 'filter_i', 'filter_sii',
                              'filter_ha'];
         var filters = [];
         for (var i = 0; i < filterNames.length; i++) {
@@ -210,6 +210,12 @@ Template.newObservationForm.events({
                 }
                 else if (filterNames[i].split('_')[1] == 'dark') {
                     filters.push('dark');
+                }
+                else if (filterNames[i].split('_')[1] == 'oiii') {
+                    filters.push('\"\[OIII\]\"');
+                }
+                else if (filterNames[i].split('_')[1] == 'sii') {
+                    filters.push('\"\[SII\]\"');
                 }
                 else {
                     filters.push(filterNames[i].split('_')[1]+'-band');
