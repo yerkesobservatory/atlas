@@ -212,10 +212,10 @@ Template.newObservationForm.events({
                     filters.push('dark');
                 }
                 else if (filterNames[i].split('_')[1] == 'oiii') {
-                    filters.push('\"\[OIII\]\"');
+                    filters.push('\"[OIII]\"');
                 }
                 else if (filterNames[i].split('_')[1] == 'sii') {
-                    filters.push('\"\[SII\]\"');
+                    filters.push('\"[SII]\"');
                 }
                 else {
                     filters.push(filterNames[i].split('_')[1]+'-band');
