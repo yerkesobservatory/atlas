@@ -146,9 +146,11 @@ class SSHTelescope(object):
 
         # if open, return True
         if slit and slit.group(0) == 'open':
+            self.update({'slit': 'open'})            
             return True
 
         # in any other scenario, return False
+        self.update({'slit': 'closed'})           
         return False
 
     def close_dome(self) -> bool:
