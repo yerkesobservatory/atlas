@@ -435,6 +435,9 @@ Template.observations.events({
         if (event.target.className == ('download')) {
             return;
         }
+        if (event.target.className == ('gotostars')) {
+            return;
+        }
         event.preventDefault();
         // checks if the actual clicked element has the class `delete`
         if (event.target.className == ('action-delete')) {
