@@ -7,7 +7,7 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun
 from typing import List, Dict
 from config import config
 from routines import pinpoint, lookup
-from telescope import Telescope
+#from telescope import Telescope
 
 def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, int):
     """ Return the next object to be imaged according to the 'general' scheduling
@@ -146,7 +146,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
     return observations[primary_target_id], int(max_altitude_time['wait'][primary_target_id].value)
 
-def execute(observation: Dict, program: Dict, telescope: Telescope, db) -> bool:
+def execute(observation: Dict, program: Dict, telescope, db) -> bool:
     """ Observe the request observation and save the data according to the parameters of the program.
     This function is provided a connected Telescope() object that should be used to execute
     the observation, and a connected MongoDB client to allow for temporary changes to be stored
@@ -197,6 +197,11 @@ def execute(observation: Dict, program: Dict, telescope: Telescope, db) -> bool:
     fname = '_'.join([target_str, '{filter}', observation.get('exptime'), 's',
                       'bin', observation.get('binning'), str(datetime.date.today()),
                       'seo', observation['email'].split('@')[0]])
+    user_path = observation['email'].split('@')[0].capitalize()
+    observation_path = '_'.join([target_str, str(observation.get('exptime'))+'s',
+                      'bin'+str(observation.get('binning')), observation.get('execDate'),
+                      'seo', observation['email'].split('@')[0]])
+    stars_path = '/'.join([user_path,observation_path])
     rawdirname = '/'.join([observation['email'].split('@')[0], fname.replace('{filter}_', '')]).strip('/')
     dirname = '/'.join(['', 'home', config.telescope.username, 'data', rawdirname])
 
