@@ -1,20 +1,12 @@
 import pymongo
 import importlib
 import imqueue
-import imqueue.schedulers.general as general
+import imqueue.schedulers.basic_general_old as general
 from typing import List, Dict
 
-from basic_general import Target #name, ra, dec
-from basic_general import Stack #exposure, filter, binning, count
-from basic_general import Sequence #stacks, repeat
-from basic_general import Observatory #code, latitude, longitude, altitude
-from basic_general import Observation #target, sequence
-from basic_general import Scheduler #observatory, observations
 
-
-"""
 def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, int):
-     Call the requested scheduler and return the next requested observation.
+    """ Call the requested scheduler and return the next requested observation.
 
     This function is responsible for finding the correct scheduler to use
     for the given program (using program.scheduler), and then calling
@@ -34,7 +26,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         The next observation that should be executed.
     wait: int
         The number of seconds to wait before imaging this observation
-
+    """
 
     # the normal scheduler
     # if program.get('executor') == 'general':
@@ -59,19 +51,9 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         imqueue.Executor.log.debug(e)
         return general.schedule(observations, session, program)
         #return scheduler.general.schedule(observations, session, program)
-"""
 
-#start up the scheduler
-schedule = Scheduler(observatory, observations: List[Dict])
-#get next best target
-next_observation = schedule.whatsNext()
-if next_observation == None:
-    print 'No target is available'
-else:
-    print 'Next observation is:\n\n%s'%next_observation.toString()
 
-#def execute(observation: Dict, program: Dict, telescope) -> bool:
-def execute(next_observation: Dict, program: Dict, telescope) -> bool:
+def execute(observation: Dict, program: Dict, telescope) -> bool:
     """ Observe the requested observation and save the data according to program.
 
     This function is provided a connected Telescope() object that should be used
@@ -95,8 +77,7 @@ def execute(next_observation: Dict, program: Dict, telescope) -> bool:
 
     # the normal executor
     if program.get('executor') == 'general':
-        return general.execute(next_observation, program, telescope)
-        #return general.execute(observation, program, telescope)
+        return general.execute(observation, program, telescope)
 
     # asteroids
     # elif program.get('executor') == 'asteroid':
@@ -110,7 +91,7 @@ def execute(next_observation: Dict, program: Dict, telescope) -> bool:
 
             # check that it provides both schedule and execute commands
             if 'schedule' in dir(scheduler) and 'execute' in dir(scheduler):
-                return scheduler.execute(next_observation, program, telescope, db_client)
+                return scheduler.execute(observation, program, telescope, db_client)
         # if the above does not work, use general scheduler
         finally:
-            return general.execute(next_observation, program, telescope, db_client)
+            return general.execute(observation, program, telescope, db_client)
