@@ -288,7 +288,7 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
     telescope.take_bias(basename_bias, 10*exposure_count, binning)
 
     # we set the directory for the observations
-    database.Database.observations.update({'_id': observation['_id']}, {'$set': {'directory': f'{rawdirname}'}})
+    database.Database.observations.update({'_id': observation['_id']}, {'$set': {'directory': f'{rawdirname}','starspath': f'{stars_path}'}})
 
     # we have finished the observation, let's update record
     # with execDate and mark it completed
