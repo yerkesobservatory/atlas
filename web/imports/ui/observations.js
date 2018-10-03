@@ -142,7 +142,7 @@ Template.newObservationForm.events({
         CoffeeAlerts.clearSeen();
 
         // load visiblity curves
-        HTTP.get('https://sirius.stoneedgeobservatory.com:8179/visibility/'+event.target.value,
+        HTTP.get('http://sirius.stoneedgeobservatory.com:8179/visibility/'+event.target.value,
                  function (error, response) {
                      if (error) {
                          console.log(error);
@@ -153,7 +153,7 @@ Template.newObservationForm.events({
                  });
 
         // load target preview
-        HTTP.get('https://sirius.stoneedgeobservatory.com:8179/preview/'+event.target.value,
+        HTTP.get('http://sirius.stoneedgeobservatory.com:8179/preview/'+event.target.value,
                  function (error, response) {
                      if (error) {
                          console.log(error);
@@ -433,6 +433,9 @@ Template.observations.events({
     // on press of the action button
     'click .reactive-table tbody tr': function (event) {
         if (event.target.className == ('download')) {
+            return;
+        }
+	if (event.target.className == ('redirect')) {
             return;
         }
         event.preventDefault();

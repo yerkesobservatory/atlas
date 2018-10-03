@@ -18,6 +18,7 @@ from imqueue import database
 from telescope.exception import *
 import random
 
+
 class SSHTelescope(object):
     """ This class allows for a telescope to be remotely controlled
     via SSH using high-level python functions.
@@ -52,10 +53,12 @@ class SSHTelescope(object):
             db.client.admin.command('ismaster')
 
             # we can connect to database, let us set the update function
-            self.update = lambda x: db.telescopes.update_one({'name': config.general.name}, {'$set': x})
+            self.update = lambda x: db.telescopes.update_one(
+                {'name': config.general.name}, {'$set': x})
 
         except Exception as e:
-            self.log.warning('Unable to connect to database... Disabling updates...')
+            self.log.warning(
+                'Unable to connect to database... Disabling updates...')
             self.update = lambda x: True
 
     def connect(self) -> bool:
@@ -83,10 +86,13 @@ class SSHTelescope(object):
 
         # connect!
         try:
-            ssh.connect(config.telescope.host, username=config.telescope.username)
-            SSHTelescope.log.info('Successfully connected to the telescope control server')
+            ssh.connect(config.telescope.host,
+                        username=config.telescope.username)
+            SSHTelescope.log.info(
+                'Successfully connected to the telescope control server')
         except paramiko.AuthenticationException:  # unable to authenticate
-            SSHTelescope.log.critical('Unable to authenticate connection to telescope control server. Please check that your SSH key has been setup correctly.')
+            SSHTelescope.log.critical(
+                'Unable to authenticate connection to telescope control server. Please check that your SSH key has been setup correctly.')
             raise ConnectionException
         except Exception as e:
             SSHTelescope.log.critical(f'SSHTelescope has encountered an unknown error in '
@@ -146,11 +152,11 @@ class SSHTelescope(object):
 
         # if open, return True
         if slit and slit.group(0) == 'open':
-            self.update({'slit': 'open'})            
+            self.update({'slit': 'open'})
             return True
 
         # in any other scenario, return False
-        self.update({'slit': 'closed'})           
+        self.update({'slit': 'closed'})
         return False
 
     def close_dome(self) -> bool:
@@ -196,7 +202,7 @@ class SSHTelescope(object):
         # TODO
         return True
 
-    #mcn
+    # mcn
     def chip_temp_ok(self) -> bool:
         """ Compare current chip temperature to the set temperature.
         If the same, return True; else, return False
@@ -209,14 +215,15 @@ class SSHTelescope(object):
 
         # extract group and return
         if tchip and setpoint:
-          return float(tchip.group(0))-float(setpoint.group(0)) < 1 #within 1 degree is good enough
-      #else:
-      #    self.log.warning(f'Unable to parse get_ccd_status: \"{result}\"')
-      #    return False  # return the safest value
+            # within 1 degree is good enough
+            return float(tchip.group(0))-float(setpoint.group(0)) < 1
+        # else:
+        #    self.log.warning(f'Unable to parse get_ccd_status: \"{result}\"')
+        #    return False  # return the safest value
 
         return False
 
-    #mcn
+    # mcn
     def cool_ccd(self) -> bool:
         """ Cool the CCD
         """
@@ -233,7 +240,8 @@ class SSHTelescope(object):
         except Exception as e:
             command = telescope.lock
 
-        result = self.run_command(telescope.lock.format(user=user, comment=comment))
+        result = self.run_command(
+            telescope.lock.format(user=user, comment=comment))
 
         # check that we were successful
         if re.search(telescope.lock_re, result):
@@ -331,6 +339,25 @@ class SSHTelescope(object):
             self.log.warning(f'Unable to parse get_rain: \"{result}\"')
             return 1.0  # return the safest value
 
+    def get_where(self) -> str:
+        """ Get the current telescope pointing location.
+        """
+        # run the command
+        result = self.run_command(telescope.get_where)
+
+        # run regex
+        ra = re.search(telescope.where_ra_re, result)
+        dec = re.search(telescope.where_dec_re, result)
+
+        # extract group and return
+        if ra and dec:
+            self.update({'location': ra.group(0)+' '+dec.group(0)})
+            return ra.group(0)+' '+dec.group(0)
+        else:
+            self.update({'location': 'Unknown'})
+            self.log.warning(f'Unable to parse get_where: \"{result}\"')
+            return ''  # return the safest value
+
     def get_sun_alt(self) -> float:
         """ Get the current altitude of the sun.
         """
@@ -369,7 +396,8 @@ class SSHTelescope(object):
         """ Get the mean count in a given FITS image.
         """
         # run the command
-        result = self.run_command(telescope.get_mean_image_count.format(file=fname))
+        result = self.run_command(
+            telescope.get_mean_image_count.format(file=fname))
 
         # run regex
         mean_count = re.search(telescope.get_mean_image_count_re, result)
@@ -467,11 +495,11 @@ class SSHTelescope(object):
         """ Point the telescope east of zenith with a bit of wiggle.
         """
 
-        #point scope east of zenith
-        ha = config.telescope.ha_for_flats #eastward
-        dec = config.general.latitude #zenith
+        # point scope east of zenith
+        ha = config.telescope.ha_for_flats  # eastward
+        dec = config.general.latitude  # zenith
 
-        #randomize
+        # randomize
         dHa = 0.5*random.random()
         dDec = 0.5*random.random()
         ha += dHa
@@ -479,20 +507,20 @@ class SSHTelescope(object):
 
         #print ('ha=%f, dec=%f'%(ha,dec))
 
-        self.run_command(telescope.goto_for_flats.format(ha='%0.4f'%ha, dec='%0.4f'%dec))
+        self.run_command(telescope.goto_for_flats.format(
+            ha='%0.4f' % ha, dec='%0.4f' % dec))
 
         return True
-
 
     def goto_point_for_flats(self) -> bool:
         """ Point the telescope east of zenith with a bit of wiggle.
         """
 
-        #point scope east of zenith
-        ha = config.telescope.ha_for_flats #eastward
-        dec = config.general.latitude #zenith
+        # point scope east of zenith
+        ha = config.telescope.ha_for_flats  # eastward
+        dec = config.general.latitude  # zenith
 
-        #randomize
+        # randomize
         dHa = 0.5*random.random()
         dDec = 0.5*random.random()
         ha += dHa
@@ -500,10 +528,10 @@ class SSHTelescope(object):
 
         #print ('ha=%f, dec=%f'%(ha,dec))
 
-        self.run_command(telescope.goto_for_flats.format(ha='%0.4f'%ha, dec='%0.4f'%dec))
+        self.run_command(telescope.goto_for_flats.format(
+            ha='%0.4f' % ha, dec='%0.4f' % dec))
 
         return True
-
 
     def goto_point(self, ra: str, dec: str, rough=False) -> (bool, float, float):
         """ Point the telescope at a given RA/Dec.
@@ -740,6 +768,9 @@ class SSHTelescope(object):
         # if the wait time is long enough, close down the telescope in the meantime
         if wait >= 60 * config.telescope.wait_time:
 
+            # update telescope pointing position
+            self.get_where()
+
             # if the dome is open, close it
             if self.dome_open():
                 self.log.info('Closing down the telescope while we sleep...')
@@ -783,7 +814,8 @@ class SSHTelescope(object):
 
             # sleep for specified wait time
             self.update({'status': 'sleeping'})
-            self.wait(time_to_sleep) # TODO: Should this be changed to avoid repeatedly opening the dome?
+            # TODO: Should this be changed to avoid repeatedly opening the dome?
+            self.wait(time_to_sleep)
             elapsed_time += time_to_sleep
 
             # shut down after max_time hours of continuous waiting
@@ -812,7 +844,7 @@ class SSHTelescope(object):
         while i < count:
 
             # create filename
-            if count == 1: #don't add count if just one exposure
+            if count == 1:  # don't add count if just one exposure
                 fname = filename + f'.fits'
             else:
                 fname = filename + f'_{i}.fits'
@@ -826,14 +858,15 @@ class SSHTelescope(object):
 
             # if the telescope has randomly closed, open up and repeat the exposure
             if not self.dome_open():
-                self.log.warning('Slit closed during exposure - repeating previous exposure!')
+                self.log.warning(
+                    'Slit closed during exposure - repeating previous exposure!')
                 self.wait_until_good()
                 self.open_dome()
                 self.keep_open(exposure_time*count)
                 continue
             else:  # this was a successful exposure - take the next one
 
-                i += 1 # increment counter
+                i += 1  # increment counter
 
         self.update({'status': 'open'})
         return True
@@ -849,7 +882,6 @@ class SSHTelescope(object):
             fname = filename + f'_dark_{n}.fits'
 
             self.log.info(f'Taking dark {n+1}/{count} with name: {fname}')
-
 
             self.run_command(telescope.take_dark.format(time=exposure_time, binning=binning,
                                                         filename=fname))
@@ -871,7 +903,6 @@ class SSHTelescope(object):
 
             # create filename
             fname = filename + f'_bias_{n}.fits'
-
 
             self.run_command(telescope.take_dark.format(time=0.1, binning=binning,
                                                         filename=fname))
@@ -927,7 +958,8 @@ class SSHTelescope(object):
 
         """
         if self.ssh == None:
-            self.log.warn('SSH is not connected. Please reconnect to the telescope server.')
+            self.log.warn(
+                'SSH is not connected. Please reconnect to the telescope server.')
             return None
 
         # make sure the connection hasn't timed out due to sleep
@@ -938,7 +970,8 @@ class SSHTelescope(object):
             self.ssh = self.connect()
 
         # try and execute command 5 times if it fails
-        numtries = 0; exit_code = 1
+        numtries = 0
+        exit_code = 1
         while numtries < 5 and exit_code != 0:
             try:
                 self.log.info(f'Executing: {command}')
@@ -985,7 +1018,8 @@ class SSHTelescope(object):
         """
         # create format string for this module
         format_str = config.logging.fmt.replace('[name]', 'TELESCOPE')
-        formatter = colorlog.ColoredFormatter(format_str, datefmt=config.logging.datefmt)
+        formatter = colorlog.ColoredFormatter(
+            format_str, datefmt=config.logging.datefmt)
 
         # create stream
         stream = logging.StreamHandler()
