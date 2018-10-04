@@ -229,6 +229,55 @@ Template.newObservationForm.events({
             return;
         }
 
+
+xmlhttp = new XMLHttpRequest();
+function objectNameExists(str){
+	xmlhttp.onreadystatechange = function(){
+		if(this.readyState==4 && this.status==200){
+			if(this.responseText.length<300){
+				document.getElementById('return').innerHTML="Object not found in SIMBAD Database"
+			}
+			else{
+				document.getElementById('return').innerHTML=""
+			}
+		}
+
+		else{
+			document.getElementById('form-target').innerHTML = "<strong> /*Waiting for Server Response...</strong>";
+		}
+	}
+	xmlhttp.open("GET","http://simbad.u-strasbg.fr/simbad/sim-id?output.format=ASCII&Ident="+str, true)
+	xmlhttp.send()
+}
+
+
+
+function objectExists(){
+  var x = document.getElementById("target")
+  var coord_or_name = x.indexOf(":");
+  if(coord_or_name<0){
+    objectNameExists(x)
+  }
+  if(coord_or_name>0){
+    var ra = x.split(" ")[0]
+    var dec = x.split(" ")[1]
+    if(dec.indexOf("+")<0){
+      dec = dec.slice(1)
+    }
+    if(ra.split(":")[0].length!=2 || ra.split(":")[1].length !=2 || ra.split(":")[2].length!=2 ||
+       dec.split(":")[0].length!=2 || dec.split(":")[1].length!=2 || dec.split(":")[2].length!=2 ){
+        document.getElementById('return').innerHTML="Coordinates in incorrect format!"
+       }
+    if(Number(ra.split(":")[0])<0 || Number(ra.split(":")[0])>24 || Number(ra.split(":")[1])<0 ||
+       Number(ra.split(":")[1])>59 || Number(ra.split(":")[2])<0 || Number(ra.split(":")[2])>59 ||
+       Number(dec.split(":")[0])<0 || Number(dec.split(":")[0])>90 || Number(dec.split(":")[1])<0 ||
+       Number(dec.split(":")[1])>59 || Number(dec.split(":")[2])<0 || Number(dec.split(":")[2])>59){
+       document.getElementById('return').innerHTML="Coordinates out of range!"
+       }
+  }
+
+}
+
         // check the time allowed is sufficient
         const availableTime =  Session.get('totalAvailableTime');
         if (availableTime < Number(exptime)*Number(expcount)*filters.length) {
@@ -435,7 +484,7 @@ Template.observations.events({
         if (event.target.className == ('download')) {
             return;
         }
-	if (event.target.className == ('redirect')) {
+        if (event.target.className == ('gotostars')) {
             return;
         }
         event.preventDefault();
