@@ -140,8 +140,8 @@ class Executor(object):
 
         # we take a 5 minute dark so that observations that don't have darks can
         # still find a dark to use for processing
-        self.telescope.take_dark('/'.join(['', 'home', config.telescope.username, 'data', 'darks',
-                                           str(datetime.datetime.now().date())+'_dark_300.fits']), 300, 1, 2)
+        #self.telescope.take_dark('/'.join(['', 'home', config.telescope.username, 'data', 'darks',
+        #                                   str(datetime.datetime.now().date())+'_dark_300.fits']), 300, 1, 2)
 
         # for each session scheduled to start tonight
         for session in sessions:
@@ -384,13 +384,15 @@ class Executor(object):
             observing_schedule = schedule.schedule(observations, session, program)
 
             # if the scheduler returns None, we are done
-            if len(observing_schedule.scheduled_blocks) == 0:
+            if observing_schedule[1]<0:
+            #if len(observing_schedule.scheduled_blocks) == 0:
                 self.log.debug('Scheduler reports no observations left for this session...')
                 break
 
             # we wait until this observation needs to start
-            start_time = observing_schedule.slots[0].start.datetime
-            wait_time = (start_time - datetime.datetime.now()).seconds
+            #start_time = observing_schedule.slots[0].start.datetime
+            #wait_time = (start_time - datetime.datetime.now()).seconds
+            wait_time = observing_schedule[1]
             # some time elapses between scheduling and execution, must
             # account for wait times that are only a few seconds past
             # the current time. We have one-minute windows on either side
@@ -408,9 +410,10 @@ class Executor(object):
             # we execute
             try:
                 # extract observation from ObservingBlock
-                observation = observing_schedule.scheduled_blocks[0].configuration
+                #observation = observing_schedule.scheduled_blocks[0].configuration
+                observation = observing_schedule[0]
                 self.log.info(f'Executing observation of {observation["target"]} for {observation["email"]}...')
-                schedule.execute(observation, program, self.telescope)
+                schedule.execute(observation, program, self.telescope, self.db)
                 self.log.info(f'Finished observing {observation["target"]} for {observation["email"]}')
 
                 # record that we completed this observation

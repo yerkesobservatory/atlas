@@ -48,7 +48,7 @@ def point(ra: str, dec: str, telescope: 'Telescope') -> bool:
         return False
 
     # location of solve-field binary of astrometry
-    solve_field = config.astrometry.bin_dir+'/solve-field'
+    solve_field = config.astrometry.bin_dir+'solve-field'
 
     # static config parameters for astrometry
     downsample = config.astrometry.downsample
@@ -82,60 +82,63 @@ def point(ra: str, dec: str, telescope: 'Telescope') -> bool:
 
     telescope.log.info('Beginning pinpoint iterations...')
     # we iterate taking images in each iteration and running astrometry
-    while ((abs(ra_offset) > min_ra_offset or
-            abs(dec_offset) > min_dec_offset) and
-           iteration < max_tries ):
+    #while ((abs(ra_offset) > min_ra_offset or
+    #        abs(dec_offset) > min_dec_offset) and
+    #       iteration < max_tries ):
 
         # take the first image
-        telescope.take_exposure(fits_fname, time, count = 1, binning = binning)
+    telescope.take_exposure(fits_fname, time, count = 1, binning = binning)
 
         # build the astrometry solve-field command
-        astro_cmd = solve_field+(' --no-verify --overwrite --no-remove-lines --no-plots '
-                                 '--downsample {} --cpulimit {} --dir /tmp/ '
-                                 '--ra {} --dec {} --scale-unit arcsecperpix '
-                                 '--scale-low {} --scale-high {} --radius {} '
-                                 '--index-xyls none --axy none --temp-axy --solved none --match none '
-                                 '--rdls none --corr none --pnm none --wcs none {}.fits '
-                                 ''.format(downsample, cpu_limit, ra_target, dec_target,
-                                           scale_low, scale_high, radius, fits_fname+'_0'))
+    astro_cmd = '/home/mcnowinski/seo/bin/pinpoint %s %s' %(ra, dec)
+        #astro_cmd = solve_field+(' --no-verify --overwrite --no-remove-lines --no-plots '
+        #                         '--downsample {} --cpulimit {} --dir /tmp/ '
+        #                         '--ra {} --dec {} --scale-unit arcsecperpix '
+        #                         '--scale-low {} --scale-high {} --radius {} '
+        #                         '--index-xyls none --axy none --temp-axy --solved none --match none '
+        #                         '--rdls none --corr none --pnm none --wcs none {}.fits '
+        #                         ''.format(downsample, cpu_limit, ra_target, dec_target,
+        #                                   scale_low, scale_high, radius, fits_fname))
 
         # run astrometry!
-        output = telescope.run_command(astro_cmd)
+    output = telescope.run_command(astro_cmd)
 
         #look for field center in solve-field output
-        match = re.search('RA,Dec \= \(([0-9\-\.\s]+)\,([0-9\-\.\s]+)\)', output)
-        if match:
-            # extract RA/DEC from image
-            RA_image = match.group(1).strip()
-            DEC_image = match.group(2).strip()
-        else:
-            telescope.log.warning('Field center RA/DEC not found in solve-field output!')
-            return False
+        #match = re.search('RA,Dec \= \(([0-9\-\.\s]+)\,([0-9\-\.\s]+)\)', output)
+        #if match:
+        #    # extract RA/DEC from image
+        #    RA_image = match.group(1).strip()
+        #    DEC_image = match.group(2).strip()
+        #else:
+        #    telescope.log.warning('Field center RA/DEC not found in solve-field output!')
+        #    return False
 
         # compute offsets in ra and dec between pointing and image
-        dec_offset = float(dec_target) - float(DEC_image)
-        ra_offset = float(ra_target) - float(RA_image)
-        if ra_offset > 350:
-            ra_offset -= 360.0
+        #dec_offset = float(dec_target) - float(DEC_image)
+        #ra_offset = float(ra_target) - float(RA_image)
+        #if ra_offset > 350:
+        #    ra_offset -= 360.0
 
         # if they are valid offsets, apply them to the scope
-        if abs(ra_offset) <= max_ra_offset and abs(dec_offset) <=max_dec_offset:
-            telescope.log.info('dRA={} arcsec dDEC={} arcsec'.format(ra_offset*3600, dec_offset*3600))
-            telescope.offset(ra_offset, dec_offset)
-        else:
-            telescope.log.warning('Calculated offsets too large '
-                                  '(tx offset ra={} dec={})'.format(ra_offset, dec_offset))
+        #if abs(ra_offset) <= max_ra_offset and abs(dec_offset) <=max_dec_offset:
+        #    telescope.log.info('dRA={} arcsec dDEC={} arcsec'.format(ra_offset*3600, dec_offset*3600))
+        #    telescope.offset(ra_offset, dec_offset)
+        #else:
+        #    telescope.log.warning('Calculated offsets too large '
+        #                          '(tx offset ra={} dec={})'.format(ra_offset, dec_offset))
 
         # everything worked - let's repeat
-        iteration += 1
+        #iteration += 1
 
         # end while
 
     # if pinpoint was successful
-    if (iteration < max_tries):
-        telescope.log.info('Pinpoint was successful!')
-        return True
+    #if (iteration < max_tries):
+    #    telescope.log.info('Pinpoint was successful!')
+    #    return True
 
     # pinpointing was unsuccessful
-    telescope.log.warn('Pinpoint reached maximum tries and was not successful.')
-    return False
+    #telescope.log.warn('Pinpoint reached maximum tries and was not successful.')
+    #return False
+    
+    return output

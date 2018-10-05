@@ -7,6 +7,9 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun
 from typing import List, Dict
 from config import config
 from routines import pinpoint, lookup
+from astropy.coordinates import Angle
+from astroplan import FixedTarget
+import re
 #from telescope import Telescope
 
 def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, int):
@@ -106,7 +109,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         #input_coordinates = observation['RA']+" "+observation['Dec']
         endtime = session['end']
 
-        max_altitude_time['target'].append(target[0])
+        max_altitude_time['target'].append(target)
 
         #try:
         #    target_coordinates = SkyCoord(input_coordinates, unit=(units.hourangle, units.deg))
@@ -116,8 +119,10 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         target_altaz = target_coordinates.transform_to(frame)
         if (np.max(target_altaz.alt)) > 40*units.degree:
             max_altitude_time['altitude'].append(np.max(target_altaz.alt))
+            logme('debuggingggggg...', max_altitude_time['target'])
         else:
             max_altitude_time['altitude'].append(0*units.degree)
+            logme('Not visible :(', max_altitude_time['target'])
 
         aux_time = times[np.argmax(target_altaz.alt)]
         max_altitude_time['time'].append(aux_time)
@@ -232,7 +237,7 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
         telescope.log.warn('Can\'t pinpoint to solar system object!')
     else:
         pinpointable = pinpoint.point(observation['RA'], observation['Dec'], telescope)
-
+        telescope.log.info({pinpointable})
         # let's check that pinpoint did not fail
     if not pinpointable:
         telescope.log.warn('Pinpoint failed! Disabling pinpointing for this observation...')

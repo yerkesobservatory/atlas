@@ -40,6 +40,7 @@ class ResourceServer(object):
 
         # save the figure into bytes
         plt.savefig(img, format='png', bbox_inches='tight', **kwargs)
+        plt.savefig('/temp/test.png', format='png', bbox_inches='tight', **kwargs)
         img.seek(0)
 
         # construct HTML response from image
