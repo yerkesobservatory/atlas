@@ -14,6 +14,7 @@ import astroplan
 import telescope
 import schedule as run
 import telescope.exception as exception
+from astropy.time import Time
 import imqueue.calendar as calendar
 import imqueue.database as database
 import imqueue.schedule as schedule
@@ -356,7 +357,7 @@ class Executor(object):
         and execute the first observation. We then repeat the scheduling in order
         to optimize target position.
         """
-
+        self.log.info(str(datetime.datetime.utcnow())+" "+str(Time.now())+" "+str(Time(str(Time.now())[:10]+" 00:00:00", scale="utc"))+" "+str(datetime.datetime.now(tz=pytz.utc)))
         if session.get('_id'):
             self.log.info(f'Starting execution of session {session["_id"]} for {session["email"]}')
         else:
@@ -382,7 +383,7 @@ class Executor(object):
             # run the scheduler and get the next observation to complete
             self.log.debug(f'Calling the {program.get("executor")} scheduler...')
             observing_schedule = schedule.schedule(observations, session, program)
-
+            self.log.info(str(observing_schedule[0])+", "+str(observing_schedule[1])+", "+str(observing_schedule[2]))
             # if the scheduler returns None, we are done
             if observing_schedule[1]<0:
             #if len(observing_schedule.scheduled_blocks) == 0:

@@ -2,6 +2,7 @@ import pymongo
 import datetime
 import numpy as np
 import astropy.units as units
+import imqueue.database as database
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun
 from typing import List, Dict
@@ -10,6 +11,7 @@ from routines import pinpoint, lookup
 from astropy.coordinates import Angle
 from astroplan import FixedTarget
 import re
+
 #from telescope import Telescope
 
 def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, int):
@@ -29,30 +31,32 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
          The time (in seconds) to wait before imaging this observation.
     Authors: apagul, rprechelt
     """
-
+    f = open('/live/production/atlas/imqueue/schedulers/log_scheduler.txt', 'w')
     # build aray to hold temporary values
     max_altitude_time = {'target': [], 'altitude': [], 'time': [], 'wait': []}
 
     # location of observatory
-    observatory = EarthLocation(lat=config.general.latitude*units.deg,
-                                lon=-config.general.longitude*units.deg,
-                                height=config.general.altitude*units.m)
+    observatory = EarthLocation(lat=38.2886*units.deg, lon=-122.50400*units.deg, height=75*units.m)
+    #lat=config.general.latitude*units.deg,
+                                #lon=-config.general.longitude*units.deg,
+                                #height=config.general.altitude*units.m)
 
     # compute necessary time variables
     start_time = str(Time.now())[:10]+" 00:00:00"
     fixed_start = Time(start_time, scale="utc")
-    delta_fixed_start = np.linspace(0,15,1000)*units.hour
+    delta_fixed_start = np.linspace(0,15,50000)*units.hour
     fixed = fixed_start+delta_fixed_start
     altazframe = AltAz(obstime=fixed, location=observatory)
     sun_altaz = get_sun(fixed).transform_to(altazframe)
 
     # get times for sunset and sunrise
-    sunset_time = fixed[np.where((sun_altaz.alt < -12*units.deg) == True)[0][0]]
-    sunrise_time = fixed[np.where((sun_altaz.alt < -12*units.deg) == True)[0][-1]]
+    sunset_time = fixed[np.where((sun_altaz.alt < -18*units.deg) == True)[0][0]]
+    sunrise_time = fixed[np.where((sun_altaz.alt < -18*units.deg) == True)[0][-1]]
 
     # compute time and coordinates
-    delta_obs_time = np.linspace(0, 15, 1000)*units.hour
+    delta_obs_time = np.linspace(0, 15, 50000)*units.hour
     times = Time.now()+delta_obs_time
+    print(Time.now(), file=f)
     times = times[np.where((times > sunset_time) & (times < sunrise_time))]
     frame = AltAz(obstime=times, location=observatory)
 
@@ -101,13 +105,13 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         coord = SkyCoord(center.ra + ra_offset, center.dec + dec_offset)
 
         # create astroplan traget
-        target = FixedTarget(coord=coord, name=observation['target'])
+        #target = FixedTarget(coord=coord, name=observation['target'])
 
         # extract values
-        #target = observation['target']
+        target = observation['target']
         target_coordinates = center
         #input_coordinates = observation['RA']+" "+observation['Dec']
-        endtime = session['end']
+        #endtime = session['end']
 
         max_altitude_time['target'].append(target)
 
@@ -119,10 +123,10 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         target_altaz = target_coordinates.transform_to(frame)
         if (np.max(target_altaz.alt)) > 40*units.degree:
             max_altitude_time['altitude'].append(np.max(target_altaz.alt))
-            logme('debuggingggggg...', max_altitude_time['target'])
+            #logme('debuggingggggg...', max_altitude_time['target'])
         else:
             max_altitude_time['altitude'].append(0*units.degree)
-            logme('Not visible :(', max_altitude_time['target'])
+            #logme('Not visible :(', max_altitude_time['target'])
 
         aux_time = times[np.argmax(target_altaz.alt)]
         max_altitude_time['time'].append(aux_time)
@@ -130,7 +134,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         aux_delta_time = delta_obs_time[np.argmax(target_altaz.alt)]
 
         if (max_altitude_time['altitude'][i]>0*units.degree) and (times[np.argmax(target_altaz.alt)] > sunset_time)\
-           and (times[np.argmax(target_altaz.alt)] < sunrise_time) and (times[np.argmax(target_altaz.alt)] < Time(endtime)):
+           and (times[np.argmax(target_altaz.alt)] < sunrise_time): #and (times[np.argmax(target_altaz.alt)] < Time(endtime)):
             max_altitude_time['wait'].append(aux_delta_time.to(units.second))
         else:
             max_altitude_time['wait'].append(-1*units.s)
@@ -140,7 +144,9 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
     if np.count_nonzero(good_object)>0:
         if np.count_nonzero(good_object)>1:
-            aux_id = np.argmin(Time(max_altitude_time['time'][good_object])-Time.now())
+            aux_id = np.argmin(Time(max_altitude_time['time'][good_object], scale='utc')-Time.now())
+            print(Time.now(), file=f)
+            print(Time(max_altitude_time['time'][good_object], scale='utc'), file=f)
             primary_target_id = np.where(good_object)[0][aux_id]
             primary_target = np.array(max_altitude_time['target'])[primary_target_id]
         else:
@@ -148,8 +154,8 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
             primary_target = np.array(max_altitude_time['target'])[primary_target_id]
     else:
         return None, -1
-
-    return observations[primary_target_id], int(max_altitude_time['wait'][primary_target_id].value)
+    f.close()
+    return observations[primary_target_id], int(max_altitude_time['wait'][primary_target_id].value),int(max_altitude_time['altitude'][primary_target_id].value)
 
 def execute(observation: Dict, program: Dict, telescope, db) -> bool:
     """ Observe the request observation and save the data according to the parameters of the program.
@@ -185,7 +191,7 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
     if telescope.goto_point(observation['RA'], observation['Dec']) is False:
         telescope.log.warn('Object is not currently visible. Skipping...')
         return False
-
+    telescope.log.info('here I am')
     # create basename for observations
     # TODO: support observations which only have RA/Dec
     # TODO: replace _id[0:3] with number from program
@@ -199,17 +205,27 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
     else:
         target_str = observation['target'].replace(' ', '_').replace("'", '')
 
-    fname = '_'.join([target_str, '{filter}', observation.get('exptime'), 's',
-                      'bin', observation.get('binning'), str(datetime.date.today()),
+    telescope.log.info(target_str,'{filter}', str(observation.get('exposure_time'))+'s',
+                      'bin'+str(observation.get('binning')), str(datetime.date.today()),
+                      'seo', str(observation['email'].split('@')[0]))
+    fname = '_'.join([target_str, '{filter}', str(observation.get('exposure_time'))+'s',
+                      'bin'+str(observation.get('binning')), str(datetime.date.today()),
                       'seo', observation['email'].split('@')[0]])
-    user_path = observation['email'].split('@')[0].capitalize()
-    observation_path = '_'.join([target_str, str(observation.get('exptime'))+'s',
-                      'bin'+str(observation.get('binning')), observation.get('execDate'),
-                      'seo', observation['email'].split('@')[0]])
-    stars_path = '/'.join([user_path,observation_path])
+    telescope.log.info('fname works!')
+    #user_path = observation['email'].split('@')[0].capitalize()
+    #telescope.log.info('user_path works!')
+    #observation_path = '_'.join([target_str, str(observation.get('exposure_time'))+'s',
+    #                             'bin'+str(observation.get('binning')),
+    #                             str(observation.get('execDate')),'seo',
+    #                             str(observation['email'].split('@')[0])])
+    #telescope.log.info('observation_path works!')
+    #stars_path = '/'.join([user_path,observation_path])
+    #telescope.log.info('stars_path works!')
     rawdirname = '/'.join([observation['email'].split('@')[0], fname.replace('{filter}_', '')]).strip('/')
+    telescope.log.info('rawdirname works!')
     dirname = '/'.join(['', 'home', config.telescope.username, 'data', rawdirname])
 
+    telescope.log.info('Finished creating directories')
 
     # create directories
     telescope.log.info('Making directory to store observations on telescope server...')
@@ -228,7 +244,8 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
     # we should be pointing roughly at the right place
     # now we pinpoint
     telescope.log.info('Starting telescope pinpointing...')
-
+    telescope.log.info('Still here')
+    
     if observation.get('target').lower() in solar_system:
         too_bright = True
 
@@ -249,10 +266,13 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
 
     # do we want to take darks
     take_darks = 'dark' in observation['filters']
-
+    filters=[]
+    for filt in observation['filters']:
+        if filt!='dark':
+            filters.append(filt)
     # for each filter
-    for filt in observation['filters'].remove('dark'):
-
+    for filt in filters:            
+        telescope.log.info("looking at filters")
         # check weather - wait until weather is good
         telescope.wait_until_good()
 
@@ -273,10 +293,15 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
 
         # keep open for filter duration - 60 seconds for pintpoint per exposure
         telescope.keep_open(exposure_time*exposure_count + 300)
-
+        if filt=="\"[OIII]\"":
+            filt_name = "OIII"
+        elif filt=="\"[SII]\"":
+            filt_name = "SII"
+        else:
+            filt_name = filt
         # take exposures!
-        telescope.take_exposure(basename_science.replace('{filter}', filt), exposure_time, exposure_count, binning, filt)
-        database.Database.observations.update({'_id': observation['_id']}, {'$push': {'filenames': basename_science.replace('{filter}', filt)}})
+        telescope.take_exposure(basename_science.replace('{filter}', filt_name), exposure_time, exposure_count, binning, filt)
+        database.Database.observations.update({'_id': observation['_id']}, {'$push': {'filenames': basename_science.replace('{filter}', filt_name)}})
 
     # reset filter back to clear
     telescope.log.info('Switching back to clear filter')
@@ -293,7 +318,7 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
     telescope.take_bias(basename_bias, 10*exposure_count, binning)
 
     # we set the directory for the observations
-    database.Database.observations.update({'_id': observation['_id']}, {'$set': {'directory': f'{rawdirname}','starspath': f'{stars_path}'}})
+   # database.Database.observations.update({'_id': observation['_id']}, {'$set': {'directory': f'{rawdirname}','starspath': f'{stars_path}'}})
 
     # we have finished the observation, let's update record
     # with execDate and mark it completed
@@ -302,6 +327,19 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
                                           {'$set':
                                            {'completed': True,
                                             'execDate': datetime.datetime.now()}})
-
-
+    user_path = observation['email'].split('@')[0].capitalize()
+    telescope.log.info('user_path works!')
+    observation_path = '_'.join([target_str, str(observation.get('exposure_time'))+'s',
+                                 'bin'+str(observation.get('binning')),
+                                 str(observation.get('execDate')),'seo',
+                                 str(observation['email'].split('@')[0])])
+    #observation_path = '/'.join([observation['email'].split('@')[0], fname.replace('{filter}_', '')]).strip('/')
+    telescope.log.info('observation_path works!')
+    stars_path = '/'.join([user_path, fname.replace('{filter}_', '')]).strip('/')
+    telescope.log.info('stars_path works!')
+    # we set the directory for the observations                                             
+    database.Database.observations.update({'_id': observation['_id']},
+                                          {'$set': {'directory': f'{rawdirname}',
+                                                    'starspath': f'{stars_path}'}})
+    
     return True

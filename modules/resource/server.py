@@ -7,15 +7,25 @@ import matplotlib.pyplot as plt
 from typing import Dict
 from routines import plots
 from config import config
+import logging
+import colorlog
+
 
 class ResourceServer(object):
     """ This class is a REST endpoint designed to serve custom files (primary plots and images)
     for the Meteor web app.
     """
 
+    # logger for class
+    log = None
+
     def __init__(self):
         """ We create the app, register routes, and runz.
         """
+
+        # initialize logging system if not already done
+        if not ResourceServer.log:
+            ResourceServer.__init_log()
 
         # create the Flask app
         app = flask.Flask("Resource Server")
@@ -39,17 +49,22 @@ class ResourceServer(object):
         img = io.BytesIO()
 
         # save the figure into bytes
+        self.log.debug('make_plot_response')
         plt.savefig(img, format='png', bbox_inches='tight', **kwargs)
-        plt.savefig('/temp/test.png', format='png', bbox_inches='tight', **kwargs)
+        plt.savefig('/tmp/test.png', format='png',
+                    bbox_inches='tight', **kwargs)
         img.seek(0)
 
         # construct HTML response from image
-        response = flask.make_response(base64.b64encode(img.getvalue()))
+        self.log.debug(base64.b64encode(img.getvalue()).decode('utf8'))
+        response = flask.make_response(
+            base64.b64encode(img.getvalue()).decode('utf8'))
         response.headers['Content-Type'] = 'image/png'
         response.headers['Content-Transfer-Encoding'] = 'BASE64'
 
         # support CORS
-        response.headers['Access-Control-Allow-Origin'] = (flask.request.headers.get('ORIGIN') or 'https://queue.stoneedgeobservatory.com')
+        response.headers['Access-Control-Allow-Origin'] = (
+            flask.request.headers.get('ORIGIN') or 'https://queue.stoneedgeobservatory.com')
 
         # close image and figures
         img.close()
@@ -60,6 +75,8 @@ class ResourceServer(object):
         """ This endpoint produces a visibility curve (using code in /routines)
         for the object provided by 'target', and returns it to the requester.
         """
+
+        self.log.info('visibility called!')
         fig = plots.visibility_curve(target, figsize=(8, 4))
         if fig:
             response = self.make_plot_response(fig, transparent=False)
@@ -68,7 +85,6 @@ class ResourceServer(object):
             return response
 
         return flask.Response("{'error': 'Unable to create visibility plot'}", status=500, mimetype='application/json')
-
 
     def preview(self, target: str) -> Dict[str, str]:
         """ This endpoint uses astroplan to produce a preview image
@@ -82,3 +98,23 @@ class ResourceServer(object):
             return response
 
         return flask.Response("{'error': 'Unable to create target preview'}", status=500, mimetype='application/json')
+
+    @classmethod
+    def __init_log(cls) -> bool:
+        """ Initialize the logging system for this module and set
+        a ColoredFormatter.
+        """
+        # create format string for this module
+        format_str = config.logging.fmt.replace('[name]', 'RESOURCE')
+        formatter = colorlog.ColoredFormatter(
+            format_str, datefmt=config.logging.datefmt)
+
+        # create stream
+        stream = logging.StreamHandler()
+        stream.setLevel(logging.DEBUG)
+        stream.setFormatter(formatter)
+
+        # assign log method and set handler
+        cls.log = logging.getLogger('resource')
+        cls.log.setLevel(logging.DEBUG)
+        cls.log.addHandler(stream)
