@@ -4,7 +4,7 @@ import $ from 'jquery';
 $.validator.addMethod("validCoordinate", function(value, element) {
 
     // if string contains :,+ or - then we assume that it is a RA/Dec string
-    if ((value.indexOf(':') > -1) || (value.indexOf('+') > -1) || (value.indexOf('-') > -1)) {
+    if ((value.indexOf(':') > -1)){// || (value.indexOf('+') > -1) || (value.indexOf('-') > -1)) {
         // we assume that we have RA/Dec
         // this checks for the following forms
         // 00:00:00 +-00:00:00
@@ -28,11 +28,23 @@ $.validator.addMethod("validCoordinate", function(value, element) {
         return false;
     }
     else {
+        xmlhttp = new XMLHttpRequest();
+        xmlhttp.onreadystatechange = function(){
+          if(this.readyState==4 && this.status==200){
+            if(this.responseText.length>300){
+              return true;
+              }
+            else{
+              return false;
+            }
+          }
+       }
+      xmlhttp.open("GET","http://simbad.u-strasbg.fr/simbad/sim-id?output.format=ASCII&Ident="+x, true)
+      xmlhttp.send()
         // we assume that we have a target string
         // TODO: lookup target in database to confirm that we understand it
         // Could use a resource server endpoint with astropy so we guarantee that
         // the executor can find this particular target
-        return true;
     }
     return false;
 }, "Invalid target name or RA/Dec pair");
