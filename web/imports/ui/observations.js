@@ -13,7 +13,7 @@ import $ from 'jquery';
 var aladin = null;
 
 
-// load sky preview
+// load sky preview test
 Template.newObservation.onCreated(function onCreated() {
 
     // aladin is disabled until HTTPS is fixed
