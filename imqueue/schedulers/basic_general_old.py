@@ -36,10 +36,10 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     max_altitude_time = {'target': [], 'altitude': [], 'time': [], 'wait': []}
 
     # location of observatory
-    observatory = EarthLocation(lat=38.2886*units.deg, lon=-122.50400*units.deg, height=75*units.m)
-    #lat=config.general.latitude*units.deg,
-                                #lon=-config.general.longitude*units.deg,
-                                #height=config.general.altitude*units.m)
+    #observatory = EarthLocation(lat=38.2886*units.deg, lon=-122.50400*units.deg, height=75*units.m)
+    observatory = EarthLocation(lat=config.general.latitude*units.deg,
+                                lon=config.general.longitude*units.deg,
+                                height=config.general.altitude*units.m)
 
     # compute necessary time variables
     start_time = str(Time.now())[:10]+" 00:00:00"
@@ -191,7 +191,6 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
     if telescope.goto_point(observation['RA'], observation['Dec']) is False:
         telescope.log.warn('Object is not currently visible. Skipping...')
         return False
-    telescope.log.info('here I am')
     # create basename for observations
     # TODO: support observations which only have RA/Dec
     # TODO: replace _id[0:3] with number from program
@@ -205,27 +204,11 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
     else:
         target_str = observation['target'].replace(' ', '_').replace("'", '')
 
-    telescope.log.info(target_str,'{filter}', str(observation.get('exposure_time'))+'s',
-                      'bin'+str(observation.get('binning')), str(datetime.date.today()),
-                      'seo', str(observation['email'].split('@')[0]))
     fname = '_'.join([target_str, '{filter}', str(observation.get('exposure_time'))+'s',
                       'bin'+str(observation.get('binning')), str(datetime.date.today()),
                       'seo', observation['email'].split('@')[0]])
-    telescope.log.info('fname works!')
-    #user_path = observation['email'].split('@')[0].capitalize()
-    #telescope.log.info('user_path works!')
-    #observation_path = '_'.join([target_str, str(observation.get('exposure_time'))+'s',
-    #                             'bin'+str(observation.get('binning')),
-    #                             str(observation.get('execDate')),'seo',
-    #                             str(observation['email'].split('@')[0])])
-    #telescope.log.info('observation_path works!')
-    #stars_path = '/'.join([user_path,observation_path])
-    #telescope.log.info('stars_path works!')
     rawdirname = '/'.join([observation['email'].split('@')[0], fname.replace('{filter}_', '')]).strip('/')
-    telescope.log.info('rawdirname works!')
     dirname = '/'.join(['', 'home', config.telescope.username, 'data', rawdirname])
-
-    telescope.log.info('Finished creating directories')
 
     # create directories
     telescope.log.info('Making directory to store observations on telescope server...')
@@ -244,8 +227,7 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
     # we should be pointing roughly at the right place
     # now we pinpoint
     telescope.log.info('Starting telescope pinpointing...')
-    telescope.log.info('Still here')
-    
+
     if observation.get('target').lower() in solar_system:
         too_bright = True
 
@@ -271,7 +253,7 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
         if filt!='dark':
             filters.append(filt)
     # for each filter
-    for filt in filters:            
+    for filt in filters:
         telescope.log.info("looking at filters")
         # check weather - wait until weather is good
         telescope.wait_until_good()
@@ -280,12 +262,12 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
         telescope.open_dome()
 
         # check our pointing with pinpoint again
-        if pinpointable:
-            telescope.log.debug('Re-pinpointing telescope...')
-            pinpointable = pinpoint.point(observation['RA'], observation['Dec'], telescope)
-        else:
-            telescope.log.debug('Doing a basic re-point...')
-            telescope.goto_point(observation['RA'], observation['Dec'], rough=True)
+        #if pinpointable:
+        #    telescope.log.debug('Re-pinpointing telescope...')
+        #    pinpointable = pinpoint.point(observation['RA'], observation['Dec'], telescope)
+        # else:
+        #    telescope.log.debug('Doing a basic re-point...')
+        #    telescope.goto_point(observation['RA'], observation['Dec'], rough=True)
 
         # reenable tracking
         telescope.log.debug('Enabling tracking...')
@@ -328,18 +310,14 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
                                            {'completed': True,
                                             'execDate': datetime.datetime.now()}})
     user_path = observation['email'].split('@')[0].capitalize()
-    telescope.log.info('user_path works!')
     observation_path = '_'.join([target_str, str(observation.get('exposure_time'))+'s',
                                  'bin'+str(observation.get('binning')),
                                  str(observation.get('execDate')),'seo',
                                  str(observation['email'].split('@')[0])])
-    #observation_path = '/'.join([observation['email'].split('@')[0], fname.replace('{filter}_', '')]).strip('/')
-    telescope.log.info('observation_path works!')
     stars_path = '/'.join([user_path, fname.replace('{filter}_', '')]).strip('/')
-    telescope.log.info('stars_path works!')
-    # we set the directory for the observations                                             
+    # we set the directory for the observations
     database.Database.observations.update({'_id': observation['_id']},
                                           {'$set': {'directory': f'{rawdirname}',
                                                     'starspath': f'{stars_path}'}})
-    
+
     return True
