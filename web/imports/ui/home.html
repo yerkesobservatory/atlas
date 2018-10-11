@@ -21,14 +21,14 @@
   <!--...
   <script src="../js/jquery.min.js"></script>
   <script src="../js/bootstrap-tour-standalone.min.js"></script>-->
-  
+
 
   <!-- Use any element to open the sidenav -->
-  
+
 
   <!-- Add all page content inside this div if you want the side nav to push page content to the right (not used if you only want the sidenav to sit on top of the page -->
   <div id="main"></div>
-  
+
   {{> history}}
 
   <div class="container-fluid">
@@ -57,7 +57,7 @@
 
 
     </div> <!-- row -->
-  </div> 
+  </div>
   <!-- container -->
 
 </template>
@@ -66,8 +66,7 @@
   <div id="mySidenav" class="sidenav">
     <a id = "close_side" class="pull-right">&times;</a>
     <h2>TELESCOPE HISTORY</h2>
-    <br>
-    <p>Queue sequence stopped at 2018-10-09 12:41:04 UTC with clouds at 50%</p>
+    {{> announcements}}
   </div>
 </template>
 
