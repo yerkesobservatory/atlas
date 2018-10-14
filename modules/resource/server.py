@@ -50,12 +50,13 @@ class ResourceServer(object):
 
         # save the figure into bytes
         self.log.debug('make_plot_response')
-        plt.savefig(img, format='png', bbox_inches='tight', **kwargs)
-        #plt.savefig('/tmp/test.png', format='png', bbox_inches='tight', **kwargs)
+        figure.savefig(img, format='png', bbox_inches='tight', **kwargs)
+        figure.savefig('/tmp/test.png', format='png',
+                       bbox_inches='tight', **kwargs)
         img.seek(0)
 
         # construct HTML response from image
-        response = flask.make_response(base64.b64encode(img.read()).decode('ascii'))
+        response = flask.make_response(base64.b64encode(img.getvalue()).decode())
         response.headers['Content-Type'] = 'image/png'
         response.headers['Content-Transfer-Encoding'] = 'BASE64'
 

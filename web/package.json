@@ -2,10 +2,11 @@
   "name": "atlas",
   "private": true,
   "scripts": {
-    "start": "meteor run"
+    "lint": "eslint .",
+    "pretest": "npm run lint --silent"
   },
   "dependencies": {
-    "@babel/runtime": "^7.0.0-beta.39",
+    "@babel/runtime": "7.0.0-beta.55",
     "babel-runtime": "^6.26.0",
     "bcrypt": "^1.0.3",
     "clipboard": "^1.7.1",
@@ -23,11 +24,7 @@
     "eslint-plugin-meteor": "^4.2.0",
     "eslint-plugin-react": "^7.7.0"
   },
-    "scripts": {
-	"lint": "eslint .",
-	"pretest": "npm run lint --silent"
-    },
-    "eslintConfig": {
-	"extends": "@meteorjs/eslint-config-meteor"
-    }
+  "eslintConfig": {
+    "extends": "@meteorjs/eslint-config-meteor"
+  }
 }
