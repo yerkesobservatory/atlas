@@ -334,7 +334,7 @@ class Executor(object):
         # try and acquire the telescope lock
         for attempts in range(0, 6): # we try 5 times (30 minutes)
             if (attempts == 5):
-                self.critical('Unable to lock the telescope after 30 minutes. Executor is shutting down...')
+                self.log.critical('Unable to lock the telescope after 30 minutes. Executor is shutting down...')
                 return
 
             # try and lock telescope

@@ -25,27 +25,20 @@ $.validator.addMethod("validCoordinate", function(value, element) {
 
         // otherwise we assume we don't understand this coordinate system
         return false;
+    } else {
+        var targetIsValid = false;
+        $.ajax({
+          type: "GET",
+          url: "https://simbad.u-strasbg.fr/simbad/sim-id?output.format=ASCII&Ident="+value,
+          async: false, //this flag makes the call synchronous, i.e. waits for the HTTP response!
+          success: function(result){
+            if(result.length > 300) { //300 is the magic number
+                targetIsValid = true;    
+            }
+          }
+        });
+        return targetIsValid;         
     }
-    else{
-//        HTTP.get('https://simbad.u-strasbg.fr/simbad/sim-id?output.format=ASCII&Ident='+value, {},
-//		 function (error, response) {
-//		if (error) {
-//		    console.log(error);
-//		    check_length=0;
-//		} else {
-//		    console.log(response.content.length);
-//		    check_length=response.content.length;
-//		}
-//	    });
-  //      console.log(check_length);
-//	if ((check_length > 300)) {
-//	    return true;
-//	} else {
-//	    return false;
-//	}
-	return true;
-    }
-    return false;
 }, "Invalid target name or RA/Dec pair");
 //	else{true_or_false=false;}
 		     // else{return false;}

@@ -9,6 +9,7 @@ from routines import plots
 from config import config
 import logging
 import colorlog
+#from flask_cors import CORS
 
 
 class ResourceServer(object):
@@ -29,6 +30,9 @@ class ResourceServer(object):
 
         # create the Flask app
         app = flask.Flask("Resource Server")
+
+        # make it CORS compatible
+        # CORS(app)
 
         @app.route('/visibility/<string:target>', methods=['GET'])
         def visibility(target: str, **kwargs) -> Dict[str, str]:
@@ -56,7 +60,8 @@ class ResourceServer(object):
         img.seek(0)
 
         # construct HTML response from image
-        response = flask.make_response(base64.b64encode(img.getvalue()).decode())
+        response = flask.make_response(
+            base64.b64encode(img.getvalue()).decode())
         response.headers['Content-Type'] = 'image/png'
         response.headers['Content-Transfer-Encoding'] = 'BASE64'
 
