@@ -8,6 +8,7 @@ import paramiko
 import datetime
 import websocket as ws
 import routines.flats as flats
+import routines.lightcurve as lightcurve
 import routines.focus as focus
 import paho.mqtt.client as mqtt
 import routines.lookup as lookup
@@ -739,9 +740,15 @@ class SSHTelescope(object):
         """
         result = self.run_command(telescope.get_focus)
 
-        # TODO: Parse output to extract focus value
+        focus=re.search(telescope.get_focus_re, result)
+        # extract group and return
+        if focus:
+            focus=float(focus.group(0))
+        else:
+            self.log.warning(f'Unable to parse focus in get_focus: \"{result}\"')
+            focus=0
 
-        return 0
+        return focus
 
     def set_focus(self, focus: float) -> bool:
         """ Set the focus value of the telescope to
@@ -789,6 +796,13 @@ class SSHTelescope(object):
         flats before returning.
         """
         return flats.take_flats(self)
+
+
+    def get_lightcurve(self) -> bool:
+        """ Wait until the weather is good, and then take a sequence of
+        images for lightcurve studies.
+        """
+        return lightcurve.get_lightcurve(self)
 
     def wait(self, wait: int) -> None:
         """ Sleep the telescope for 'wait' seconds.
