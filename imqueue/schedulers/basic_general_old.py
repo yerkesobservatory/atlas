@@ -141,7 +141,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     good_object = np.array([max_altitude_time['wait'][itgt]>-1*units.s for itgt in range(len(max_altitude_time['wait']))])
 
     if np.count_nonzero(good_object)>0:
-        half_exp_time = observation.get('totalTime')/2.*units.s
+        half_exp_time = observation.get('totalTime')/2.
         if np.count_nonzero(good_object)>1:
             aux_id = np.argmin(Time(max_altitude_time['time'][good_object], scale='utc')-Time.now())
             print(Time.now(), file=f)
