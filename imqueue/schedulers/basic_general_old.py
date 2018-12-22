@@ -121,7 +121,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         #    continue
 
         target_altaz = target_coordinates.transform_to(frame)
-        if (np.max(target_altaz.alt)) > min_alt*units.degree:
+        if (np.max(target_altaz.alt)) > config.telescope.min_alt*units.degree:
             max_altitude_time['altitude'].append(np.max(target_altaz.alt))
         else:
             max_altitude_time['altitude'].append(0*units.degree)
@@ -131,7 +131,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
         aux_delta_time = delta_obs_time[np.argmax(target_altaz.alt)]
 
-        if (max_altitude_time['altitude'][i]>min_alt*units.degree) and (times[np.argmax(target_altaz.alt)] > sunset_time)\
+        if (max_altitude_time['altitude'][i]>config.telescope.min_alt*units.degree) and (times[np.argmax(target_altaz.alt)] > sunset_time)\
            and (times[np.argmax(target_altaz.alt)] < sunrise_time): #and (times[np.argmax(target_altaz.alt)] < Time(endtime)):
             max_altitude_time['wait'].append(aux_delta_time.to(units.second))
         else:
