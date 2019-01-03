@@ -32,12 +32,6 @@ Template.newObservation.onCreated(function onCreated() {
 });
 
 // subscribe to program stream
-Template.observations.onCreated(function onCreated() {
-    Meteor.subscribe('observations');
-    Meteor.subscribe('programs');
-});
-
-// subscribe to program stream
 Template.newObservationForm.onCreated(function onCreated() {
     Meteor.subscribe('programs');
 
@@ -187,6 +181,7 @@ Template.newObservationForm.events({
         const exptime = target.exptime.value;
         const expcount = target.expcount.value;
         const binning = target.binning.value;
+        const dither = target.dither.value
         const lunar = target.lunar.value;
         const airmass = target.airmass.value;
         const offset_ra = target.offset_ra.value;
@@ -194,6 +189,7 @@ Template.newObservationForm.events({
         const xframe = target.x_frame.value;
         const yframe = target.y_frame.value;
         const priority = target.obs_priority.value;
+
 
         // build filter list
         const filterNames = ['filter_clear', 'filter_dark', 'filter_oiii', 'filter_g',
@@ -223,7 +219,6 @@ Template.newObservationForm.events({
             }
         }
 
-
         // check that at least one filter is selected
         if (filters.length == 0) {
             CoffeeAlerts.error('Your observation needs at least one filter.');
@@ -243,7 +238,7 @@ Template.newObservationForm.events({
                          'xframe': xframe, 'yframe': yframe, 'priority': priority};
 
         // submit new observation
-        Meteor.call('observations.insert', progId, target_name, exptime, expcount, binning, filters, options);
+        Meteor.call('observations.insert', progId, target_name, exptime, expcount, binning, filters, dither, options);
 
         // update the users available time
         Meteor.call('observations.totalAvailableTime', function(error, total) {
@@ -346,6 +341,12 @@ Template.newObservation.onRendered(function() {
                 min:1,
                 max: 8,
                 digits: true
+            },
+            dither: {
+                required: false,
+                min:0,
+                max: 20,
+                digits: true
             }
         },
         messages: {
@@ -360,7 +361,7 @@ Template.newObservation.onRendered(function() {
                 max: "That exposure time is waaaaay too long; most things will be saturated"
             },
             expcount: {
-                required: "Please enter a valid integer nmber of exposure counts",
+                required: "Please enter a valid integer number of exposure counts",
                 min: "You need to take atleast 1 exposure!",
                 max: "That is an excessive number of exposures; please make this less than 100",
                 digits: "This needs to be an integer - we can't have any half exposures can we?"
@@ -369,6 +370,11 @@ Template.newObservation.onRendered(function() {
                 required: "You need to set a binning - we recommend 1 or 2",
                 min: "CCD Binning needs to be greated than 1!",
                 max: "A CCD binning over 8 is excessive - please lower the binning",
+                digits: "This needs to be an integer!"
+            },
+            dither: {
+                min: "Dither radius should be greater than 0!",
+                max: "Dither radius should be less than 20 arcmin!",
                 digits: "This needs to be an integer!"
             }
         }
@@ -410,6 +416,8 @@ Template.observations.helpers({
                  }},
                 {key: 'binning',
                  label: 'Binning'},
+                {key: 'dither',
+                  label: 'Dither'},
                 // {key: 'submitDate',
                 //  label: 'Date Submitted'},
                 {key: 'completed',

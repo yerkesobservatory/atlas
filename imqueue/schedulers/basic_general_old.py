@@ -153,8 +153,8 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
             primary_target = np.array(max_altitude_time['target'])[primary_target_id]
     else:
         return None, -1
-    
-                          
+
+
     f.close()
     return observations[primary_target_id], int(max_altitude_time['wait'][primary_target_id].value)-half_exp_time,int(max_altitude_time['altitude'][primary_target_id].value)
 
@@ -246,6 +246,7 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
     exposure_time = observation['exposure_time']
     exposure_count = observation['exposure_count']
     binning = observation['binning']
+    dither = observation['dither']
 
     # do we want to take darks
     take_darks = 'dark' in observation['filters']
@@ -254,36 +255,57 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
         if filt!='dark':
             filters.append(filt)
     # for each filter
+
+    # keep open for filter duration - 60 seconds for pintpoint per exposure
+    telescope.keep_open(exposure_time*exposure_count + 300)
+
     for filt in filters:
-        telescope.log.info("looking at filters")
-        # check weather - wait until weather is good
-        telescope.wait_until_good()
+        while iexp < exposure_count:
+            telescope.log.info("looking at filters")
+            # check weather - wait until weather is good
+            telescope.wait_until_good()
 
-        # if the telescope has randomly closed, open up
-        telescope.open_dome()
+            # if the telescope has randomly closed, open up
+            telescope.open_dome()
 
-        # check our pointing with pinpoint again
-        #if pinpointable:
-        #    telescope.log.debug('Re-pinpointing telescope...')
-        #    pinpointable = pinpoint.point(observation['RA'], observation['Dec'], telescope)
-        # else:
-        #    telescope.log.debug('Doing a basic re-point...')
-        #    telescope.goto_point(observation['RA'], observation['Dec'], rough=True)
+            # check our pointing with pinpoint again
+            #if pinpointable:
+            #    telescope.log.debug('Re-pinpointing telescope...')
+            #    pinpointable = pinpoint.point(observation['RA'], observation['Dec'], telescope)
+            # else:
+            #    telescope.log.debug('Doing a basic re-point...')
+            #    telescope.goto_point(observation['RA'], observation['Dec'], rough=True)
 
-        # reenable tracking
-        telescope.log.debug('Enabling tracking...')
-        telescope.enable_tracking()
+            # reenable tracking
+            telescope.log.debug('Enabling tracking...')
+            telescope.enable_tracking()
 
-        # keep open for filter duration - 60 seconds for pintpoint per exposure
-        telescope.keep_open(exposure_time*exposure_count + 300)
-        if filt=="\"[OIII]\"":
-            filt_name = "OIII"
-        elif filt=="\"[SII]\"":
-            filt_name = "SII"
-        else:
-            filt_name = filt
-        # take exposures!
-        telescope.take_exposure(basename_science.replace('{filter}', filt_name), exposure_time, exposure_count, binning, filt)
+            if filt=="\"[OIII]\"":
+                filt_name = "OIII"
+            elif filt=="\"[SII]\"":
+                filt_name = "SII"
+            else:
+                filt_name = filt
+
+            if dither>0:
+                ra_offset = (-dither+2*dither*np.random.random())*u.arcmin
+                dec_offset = (-dither+2*dither*np.random.random())*u.arcmin
+                telescope.offset(ra_offset.to(u.deg),dec_offset.to(u.deg))
+
+            # take exposures!
+            telescope.take_exposure(basename_science.replace('{filter}', filt_name), exposure_time, iexp, binning, filt)
+            # if the telescope has randomly closed, open up and repeat the exposure
+            if not telescope.dome_open():
+                telescope.log.warning(
+                    'Slit closed during exposure - repeating previous exposure!')
+                telescope.wait_until_good()
+                telescope.open_dome()
+                telescope.keep_open(exposure_time*count)
+                continue
+            else:  # this was a successful exposure - take the next one
+
+                iexp += 1  # increment counter
+
         database.Database.observations.update({'_id': observation['_id']}, {'$push': {'filenames': basename_science.replace('{filter}', filt_name)}})
 
     # reset filter back to clear

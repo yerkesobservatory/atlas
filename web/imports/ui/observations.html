@@ -1,4 +1,3 @@
-<!-- template for the observation page -->
 <template name="newObservation">
 
   <!-- change the background color -->
@@ -145,6 +144,18 @@
             <label>
               <input type="checkbox" name="filter_sii" class="filter"> SII
             </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dither -->
+
+      <div class="form-group" id="form-dither form-dither">
+        <div class="row">
+          <label for="dither" class="col-lg-3 control-label" style="font-family: Futura; color:white;">DITHER</label>
+
+          <div class="col-lg-6">
+            <input class="form-control" type="number" id="dither" placeholder="dither radius (arcmin)" name="dither" min=0 max=20>
           </div>
         </div>
       </div>
