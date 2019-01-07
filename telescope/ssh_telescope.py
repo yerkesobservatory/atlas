@@ -679,7 +679,7 @@ class SSHTelescope(object):
 
     def offset(self, dra: float, ddec: float) -> bool:
         """ Offset the pointing of the telescope by a given
-        dRa and dDec in degrees
+        dRa and dDec
         """
         result = self.run_command(telescope.offset.format(ra=dra, dec=ddec))
 
@@ -888,22 +888,32 @@ class SSHTelescope(object):
         # take exposure_count exposures
         i: int = 0
         self.update({'status': 'exposing'})
-        fname = filename + f'_{count}.fits'
-        #while i < count:
+        while i < count:
 
             # create filename
-        #    if count == 1:  # don't add count if just one exposure
-        #        fname = filename + f'.fits'
-        #    else:
-        #        fname = filename + f'_{i}.fits'
+            if count == 1:  # don't add count if just one exposure
+                fname = filename + f'.fits'
+            else:
+                fname = filename + f'_{i}.fits'
 
-        self.log.info(f'Taking exposure {count} with name: {fname}')
+            self.log.info(f'Taking exposure {i+1}/{count} with name: {fname}')
 
             # take exposure
 
-        self.run_command(telescope.take_exposure.format(time=exposure_time, binning=binning,
-                                                        filename=fname))
+            self.run_command(telescope.take_exposure.format(time=exposure_time, binning=binning,
+                                                            filename=fname))
 
+            # if the telescope has randomly closed, open up and repeat the exposure
+            if not self.dome_open():
+                self.log.warning(
+                    'Slit closed during exposure - repeating previous exposure!')
+                self.wait_until_good()
+                self.open_dome()
+                self.keep_open(exposure_time*count)
+                continue
+            else:  # this was a successful exposure - take the next one
+
+                i += 1  # increment counter
 
         self.update({'status': 'open'})
         return True
