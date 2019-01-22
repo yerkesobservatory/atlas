@@ -141,7 +141,6 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     good_object = np.array([max_altitude_time['wait'][itgt]>-1*units.s for itgt in range(len(max_altitude_time['wait']))])
 
     if np.count_nonzero(good_object)>0:
-        half_exp_time = observation.get('totalTime')/2.
         if np.count_nonzero(good_object)>1:
             aux_id = np.argmin(Time(max_altitude_time['time'][good_object], scale='utc')-Time.now())
             print(Time.now(), file=f)
@@ -152,12 +151,17 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
             primary_target_id = np.where(good_object)[0][0]
             primary_target = np.array(max_altitude_time['target'])[primary_target_id]
     else:
-        return None, -1
+        return None, -1                    
     
-                          
     f.close()
-    return observations[primary_target_id], int(max_altitude_time['wait'][primary_target_id].value)-half_exp_time,int(max_altitude_time['altitude'][primary_target_id].value)
-
+                          
+    half_exp_time = observations[primary_target_id].get('totalTime')/2.
+    
+    if half_exp_time>int(max_altitude_time['wait'][primary_target_id].value):
+        return observations[primary_target_id], int(max_altitude_time['wait'][primary_target_id].value), int(max_altitude_time['altitude'][primary_target_id].value)
+    else:
+        return observations[primary_target_id], int(max_altitude_time['wait'][primary_target_id].value)-half_exp_time, int(max_altitude_time['altitude'][primary_target_id].value)
+                          
 def execute(observation: Dict, program: Dict, telescope, db) -> bool:
     """ Observe the request observation and save the data according to the parameters of the program.
     This function is provided a connected Telescope() object that should be used to execute
