@@ -36,7 +36,18 @@ Template.adminObservations.helpers({
                          else {
                              return "";
                          }
-                     }},
+                     }
+                },
+                {key: 'createdAt',
+                    label: 'Submitted',
+                    fn: function (value, object, key) {
+                        if (value != null) {
+                            return value.toISOString();
+                        } else {
+                            return "";
+                        }
+                    }                            
+                },
                 {key: 'target',
                  label: 'Target'},
                 {key: 'exposure_time',
@@ -52,15 +63,25 @@ Template.adminObservations.helpers({
                  label: 'Binning'},
                 // {key: 'submitDate',
                 //  label: 'Date Submitted'},
-                {key: 'completed',
+//                {key: 'completed',
+//                 label: 'Completed',
+//                 fn: function (value, object, key) {
+//                     if (value === true) {
+//                         return "Yes";
+//                     } else {
+//                         return "No";
+//                     }
+//                 }
+//                },
+                {key: 'execDate',
                  label: 'Completed',
                  fn: function (value, object, key) {
-                     if (value === true) {
-                         return "Yes";
+                     if (value != null) {
+                         return value.toISOString();
                      } else {
-                         return "No";
+                         return "";
                      }
-                 }
+                 }                            
                 },
                 {label: '',
                  tmpl: Template.observationAction

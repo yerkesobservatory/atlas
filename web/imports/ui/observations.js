@@ -397,12 +397,22 @@ Template.observations.helpers({
                      return "";
                  }
                 },
+                {key: 'createdAt',
+                    label: 'Submitted',
+                    fn: function (value, object, key) {
+                        if (value != null) {
+                            return value.toISOString();
+                        } else {
+                            return "";
+                        }
+                    }                            
+                },
                 {key: 'target',
-                 label: 'Target'},
+                 label: 'Target'},              
                 {key: 'exposure_time',
-                 label: 'Exposure Time (s)'},
+                 label: 'Exp Time (s)'},
                 {key: 'exposure_count',
-                 label: 'Exposure Count'},
+                 label: 'Exp Count'},
                 {key: 'filters',
                  label: 'Filters',
                  fn: function (value, object, key) {
@@ -410,18 +420,26 @@ Template.observations.helpers({
                  }},
                 {key: 'binning',
                  label: 'Binning'},
-                // {key: 'submitDate',
-                //  label: 'Date Submitted'},
-                {key: 'completed',
-                 label: 'Completed',
-                 fn: function (value, object, key) {
-                     if (value === true) {
-                         return "Yes";
-                     } else {
-                         return "No";
-                     }
-                 }
-                },
+//                {key: 'completed',
+//                 label: 'Completed',
+//                 fn: function (value, object, key) {
+//                     if (value === true) {
+//                         return "Yes";
+//                     } else {
+//                         return "No";
+//                     }
+//                 }
+//                },
+                {key: 'execDate',
+                label: 'Completed',
+                fn: function (value, object, key) {
+                    if (value != null) {
+                        return value.toISOString();
+                    } else {
+                        return "";
+                    }
+                }                            
+                },             
                 {label: '',
                  tmpl: Template.observationAction
                 }

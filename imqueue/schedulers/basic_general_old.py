@@ -71,7 +71,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
                 observation['RA'] = ra; observation['Dec'] = dec;
             else: # try and lookup by name
                 ra, dec = lookup.lookup(observation.get('target'))
-
+                print(ra, dec)
                 if not ra or not dec:
                     print(f'Unable to compute RA/Dec for {observation.get("target")}.')
                     if database.Database.is_connected:
@@ -82,6 +82,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
                 # save the RA/Dec
                 observation['RA'] = ra; observation['Dec'] = dec;
+                
                 if database.Database.is_connected:
                     database.Database.observations.update({'_id': observation['_id']},
                                                           {'$set':
@@ -121,7 +122,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         #    continue
 
         target_altaz = target_coordinates.transform_to(frame)
-        if (np.max(target_altaz.alt)) > 40*units.degree:
+        if (np.max(target_altaz.alt)) > config.telescope.min_alt*units.degree:
             max_altitude_time['altitude'].append(np.max(target_altaz.alt))
             #logme('debuggingggggg...', max_altitude_time['target'])
         else:
@@ -133,7 +134,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
         aux_delta_time = delta_obs_time[np.argmax(target_altaz.alt)]
 
-        if (max_altitude_time['altitude'][i]>0*units.degree) and (times[np.argmax(target_altaz.alt)] > sunset_time)\
+        if (max_altitude_time['altitude'][i]>config.telescope.min_alt*units.degree) and (times[np.argmax(target_altaz.alt)] > sunset_time)\
            and (times[np.argmax(target_altaz.alt)] < sunrise_time): #and (times[np.argmax(target_altaz.alt)] < Time(endtime)):
             max_altitude_time['wait'].append(aux_delta_time.to(units.second))
         else:
@@ -155,7 +156,16 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     else:
         return None, -1
     f.close()
-    return observations[primary_target_id], int(max_altitude_time['wait'][primary_target_id].value),int(max_altitude_time['altitude'][primary_target_id].value)
+
+    half_exp_time = observations[primary_target_id].get('totalTime')/2.
+    
+    if half_exp_time>int(max_altitude_time['wait'][primary_target_id].value):
+        return observations[primary_target_id], int(max_altitude_time['wait'][primary_target_id].value), int(max_altitude_time['altitude'][primary_target_id].value)
+    else:
+        return observations[primary_target_id], int(max_altitude_time['wait'][primary_target_id].value)-half_exp_time, int(max_altitude_time['altitude'][primary_target_id].value)
+    
+    #return observations[primary_target_id], int(max_altitude_time['wait'][primary_target_id].value),int(max_altitude_time['altitude'][primary_target_id].value)  
+    #return observations[primary_target_id], int(max_altitude_time['wait'][primary_target_id].value)-half_exp_time,int(max_altitude_time['altitude'][primary_target_id].value)
 
 def execute(observation: Dict, program: Dict, telescope, db) -> bool:
     """ Observe the request observation and save the data according to the parameters of the program.

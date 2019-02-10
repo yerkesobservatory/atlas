@@ -91,6 +91,7 @@ Meteor.methods({
             email: Meteor.user().emails[0]["address"],
             completed: false,
             execDate: null,
+            createdAt: new Date(),
             totalTime: Number(exptime)*Number(expcount)*filters.length
         });
 
