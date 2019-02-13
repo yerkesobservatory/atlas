@@ -53,6 +53,10 @@ def lookup(target: str) -> (str, str):
                 celestial_body.dec.to_string(unit=units.degree,sep=':'))
     else: # stellar body
         try:
+            #simbad_query = Simbad.query_object(target, True)            
+            #ra = str(simbad_query['RA'][0]).replace(' ',':')
+            #dec = str(simbad_query['DEC'][0]).replace(' ',':')
+            #target_coordinates = SkyCoord(ra+' '+dec, unit=(u.hourangle, u.deg))
             target_coordinates = coordinates.SkyCoord.from_name(target)
             return (target_coordinates.ra.to_string(unit=units.hour,sep=':'),
                     target_coordinates.dec.to_string(unit=units.degree,sep=':'))
