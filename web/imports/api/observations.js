@@ -57,7 +57,8 @@ if (Meteor.isServer) {
 }
 
 Meteor.methods({
-    'observations.insert'(progId, target, exptime, expcount, binning, filters, options, priority) {
+    'observations.insert'(progId, target, exptime, expcount, binning, filters, options) {
+        //, priority) {
 
         // validate parameters
         check(progId, String);
@@ -93,7 +94,7 @@ Meteor.methods({
             execDate: null,
             createdAt: new Date(),
             totalTime: Number(exptime)*Number(expcount)*filters.length
-            priority: Meteor.user().priority
+            // priority: Meteor.user().priority
         });
 
         // add the observation to the program
