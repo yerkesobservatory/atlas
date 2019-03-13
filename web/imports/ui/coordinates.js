@@ -2,6 +2,7 @@ import $ from 'jquery';
 // create a new validator to check for a taget string or valid RA/DEC
 $.validator.addMethod("validCoordinate", function(value, element) {
     var check_length=0;
+    var solar_system = ['mercury','venus','moon','mars','jupiter','saturn','uranus','neptune','pluto']
     // if string contains :,+ or - then we assume that it is a RA/Dec string
     if ((value.indexOf(':') > -1)){// || (value.indexOf('+') > -1) || (value.indexOf('-') > -1)) {
         // we assume that we have RA/Dec
@@ -25,7 +26,11 @@ $.validator.addMethod("validCoordinate", function(value, element) {
 
         // otherwise we assume we don't understand this coordinate system
         return false;
-    } else {
+    }
+
+    else if (solar_system.indexOf(String(value).toLowerCase()) >= 0){
+        return true;}    
+    else{
         var targetIsValid = false;
         $.ajax({
           type: "GET",
