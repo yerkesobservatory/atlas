@@ -38,30 +38,30 @@ $.validator.addMethod("validCoordinate", function(value, element) {
           async: false, //this flag makes the call synchronous, i.e. waits for the HTTP response!
           success: function(result){
             if(result.length > 300) { //300 is the magic number
-                targetIsValid = true;    
+                targetIsValid = true;
             }
           }
         });
-        return targetIsValid;         
+        return targetIsValid;
     }
 }, "Invalid target name or RA/Dec pair");
-//	else{true_or_false=false;}
-		     // else{return false;}
-		     //console.log(response.content.length);
-		     //if ((simbad_return) > 300) {
+//      else{true_or_false=false;}
+                     // else{return false;}
+                     //console.log(response.content.length);
+                     //if ((simbad_return) > 300) {
                      //        return true;
-		     // console.log(simbad_return);}
-		     
+                     // console.log(simbad_return);}
+
                     // else{console.log(response.content.length); return false;
-	//console.log(simbad_return);
-	//return true
+        //console.log(simbad_return);
+        //return true
         // we assume that we have a target string
         // TODO: lookup target in database to confirm that we understand it
         // Could use a resource server endpoint with astropy so we guarantee that
         // the executor can find this particular target
-//	return true_or_false;
-//	console.log(true_or_false);
-//	return true;
+//      return true_or_false;
+//      console.log(true_or_false);
+//      return true;
 //    }
 //    return false;
 //}, "Invalid target name or RA/Dec pair");
