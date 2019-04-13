@@ -183,8 +183,8 @@ def point(ra: str, dec: str, telescope: 'Telescope', point: bool = True) -> bool
 
     # if initial pointing is requested, do that
     if point:
-        status = self.run_command(
-            telescope.goto.format(ra=ra_target, dec=dec_target))
+        status = telescope.run_command(
+            telescope.goto_point(ra=ra_target, dec=dec_target))
 
     # get current filter
     current_filter = telescope.current_filter()
