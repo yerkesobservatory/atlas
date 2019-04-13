@@ -275,7 +275,7 @@ def execute(observation: Dict, program: Dict, telescope, db) -> bool:
         #
         # we need to update the database status here
         #
-        retun False
+        return False
 
     # extract variables
     exposure_time = observation['exposure_time']
