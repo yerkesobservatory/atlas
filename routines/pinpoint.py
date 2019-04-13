@@ -184,17 +184,17 @@ def point(ra: str, dec: str, telescope: 'Telescope', point: bool = True) -> bool
     # if initial pointing is requested, do that
     if point:
         status = telescope.run_command(
-            telescope.goto_point(ra=ra_target, dec=dec_target))
+            telescope.goto_point(ra=str(ra_target), dec=str(dec_target))
 
     # get current filter
-    current_filter = telescope.current_filter()
+    current_filter=telescope.current_filter()
     # change filter to clear
     telescope.change_filter('clear')
 
     # start pinpointing
-    ra_offset = min_ra_offset*2.0
-    dec_offset = max_dec_offset*2.0
-    iteration = 0
+    ra_offset=min_ra_offset*2.0
+    dec_offset=max_dec_offset*2.0
+    iteration=0
     while((abs(ra_offset) > min_ra_offset or abs(dec_offset) > min_dec_offset) and iteration < max_tries):
         iteration += 1
 
@@ -213,23 +213,23 @@ def point(ra: str, dec: str, telescope: 'Telescope', point: bool = True) -> bool
 
         # get FITS header, pull RA and DEC for cueing the plate solving
         if(ra_target == None or dec_target == None):
-            header = getheader(fits_fname)
+            header=getheader(fits_fname)
             try:
-                ra_target = header['RA']
-                dec_target = header['DEC']
-                ra_target = coord.Angle(ra_target, unit=u.hour).degree
-                dec_target = coord.Angle(dec_target, unit=u.deg).degree
+                ra_target=header['RA']
+                dec_target=header['DEC']
+                ra_target=coord.Angle(ra_target, unit=u.hour).degree
+                dec_target=coord.Angle(dec_target, unit=u.deg).degree
             except KeyError:
                 telescope.log.error(
                     "RA/DEC not found in input FITS header (%s)." % fits_fname)
                 pass
 
-        astro_cmd = '/home/mcnowinski/astrometry/bin/solve-field ' + '--no-verify ' + '--overwrite ' + '--no-remove-lines ' + '--downsample %d ' % downsample + '--scale-units ' + 'arcsecperpix ' + '--no-plots ' + \
+        astro_cmd='/home/mcnowinski/astrometry/bin/solve-field ' + '--no-verify ' + '--overwrite ' + '--no-remove-lines ' + '--downsample %d ' % downsample + '--scale-units ' + 'arcsecperpix ' + '--no-plots ' + \
             '--scale-low %f ' % scale_low + '--scale-high %f ' % scale_high + '--ra %s ' % ra_target + \
             '--dec %s ' % dec_target + '--radius %f ' % radius + \
             '--cpulimit %d ' % cpu_limit + '%s' % fits_fname
 
-        output = telescope.run_command(astro_cmd)
+        output=telescope.run_command(astro_cmd)
 
         # remove astrometry.net temporary files
         try:
@@ -246,20 +246,20 @@ def point(ra: str, dec: str, telescope: 'Telescope', point: bool = True) -> bool
             pass
 
         # look for field center in solve-field output
-        match = re.search(
+        match=re.search(
             'Field center\: \(RA,Dec\) \= \(([0-9\-\.\s]+)\,([0-9\-\.\s]+)\) deg\.', output)
         if match:
-            RA_image = match.group(1).strip()
-            DEC_image = match.group(2).strip()
+            RA_image=match.group(1).strip()
+            DEC_image=match.group(2).strip()
         else:
             telescope.log.error(
                 "Field center RA/DEC not found in solve-field output.")
             pass
 
-        ra_offset = float(ra_target)-float(RA_image)
+        ra_offset=float(ra_target)-float(RA_image)
         if ra_offset > 350:
             ra_offset -= 360.0
-        dec_offset = float(dec_target)-float(DEC_image)
+        dec_offset=float(dec_target)-float(DEC_image)
 
         if(abs(ra_offset) <= max_ra_offset and abs(dec_offset) <= max_dec_offset):
             telescope.offset(ra_offset, dec_offset)
@@ -275,12 +275,12 @@ def point(ra: str, dec: str, telescope: 'Telescope', point: bool = True) -> bool
         # turn tracking on, just in case
         telescope.enable_tracking()
 
-    status = None
+    status=None
     if(iteration < max_tries):
-        status = True
+        status=True
         telescope.log.info('BAM! Your target has been pinpoint-ed!')
     else:
-        status = False
+        status=False
         telescope.log.error(
             'Exceeded maximum number of adjustments (%d).' % max_tries)
 
