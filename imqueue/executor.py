@@ -472,6 +472,6 @@ class Executor(object):
             cls.log.addHandler(slack_handler)
 
             # define the minimum level of log messages
-            slack_handler.setLevel(logging.INFO)
+            slack_handler.setLevel(logging.DEBUG)
 
         return True

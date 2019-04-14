@@ -18,6 +18,7 @@ from config import config
 from imqueue import database
 from telescope.exception import *
 import random
+from slacker_log_handler import SlackerLogHandler
 
 
 class SSHTelescope(object):
@@ -740,13 +741,13 @@ class SSHTelescope(object):
         """
         result = self.run_command(telescope.get_focus)
 
-        focus=re.search(telescope.get_focus_re, result)
+        focus = re.search(telescope.get_focus_re, result)
         # extract group and return
         if focus:
-            focus=float(focus.group(0))
+            focus = float(focus.group(0))
         else:
             self.log.warning(f'Unable to parse focus in get_focus: \"{result}\"')
-            focus=0
+            focus = 0
 
         return focus
 
@@ -796,7 +797,6 @@ class SSHTelescope(object):
         flats before returning.
         """
         return flats.take_flats(self)
-
 
     def get_lightcurve(self) -> bool:
         """ Wait until the weather is good, and then take a sequence of
@@ -1077,5 +1077,17 @@ class SSHTelescope(object):
         cls.log = logging.getLogger('telescope')
         cls.log.setLevel(logging.DEBUG)
         cls.log.addHandler(stream)
+
+        # if requested, enable slack notifications
+        if config.notification.slack:
+            # channel
+            channel = config.notification.slack_channel
+            # create slack handler
+            slack_handler = SlackerLogHandler(config.notification.slack_token, channel, stack_trace=True,
+                                              username='sirius', icon_emoji=':dizzy', fail_silent=True)
+            # add slack handler to logger
+            cls.log.addHandler(slack_handler)
+            # define the minimum level of log messages
+            slack_handler.setLevel(logging.DEBUG)
 
         return True
