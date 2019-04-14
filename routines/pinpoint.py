@@ -8,7 +8,7 @@ import astropy.coordinates as coordinates
 import astropy.units as units
 from astropy.io.fits import getheader
 from config import config
-
+import os
 
 # def point(ra: str, dec: str, telescope: 'Telescope') -> bool:
 #     """ Pinpoint the telescope to a given RA and Dec.
@@ -183,8 +183,7 @@ def point(ra: str, dec: str, telescope: 'Telescope', point: bool = True) -> bool
 
     # if initial pointing is requested, do that
     if point:
-        status = telescope.run_command(
-            telescope.goto_point(ra=str(ra_target), dec=str(dec_target)))
+        status = telescope.goto_point(ra=str(ra), dec=str(dec), rough=True)
 
     # get current filter
     current_filter = telescope.current_filter()
@@ -202,7 +201,7 @@ def point(ra: str, dec: str, telescope: 'Telescope', point: bool = True) -> bool
             iteration, ra_offset, dec_offset))
 
         # get pointing image
-        telescope.take_exposure(fits_fname, time, count=1, binning=binning)
+        telescope.take_exposure(os.path.splitext(fits_fname)[0], time, count=1, binning=binning)
 
         if not os.path.isfile(fits_fname):
             telescope.log.error('File (%s) not found.' % fits_fname)
