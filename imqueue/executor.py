@@ -382,7 +382,7 @@ class Executor(object):
 
             # run the scheduler and get the next observation to complete
             self.log.debug(f'Calling the {program.get("executor")} scheduler...')
-            observing_schedule = schedule.schedule(observations, session, program)
+            observing_schedule = schedule.schedule(observations, session, program, self.telescope)
             if observing_schedule is None:
                 self.log.error('Scheduler did not return a valid schedule.')
                 break
@@ -405,7 +405,6 @@ class Executor(object):
             # if (wait_time >= (23.5*60*60)) and (wait_time <= (24*60*60 + 600)):
             #     pass # we start immedatiately
             else:
-                self.log.debug('Waiting {wait_time} seconds for {observing_schedule[0]["target"]}.')
                 self.telescope.wait(wait_time)
 
             # make sure that the weather is still good
