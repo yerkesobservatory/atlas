@@ -16,7 +16,7 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz, Angle, get_sun
 
 
 
-def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[ObservingBlock]:
+def schedule(observations: List[Dict], session: Dict, program: Dict, telescope: Telescope) -> List[ObservingBlock]:
     """ Return the next object to be imaged according to the 'general' scheduling
     algorithm, and the time that the executor must wait before imaging this observation.
 
