@@ -405,6 +405,7 @@ class Executor(object):
             # if (wait_time >= (23.5*60*60)) and (wait_time <= (24*60*60 + 600)):
             #     pass # we start immedatiately
             else:
+                self.log.debug('Waiting {wait_time} seconds for {observing_schedule[0]["target"]}.')
                 self.telescope.wait(wait_time)
 
             # make sure that the weather is still good
