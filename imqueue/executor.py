@@ -382,7 +382,7 @@ class Executor(object):
 
             # run the scheduler and get the next observation to complete
             self.log.debug(f'Calling the {program.get("executor")} scheduler...')
-            observing_schedule = schedule.schedule(observations, session, program, self.telescope)
+            observing_schedule = schedule.schedule(observations, session, program)
             if observing_schedule is None:
                 self.log.error('Scheduler did not return a valid schedule.')
                 break

@@ -15,7 +15,7 @@ import re
 #from telescope import Telescope
 
 
-def schedule(observations: List[Dict], session: Dict, program: Dict, telescope: Telescope) -> (Dict, int):
+def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, int):
     """ Return the next object to be imaged according to the 'general' scheduling
     algorithm, and the time that the executor must wait before imaging this observation.
     Parameters
