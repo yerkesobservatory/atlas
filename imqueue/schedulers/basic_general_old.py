@@ -9,11 +9,11 @@ from typing import List, Dict
 from config import config
 from routines import pinpoint, lookup
 from astropy.coordinates import Angle
-from astroplan import FixedTarget
+from astroplan import FixedTarget, Observer, download_IERS_A
 import re
-
-#from telescope import Telescope
-
+import telescope
+import telescope.exception as exception
+import telescope.ssh_telescope as Telescope
 
 def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, int):
     """ Return the next object to be imaged according to the 'general' scheduling
@@ -51,10 +51,13 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     sun_altaz = get_sun(fixed).transform_to(altazframe)
 
     # get times for sunset and sunrise
-    sunset_time = fixed[np.where(
-        (sun_altaz.alt < -18*units.deg) == True)[0][0]]
-    sunrise_time = fixed[np.where(
-        (sun_altaz.alt < -18*units.deg) == True)[0][-1]]
+    observatory_location_obsplan = Observer(longitude=config.general.longitude*units.deg,latitude=config.general.latitude*units.deg, elevation=config.general.altitude*units.m, name="G52", timezone="US/Pacific")
+    sunset_time = observatory_location_obsplan.twilight_evening_nautical(Time.now(), which="nearest")
+    sunrise_time = observatory_location_obsplan.twilight_morning_nautical(Time.now(), which="next")
+    #sunset_time = fixed[np.where(
+    #    (sun_altaz.alt < -18*units.deg) == True)[0][0]]
+    #sunrise_time = fixed[np.where(
+    #    (sun_altaz.alt < -18*units.deg) == True)[0][-1]]
 
     # compute time and coordinates
     delta_obs_time = np.linspace(0, 15, 50000)*units.hour
