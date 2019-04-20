@@ -11,11 +11,9 @@ from routines import pinpoint, lookup
 from astropy.coordinates import Angle
 from astroplan import FixedTarget, Observer, download_IERS_A
 import re
-import telescope
-import telescope.exception as exception
 import telescope.ssh_telescope as Telescope
 
-def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, int):
+def schedule(observations: List[Dict], session: Dict, program: Dict, telescope: Telescope) -> (Dict, int):
     """ Return the next object to be imaged according to the 'general' scheduling
     algorithm, and the time that the executor must wait before imaging this observation.
     Parameters
@@ -69,7 +67,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     # iterate over all the observations
     for i, observation in enumerate(observations):
         if not observation.get('RA') or not observation.get('Dec'):
-
+            telescope.log.debug("Observation {i}")	
             # if the target name is a RA/Dec string
             # if re.search(r'\d{1,2}:\d{2}:\d{1,2}.\d{1,2}\s[+-]\d{1,2}:\d{2}:\d{1,2}.\d{1,2}',observation.get('target')) or re.search(r'\d{1,2}:\d{2}:\d{1,2}\s[+-]\d{1,2}:\d{2}:\d{1,2}',observation.get('target')):
             # if (re.search(r'\d{1,2}:\d{2}:\d{1,2}.\d{1,2}\s[+-]\d{1,2}:\d{2}:\d{1,2}.\d{1,2}',observation.get('target'))) or (re.search(r'\d{1,2}:\d{2}:\d{1,2}\s[+-]\d{1,2}:\d{2}:\d{1,2}',observation.get('target'))):

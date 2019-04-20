@@ -1,5 +1,5 @@
 from typing import List
-from telescope.telescope import Telescope
+import telescope.ssh_telescope as Telescope
 
 def schedule(observations: List['Observation'], session: 'Session') -> ('Observation', int):
     """ Return the next object to be imaged according to this algorithm, and the

@@ -13,10 +13,10 @@ from astropy.time import Time
 from routines import pinpoint, lookup
 from astroplan import ObservingBlock, FixedTarget
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, Angle, get_sun
+import telescope.ssh_telescope as Telescope
 
 
-
-def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[ObservingBlock]:
+def schedule(observations: List[Dict], session: Dict, program: Dict, telescope: Telescope) -> List[ObservingBlock]:
     """ Return the next object to be imaged according to the 'general' scheduling
     algorithm, and the time that the executor must wait before imaging this observation.
 
@@ -43,18 +43,20 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
                                      name=config.general.name, timezone="UTC")
 
     # build default constraints
-    global_constraints = [constraints.AltitudeConstraint(min=config.telescope.min_alt*units.deg, boolean_constraint=False), # rank objects by altitude
-                          constraints.AtNightConstraint.twilight_astronomical(), # must be darker than astronomical
-                          constraints.TimeConstraint(min=Time(datetime.datetime.now()), # and occur between now and the end of the session
+    global_constraints = [constraints.AltitudeConstraint(min=config.telescope.min_alt*units.deg, boolean_constraint=False),  # rank objects by altitude
+                          # must be darker than astronomical
+                          constraints.AtNightConstraint.twilight_astronomical(),
+                          constraints.TimeConstraint(min=Time(datetime.datetime.now()),  # and occur between now and the end of the session
                                                      max=Time(session['end']))]
 
     # list to store observing blocks
     blocks = []
-    
+
     # list solar system objects
-    solar_system = ['mercury','venus','moon','mars','jupiter','saturn','uranus','neptune','pluto']
+    solar_system = ['mercury', 'venus', 'moon', 'mars',
+                    'jupiter', 'saturn', 'uranus', 'neptune', 'pluto']
     too_bright = False
-    
+
     # create targets
     for observation in observations:
 
@@ -65,8 +67,9 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
             if re.search(r'\d{1,2}:\d{2}:\d{1,2}.\d{1,2}\s[+-]\d{1,2}:\d{2}:\d{1,2}.\d{1,2}',
                          observation.get('target')):
                 ra, dec = observation.get('target').strip().split(' ')
-                observation['RA'] = ra; observation['Dec'] = dec;
-            else: # try and lookup by name
+                observation['RA'] = ra
+                observation['Dec'] = dec
+            else:  # try and lookup by name
                 if observation.get('target').lower() in solar_system:
                     too_bright = True
                 ra, dec = lookup.lookup(observation.get('target'))
@@ -80,7 +83,8 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
                     continue
 
                 # save the RA/Dec
-                observation['RA'] = ra; observation['Dec'] = dec;
+                observation['RA'] = ra
+                observation['Dec'] = dec
                 if database.Database.is_connected:
                     database.Database.observations.update({'_id': observation['_id']},
                                                           {'$set':
@@ -94,11 +98,14 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
             continue
 
         # target coordinates
-        center = SkyCoord(observation['RA']+' '+observation['Dec'], unit=(units.hourangle, units.deg))
+        center = SkyCoord(
+            observation['RA']+' '+observation['Dec'], unit=(units.hourangle, units.deg))
 
         # create and apply offset
-        ra_offset = Angle(observation['options'].get('ra_offset') or 0, unit=units.arcsec)
-        dec_offset = Angle(observation['options'].get('dec_offset') or 0, unit=units.arcsec)
+        ra_offset = Angle(observation['options'].get(
+            'ra_offset') or 0, unit=units.arcsec)
+        dec_offset = Angle(observation['options'].get(
+            'dec_offset') or 0, unit=units.arcsec)
 
         # offset coordinates
         coord = SkyCoord(center.ra + ra_offset, center.dec + dec_offset)
@@ -118,38 +125,42 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
         # if specified, restrict airmass, otherwise no airmass restriction
         if observation['options'].get('airmass'):
             local_constraints.append(constraints.AirmassConstraint(max=float(observation['options'].get('airmass')),
-                                                                   boolean_constraint = False))
+                                                                   boolean_constraint=False))
 
         # if specified, restrict maximum moon illumination, otherwise no restriction
         if observation['options'].get('moon_illumination'):
-            local_constraints.append(constraints.MoonIlluminationConstraint(max=float(observation['options'].get('moon_illumination'))))
+            local_constraints.append(constraints.MoonIlluminationConstraint(
+                max=float(observation['options'].get('moon_illumination'))))
 
         # if specified, use observations moon separation, otherwise use 2 degrees
         if observation['options'].get('moon'):
             moon_sep = float(observation['options'].get('moon'))
         else:
             moon_sep = config.queue.moon_separation
-        local_constraints.append(constraints.MoonSeparationConstraint(min=moon_sep*units.deg))
+        local_constraints.append(
+            constraints.MoonSeparationConstraint(min=moon_sep*units.deg))
 
         # create observing block for this target
         blocks.append(ObservingBlock.from_exposures(target, priority, observation['exposure_time']*units.second,
-                                                    observation['exposure_count']*(len(observation['filters'])+1),
+                                                    observation['exposure_count'] *
+                                                    (len(
+                                                        observation['filters'])+1),
                                                     config.telescope.readout_time*units.second,
-                                                    configuration = observation,
-                                                    constraints = local_constraints))
+                                                    configuration=observation,
+                                                    constraints=local_constraints))
 
     # check if we were able to make at least one block
     if len(blocks) < 1:
-        return None # we were unable to schedule any blocks
+        return None  # we were unable to schedule any blocks
 
     # we need to create a transitioner to go between blocks
     transitioner = astroplan.Transitioner(1*units.deg/units.second,
                                           {'filter': {'default': 4*units.second}})
 
     # create priority scheduler
-    priority_scheduler = scheduling.PriorityScheduler(constraints = global_constraints,
-                                                      observer = observatory,
-                                                      transitioner = transitioner)
+    priority_scheduler = scheduling.PriorityScheduler(constraints=global_constraints,
+                                                      observer=observatory,
+                                                      transitioner=transitioner)
 
     # initialize the schedule
     schedule = scheduling.Schedule(Time.now(), Time(session['end']))
@@ -164,6 +175,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> List[Obs
 
     # return the scheduled blocks
     return schedule
+
 
 def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> bool:
     """ Observe the request observation and save the data according to the parameters of the program.
@@ -202,7 +214,7 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     # create basename for observations
     # TODO: replace _id[0:3] with number from program
     if re.search(r'\d{1,2}:\d{2}:\d{1,2}.\d{1,2} [+-]\d{1,2}:\d{2}:\d{1,2}.\d{1,2}',
-                                 observation.get('target')):
+                 observation.get('target')):
         split_name = observation.get('target').replace(':', '').split(' ')
         ra = split_name[0].replace(':', 'h', 1).replace(':', 'm', 1)+'s'
         dec = split_name[0].replace(':', 'd', 1).replace(':', 'm', 1)+'s'
@@ -211,14 +223,17 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
         target_str = observation['target'].replace(' ', '_').replace("'", '')
 
     fname = '_'.join([target_str, '{filter}', observation.get('exptime'), 's',
-                      'bin', observation.get('binning'), str(datetime.date.today()),
+                      'bin', observation.get('binning'), str(
+                          datetime.date.today()),
                       'seo', observation['email'].split('@')[0]])
-    rawdirname = '/'.join([observation['email'].split('@')[0], fname.replace('{filter}_', '')]).strip('/')
-    dirname = '/'.join(['', 'home', config.telescope.username, 'data', rawdirname])
-
+    rawdirname = '/'.join([observation['email'].split('@')
+                           [0], fname.replace('{filter}_', '')]).strip('/')
+    dirname = '/'.join(['', 'home', config.telescope.username,
+                        'data', rawdirname])
 
     # create directories
-    telescope.log.info('Making directory to store observations on telescope server...')
+    telescope.log.info(
+        'Making directory to store observations on telescope server...')
     telescope.make_dir(dirname+'/raw/science')
     telescope.make_dir(dirname+'/raw/dark')
     telescope.make_dir(dirname+'/raw/bias')
@@ -234,7 +249,8 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
 
     # we should be pointing roughly at the right place
     telescope.log.info('Performing a basic point...')
-    good_pointing = telescope.goto_point(observation['RA'], observation['Dec'], rough=True)
+    good_pointing = telescope.goto_point(
+        observation['RA'], observation['Dec'], rough=True)
 
     # now we pinpoint
     telescope.log.info('Starting telescope pinpointing...')
@@ -242,11 +258,13 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
         pinpointable = False
         telescope.log.warn('Can\'t pinpoint to solar system object!')
     else:
-        pinpointable = pinpoint.point(observation['RA'], observation['Dec'], telescope)
+        pinpointable = pinpoint.point(
+            observation['RA'], observation['Dec'], telescope)
 
     # let's check that pinpoint did not fail
     if not pinpointable:
-        telescope.log.warn('Pinpoint failed! Disabling pinpointing for this observation...')
+        telescope.log.warn(
+            'Pinpoint failed! Disabling pinpointing for this observation...')
 
     # extract variables
     exposure_time = observation['exposure_time']
@@ -268,10 +286,12 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
         # check our pointing with pinpoint again
         if pinpointable:
             telescope.log.debug('Re-pinpointing telescope...')
-            pinpointable = pinpoint.point(observation['RA'], observation['Dec'], telescope)
+            pinpointable = pinpoint.point(
+                observation['RA'], observation['Dec'], telescope)
         else:
             telescope.log.debug('Doing a basic re-point...')
-            telescope.goto_point(observation['RA'], observation['Dec'], rough=True)
+            telescope.goto_point(
+                observation['RA'], observation['Dec'], rough=True)
 
         # reenable tracking
         telescope.log.debug('Enabling tracking...')
@@ -281,8 +301,10 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
         telescope.keep_open(exposure_time*exposure_count + 300)
 
         # take exposures!
-        telescope.take_exposure(basename_science.replace('{filter}', filt), exposure_time, exposure_count, binning, filt)
-        database.Database.observations.update({'_id': observation['_id']}, {'$push': {'filenames': basename_science.replace('{filter}', filt)}})
+        telescope.take_exposure(basename_science.replace(
+            '{filter}', filt), exposure_time, exposure_count, binning, filt)
+        database.Database.observations.update({'_id': observation['_id']}, {
+                                              '$push': {'filenames': basename_science.replace('{filter}', filt)}})
 
     # reset filter back to clear
     telescope.log.info('Switching back to clear filter')
@@ -293,7 +315,8 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
 
     # take exposure_count darks
     if take_darks:
-        telescope.take_dark(basename_dark, exposure_time, exposure_count, binning)
+        telescope.take_dark(basename_dark, exposure_time,
+                            exposure_count, binning)
 
     # take numbias*exposure_count biases
     telescope.take_bias(basename_bias, 10*exposure_count, binning)
@@ -308,6 +331,5 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
                                           {'$set':
                                            {'completed': True,
                                             'execDate': datetime.datetime.now()}})
-
 
     return True
