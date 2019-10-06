@@ -13,7 +13,7 @@ from astroplan import FixedTarget, Observer, download_IERS_A
 import re
 import telescope.ssh_telescope as Telescope
 
-def schedule(observations: List[Dict], session: Dict, program: Dict, telescope: Telescope) -> (Dict, int):
+def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, int):
     """ Return the next object to be imaged according to the 'general' scheduling
     algorithm, and the time that the executor must wait before imaging this observation.
     Parameters
