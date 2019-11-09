@@ -1,7 +1,8 @@
 import pymongo
 import importlib
 import imqueue
-import imqueue.schedulers.basic_general_old as general
+import imqueue.schedulers.astroplan_scheduler as general
+#import imqueue.schedulers.basic_general_old as general
 from typing import List, Dict
 
 

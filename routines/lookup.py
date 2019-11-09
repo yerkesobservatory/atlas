@@ -4,11 +4,42 @@ from astroquery.simbad import Simbad
 import astropy.units as units
 import astropy.time as time
 import astropy.coordinates as coordinates
+from astroplan import FixedTarget
 import datetime
 
+def lookup(obs):
+    # location of observatory
+    target = obs['target']
+    obs_location = location
+
+    obs_time = Time(datetime.datetime.utcnow(), scale='utc')
+    frame = astropy.coordinates.AltAz(obstime=obs_time, location=obs_location)
+
+    # planetary bodies - TODO: Add moons
+    solar_system = ['mercury','venus','moon','mars','jupiter','saturn','uranus','neptune','pluto']
+    astropy.coordinates.solar_system_ephemeris.set('de432s')
+
+    # convert it all to lowercase
+    target = target.lower()
+
+    # we have a planetary body
+    if target in solar_system:
+        celestial_body = astropy.coordinates.get_body(target, obs_time, obs_location)
+        return (celestial_body.ra.to_string(unit=u.hour, sep=':'),
+                celestial_body.dec.to_string(unit=u.degree,sep=':'))
+    else: # stellar body
+        try:
+            target_coordinates = astropy.coordinates.SkyCoord.from_name(target)
+            return FixedTarget(coord=target_coordinates,name=target+" "+obs['_id'])
+
+        except Exception as e:
+            print(e)
+            return None, None
+
+"""
 def lookup(target: str) -> (str, str):
-    """ Convert a target name 'M31', 'NGC6946', to a RA/Dec pair using the location
-    of the observatory. 
+    Convert a target name 'M31', 'NGC6946', to a RA/Dec pair using the location
+    of the observatory.
 
     Given a string representing a target ('M 31', 'NGC 4584', 'Horsehead Nebula')
     return an (RA, DEC) string tuple of the form ('hh:mm:sss', 'dd:mm:ss')
@@ -29,12 +60,12 @@ def lookup(target: str) -> (str, str):
     Notes
     -----
     Author: rprechelt
-    """
+
     # location of observatory
     obs_location = coordinates.EarthLocation(lat=config.general.latitude*units.deg,
                                              lon=config.general.longitude*units.deg,
                                              height=config.general.altitude*units.m)
-    
+
     obs_time = time.Time(datetime.datetime.utcnow(), scale='utc')
     #obs_time = time.Time.now()
     frame = coordinates.AltAz(obstime=obs_time, location=obs_location)
@@ -45,7 +76,7 @@ def lookup(target: str) -> (str, str):
 
     # convert it all to lowercase
     target = target.lower()
-    
+
     # we have a planetary body
     if target in solar_system:
         celestial_body = coordinates.get_body(target, obs_time, obs_location)
@@ -53,7 +84,7 @@ def lookup(target: str) -> (str, str):
                 celestial_body.dec.to_string(unit=units.degree,sep=':'))
     else: # stellar body
         try:
-            #simbad_query = Simbad.query_object(target, True)            
+            #simbad_query = Simbad.query_object(target, True)
             #ra = str(simbad_query['RA'][0]).replace(' ',':')
             #dec = str(simbad_query['DEC'][0]).replace(' ',':')
             #target_coordinates = SkyCoord(ra+' '+dec, unit=(u.hourangle, u.deg))
@@ -62,12 +93,12 @@ def lookup(target: str) -> (str, str):
                     target_coordinates.dec.to_string(unit=units.degree,sep=':'))
         except Exception as e:
             return None, None
-
+"""
 
 def target_visible(target: str) -> bool:
     """ Check whether an object is visible.
 
-    An object is defined as visible if its altitude is above the 
+    An object is defined as visible if its altitude is above the
     altitude minimum given in the telescope config file.
 
     Parameters
@@ -90,7 +121,7 @@ def target_visible(target: str) -> bool:
 def point_visible(ra: str, dec: str) -> bool:
     """ Check whether an object is visible.
 
-    An object is defined as visible if its altitude is above the 
+    An object is defined as visible if its altitude is above the
     altitude minimum given in the telescope config file.
 
     Parameters
