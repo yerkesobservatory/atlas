@@ -387,7 +387,7 @@ class Executor(object):
                 self.log.error('Scheduler did not return a valid schedule.')
                 break
             # if the scheduler returns no observations, we are done
-            if observing_schedule[1]<0:
+            if observing_schedule[1]<-30:
             #if len(observing_schedule.scheduled_blocks) == 0:
                 self.log.debug('Scheduler reports no observations left for this session...')
                 break

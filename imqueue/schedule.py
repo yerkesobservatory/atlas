@@ -44,8 +44,10 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         scheduler = importlib.import_module(f'imqueue.schedulers.{program.get("executor")}')
 
         # check that it provides both schedule and execute commands
-        if 'schedule' in dir(scheduler) and 'execute' in dir(scheduler):
-            return scheduler.schedule(observations, session, program)
+        # temporary commented
+        #if 'schedule' in dir(scheduler) and 'execute' in dir(scheduler):
+        #    return scheduler.schedule(observations, session, program)
+        return general.schedule(observations, session, program)
         # if the above does not work, use general scheduler
     except Exception as e:
         imqueue.Executor.log.warning('Unable to load desired scheduler. Using "general" scheduler...')

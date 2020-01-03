@@ -9,23 +9,43 @@ from routines import pinpoint, lookup
 import telescope.ssh_telescope as Telescope
 
 import datetime
+import astropy
 from astropy.time import Time
 import astropy.units as u
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz, Angle, get_sun
 from astropy.utils.iers import conf
+from astropy.table import Table
 conf.auto_max_age = None
 
 import astroplan
-import astroplan.scheduling as scheduling, Transitioner, SequentialScheduler, Schedule, PriorityScheduler
+from astroplan.scheduling import Transitioner, SequentialScheduler, Schedule, PriorityScheduler
+#import astroplan.scheduling as scheduling, Transitioner, SequentialScheduler, Schedule, PriorityScheduler
 from astroplan.constraints import AtNightConstraint, AirmassConstraint, AltitudeConstraint, TimeConstraint
 from astroplan import ObservingBlock, FixedTarget, Observer
 from astroplan.plots import plot_airmass
 from astroplan.plots import plot_parallactic
 from astroplan.plots import plot_sky, plot_altitude
 from astroplan import download_IERS_A
+
+from pytz import timezone
 #from astroplan.scheduling import Transitioner
 
 download_IERS_A()
+
+longitude = 237.49604 * u.deg
+latitude = 38.288709 * u.deg
+elevation = 63.924 * u.m
+location = EarthLocation.from_geodetic(longitude, latitude, elevation)
+
+seo = Observer(name='Stone Edge Observatory',
+               location=location,
+               #pressure=0.615 * u.bar,
+               #relative_humidity=0.11,
+               #temperature=0 * u.deg_C,
+               timezone=timezone('US/Pacific'),
+               description="Stone Edge Observatory in Sonoma, California")
+
+
 
 def to_table(priority_schedule, show_transitions=True, show_unused=False):
     # TODO: allow different coordinate types
@@ -64,7 +84,7 @@ def to_table(priority_schedule, show_transitions=True, show_unused=False):
             ra.append('-99.')
             dec.append('-99.')
             config.append('')
-    print ra, dec
+    print (ra, dec)
     #ra = np.array(ra).astype(np.float)
     #dec = np.array(dec).astype(np.float)
     return Table([target_names, start_times, end_times, durations,
@@ -121,15 +141,15 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     f = open('/live/production/atlas/imqueue/schedulers/log_scheduler.txt', 'w')
     ############## Set up observatory ###############
 
-    longitude = 237.49604 * u.deg
-    latitude = 38.288709 * u.deg
-    elevation = 63.924 * u.m
-    location = EarthLocation.from_geodetic(longitude, latitude, elevation)
+#    longitude = 237.49604 * u.deg
+#    latitude = 38.288709 * u.deg
+#    elevation = 63.924 * u.m
+#    location = EarthLocation.from_geodetic(longitude, latitude, elevation)
 
-    seo = Observer(name='Stone Edge Observatory',
-                location=location,
-                timezone=timezone('US/Pacific'),
-                description="Stone Edge Observatory in Sonoma, California")
+#    seo = Observer(name='Stone Edge Observatory',
+#                location=location,
+#                timezone=timezone('US/Pacific'),
+#                description="Stone Edge Observatory in Sonoma, California")
 
     # create the list of constraints that all targets must satisfy
     time = Time.now()
@@ -148,8 +168,9 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     sunset_tonight = seo.sun_set_time(time, which='nearest')
     sunrise_tomorrow = seo.sun_rise_time(time, which=u'next')
 
-    night = TimeConstraint(sunset_tonight, sunrise_tomorrow)
-
+    #night = TimeConstraint(sunset_tonight, sunrise_tomorrow)
+    night = TimeConstraint(sunset_tonight, sunrise_tomorrow) 
+    obstime_constraint = TimeConstraint(time, sunrise_tomorrow)
     # Create ObservingBlocks for each filter and target with our time
     # constraint, and durations determined by the exposures needed
     for j,obs in enumerate(observations):
@@ -157,6 +178,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         input_obs = lookup(obs)
         ra = input_obs.ra.to_string(unit=u.hour, sep=':')
         dec = input_obs.dec.to_string(unit=u.degree,sep=':')
+        #print(ra,dec)
         obs['RA'] = ra
         obs['Dec'] = dec
         #print input_obs, obs['exposure_time']*u.second, obs['exposure_count'],read_out*u.second
@@ -171,18 +193,29 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         if database.Database.is_connected:
             database.Database.observations.update({'_id': observation['_id']},
                                                   {'$set':
-                                                   {'RA': ra,
+                                                   {'RA': ra, 'DEC': dec}})
 
 
 
         for i,filt in enumerate(obs['filters']):
             #print filt
             #print obs['exposure_count'] * (obs['exposure_time']*u.second + read_out*u.second)
-            b = ObservingBlock.from_exposures(input_obs,obs['options']['priority'],
-                                            obs['exposure_time']*u.second,
+            if len(obs['options']['priority']):
+                bpriority = float(obs['options']['priority'])
+            else:
+                bpriority = 10.
+
+            if obs['exposure_time']<30:
+                aux = 30
+            else:
+                aux = obs['exposure_time']
+                
+            b = ObservingBlock.from_exposures(input_obs,bpriority,
+                                            aux*u.second,
                                             obs['exposure_count'],
                                             read_out*u.second,
-                                            configuration = {'filter': filt})
+                                            configuration = {'filter': filt},
+                                            constraints = [obstime_constraint])
             blocks.append(b)
 
 
@@ -196,15 +229,15 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
 
     # Initialize the sequential scheduler with the constraints and transitioner
-    print "starting sequential scheduler"
+    print("starting sequential scheduler")
     seq_scheduler = SequentialScheduler(constraints = global_constraints,
                                         observer = seo,
                                         transitioner = transitioner)
-    print "initializing a schedule object"
+    print("initializing a schedule object")
     # Initialize a Schedule object, to contain the new schedule
     sequential_schedule = Schedule(sunset_tonight, sunrise_tomorrow)
 
-    print "schedule the blocks"
+    print("schedule the blocks")
     # Call the schedule with the observing blocks and schedule to schedule the blocks
     seq_scheduler(blocks, sequential_schedule)
 
@@ -216,17 +249,33 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     # Initialize a Schedule object, to contain the new schedule
     priority_schedule = Schedule(sunset_tonight, sunrise_tomorrow)
 
+    print(priority_schedule)
     # Call the schedule with the observing blocks and schedule to schedule the blocks
     prior_scheduler(blocks, priority_schedule)
 
     tab = to_table(sequential_schedule, show_transitions=True)
+    print(tab)
+    idval = tab['target'][0].split(" ")[-1]
+    #print("idval:", idval)
+    #print(observations)
+    #print("database connected?:", database.Database.is_connected)
+    #print("database observations:", database.Database.observations.find({'_id': idval}))
+    
+    #if database.Database.is_connected:
 
-    idval = tab['target'][0].split(" ")[1]
+    #nextobs = database.Database.observations.find({'_id': idval})
+    for obs in observations:
+        if obs['_id']==idval:
+            nextobs = obs
+        else:
+            continue
+        #nextobs_index = observations['_id'].index(idval)
+        #nextobs = observations[nextobs_index]
+    print(nextobs)
+    
+    wait = ((Time(tab['start time (UTC)'][0])-Time.now()).to(u.second)).value
 
-    if database.Database.is_connected:
-        nextobs = database.Database.observations.findOne({'_id': idval})
-
-    wait = (Time(tab['start time (UTC)'][0])-Time.now()).to(u.second)
+    print("wait:", wait)
 
     return nextobs, wait
 
