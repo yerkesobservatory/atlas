@@ -169,7 +169,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     sunrise_tomorrow = seo.sun_rise_time(time, which=u'next')
 
     #night = TimeConstraint(sunset_tonight, sunrise_tomorrow)
-    night = TimeConstraint(sunset_tonight, sunrise_tomorrow) 
+    night = TimeConstraint(sunset_tonight, sunrise_tomorrow)
     obstime_constraint = TimeConstraint(time, sunrise_tomorrow)
     # Create ObservingBlocks for each filter and target with our time
     # constraint, and durations determined by the exposures needed
@@ -209,13 +209,37 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
                 aux = 30
             else:
                 aux = obs['exposure_time']
-                
+
+
+            # list to store local constraints
+            local_constraints = []
+
+            
+            # if specified, restrict airmass, otherwise no airmass restriction
+            if observation['options'].get('airmass'):
+                local_constraints.append(constraints.AirmassConstraint(max=float(observation['options'].get('airmass')),
+                                                                       boolean_constraint=False))
+
+            # if specified, restrict maximum moon illumination, otherwise no restriction
+            if observation['options'].get('moon_illumination'):
+                local_constraints.append(constraints.MoonIlluminationConstraint(
+                    max=float(observation['options'].get('moon_illumination'))))
+
+            # if specified, use observations moon separation, otherwise use 2 degrees
+            if observation['options'].get('moon'):
+                moon_sep = float(observation['options'].get('moon'))
+            else:
+                moon_sep = config.queue.moon_separation
+            local_constraints.append(
+                constraints.MoonSeparationConstraint(min=moon_sep*units.deg))
+
+
             b = ObservingBlock.from_exposures(input_obs,bpriority,
                                             aux*u.second,
                                             obs['exposure_count'],
                                             read_out*u.second,
                                             configuration = {'filter': filt},
-                                            constraints = [obstime_constraint])
+                                            constraints = [obstime_constraint, local_constraints])
             blocks.append(b)
 
 
@@ -260,7 +284,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     #print(observations)
     #print("database connected?:", database.Database.is_connected)
     #print("database observations:", database.Database.observations.find({'_id': idval}))
-    
+
     #if database.Database.is_connected:
 
     #nextobs = database.Database.observations.find({'_id': idval})
@@ -272,7 +296,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         #nextobs_index = observations['_id'].index(idval)
         #nextobs = observations[nextobs_index]
     print(nextobs)
-    
+
     wait = ((Time(tab['start time (UTC)'][0])-Time.now()).to(u.second)).value
 
     print("wait:", wait)
