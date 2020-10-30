@@ -20,7 +20,7 @@ html5lib==1.0.1
 httplib2==0.10.3
 idna==2.6
 itsdangerous==0.24
-Jinja2==2.10
+Jinja2==2.10.1
 jplephem==2.6
 keyring==11.0.0
 MarkupSafe==1.0
