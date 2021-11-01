@@ -214,7 +214,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
             # list to store local constraints
             local_constraints = []
 
-            
+            observation=obs
             # if specified, restrict airmass, otherwise no airmass restriction
             if observation['options'].get('airmass'):
                 local_constraints.append(constraints.AirmassConstraint(max=float(observation['options'].get('airmass')),
@@ -230,8 +230,10 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
                 moon_sep = float(observation['options'].get('moon'))
             else:
                 moon_sep = config.queue.moon_separation
+
+            
             local_constraints.append(
-                constraints.MoonSeparationConstraint(min=moon_sep*units.deg))
+                astroplan.MoonSeparationConstraint(min=moon_sep*u.deg))
 
 
             b = ObservingBlock.from_exposures(input_obs,bpriority,
@@ -239,7 +241,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
                                             obs['exposure_count'],
                                             read_out*u.second,
                                             configuration = {'filter': filt},
-                                            constraints = [obstime_constraint, local_constraints])
+                                            constraints = [obstime_constraint])#, local_constraints])
             blocks.append(b)
 
 
@@ -260,11 +262,12 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     print("initializing a schedule object")
     # Initialize a Schedule object, to contain the new schedule
     sequential_schedule = Schedule(sunset_tonight, sunrise_tomorrow)
-
+    print(blocks)
+    
     print("schedule the blocks")
     # Call the schedule with the observing blocks and schedule to schedule the blocks
     seq_scheduler(blocks, sequential_schedule)
-
+    
 
     # Initialize the priority scheduler with the constraints and transitioner
     prior_scheduler = PriorityScheduler(constraints = global_constraints,

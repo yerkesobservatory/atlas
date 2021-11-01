@@ -67,7 +67,7 @@ class ResourceServer(object):
 
         # support CORS
         response.headers['Access-Control-Allow-Origin'] = (
-            flask.request.headers.get('ORIGIN') or 'https://queue.stoneedgeobservatory.com')
+            flask.request.headers.get('ORIGIN') or 'https://queue.stoneedgeobservatory.com' or 'https://sirius.stoneedgeobservatory.com:8179/*')
 
         # close image and figures
         img.close()
@@ -94,6 +94,7 @@ class ResourceServer(object):
 
         """
         fig = plots.target_preview(target)
+        
         if fig:
             response = self.make_plot_response(fig, transparent=True)
             plt.close(fig)

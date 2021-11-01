@@ -148,7 +148,7 @@ Template.newObservationForm.events({
                          console.log(error);
                      } else {
                          // set src of visibility plot to content of response
-                         $("#visibility_plot").attr('src','data:image/png;base64,'+response.content);
+                         $("#visibility").attr('src','data:image/png;base64,'+response.content);
                      }
                  });
 
@@ -159,7 +159,8 @@ Template.newObservationForm.events({
                          console.log(error);
                      } else {
                          // set src of visibility plot to content of response
-                         $("#target_preview").attr('src','data:image/png;base64,'+response.content);
+			 $("#preview").attr('src','data:image/png;base64,'+response.content);
+			 //$("#target_preview").attr('src','data:image/png;base64,'+response.content);
                      }
                  });
 

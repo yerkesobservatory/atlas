@@ -24,14 +24,14 @@
         <p style="font-size: 20px; margin-top:-43px;">DIGITIZED SKY SURVEY (DSS) PREVIEW:</p>
 	      <!-- <div id="aladin-lite-div" style="width:400px;height:400px;"></div> -->
 	      <!-- <div id="aladin-lite-div" style="height:550px; width:550px; border-radius:20px;"></div> -->
-	      <img id="target_preview" src="" alt="" style="width:550px; border-radius:20px;">
+	      <img id="preview" src="" alt="" style="width:550px; border-radius:20px;">
 	    </div> <!-- panel-body -->
 	  </div> <!-- panel -->
 
     <p style="font-size: 20px; margin-top:70px; color:white;">VISIBILITY CHART:</p>
   <div class="panel panel-default" style="height:350px; border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0); color:white;">
   <div class="panel-body">
-    <img id="visibility_plot" src="" alt="" style="width:550px; border-radius:20px;">
+    <img id="visibility" src="" alt="" style="width:550px; border-radius:20px;">
   </div> <!-- panel-body -->
   </div> <!-- panel -->
 
@@ -245,8 +245,8 @@
       <li><a href="#" class="action-completed">Mark Completed</a></li>
       {{else}}
       <li><a href="#" class="action-completed">Re-execute</a></li>
-      <li><a class="gotoimages" href="http://stars.uchicago.edu/astroclass/data/{{starspath}}" target="_blank" rel="noopener">Go To Images</a></li>
-      <li><a class="gotostars" href="http://stars.uchicago.edu/astroclass/data/" target="_blank" rel="noopener">Go to Stars</a></li>
+      <li><a class="gotoimages" href="http://stars.uchicago.edu/queue/data/{{starspath}}" target="_blank" rel="noopener">Go To Images</a></li>
+      <li><a class="gotostars" href="http://stars.uchicago.edu/queue/" target="_blank" rel="noopener">Go to Stars</a></li>
       <li><a class="download" href="https://queue.stoneedgeobservatory.com/data/{{directory}}.zip" download="{{directory}}">Download Raw Data</a></li>
       <!--<li><a href="#" class="copy-link" data-clipboard-text="https://queue.stoneedgeobservatory.com/data/{{directory}}.zip">Copy Link to Files</a></li>-->
       {{/unless}}

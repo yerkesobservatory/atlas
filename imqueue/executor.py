@@ -20,7 +20,9 @@ import imqueue.database as database
 import imqueue.schedule as schedule
 from config import config
 from typing import List, Dict
-from slacker_log_handler import SlackerLogHandler
+#from slacker_log_handler import SlackerLogHandler
+#from slack_sdk import WebClient
+#from slack_sdk.errors import SlackApiError
 from dateutil import parser, tz
 from telescope.exception import *
 
@@ -245,7 +247,8 @@ class Executor(object):
                 self.log.debug('Unable to find program for this session. Cancelling this session...')
                 return None, None
         else: # TODO: figure priority between multiple public programs
-            programs = list(self.db.programs.find({'name': 'General'}))
+            programs = list(self.db.programs.find())
+            #programs = list(self.db.programs.find({'name': 'General'}))
 
             # find all observations that are in these programs
             observations = sum([list(self.db.observations.find({'program': program['_id'],
@@ -258,6 +261,7 @@ class Executor(object):
                        'sessions': [], 'observations': [obs['_id'] for obs in observations],
                        'createdAt': datetime.datetime.now()}
 
+            self.log.debug(observations)
             return observations, program
 
     def open_telescope(self):
@@ -464,14 +468,15 @@ class Executor(object):
             # channel
             channel = config.notification.slack_channel
 
+            client = WebClient(token=config.notification.slack_token)
             # create slack handler
-            slack_handler = SlackerLogHandler(config.notification.slack_token, channel, stack_trace=True,
-                                              username='sirius', icon_emoji=':dizzy', fail_silent=True)
+            #slack_handler = SlackerLogHandler(config.notification.slack_token, channel, stack_trace=True,
+            #                                  username='sirius', icon_emoji=':dizzy', fail_silent=True)
 
             # add slack handler to logger
             cls.log.addHandler(slack_handler)
 
             # define the minimum level of log messages
-            slack_handler.setLevel(logging.DEBUG)
+            #slack_handler.setLevel(logging.DEBUG)
 
         return True

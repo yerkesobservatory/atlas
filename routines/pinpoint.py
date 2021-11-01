@@ -223,7 +223,7 @@ def point(ra: str, dec: str, telescope: 'Telescope', point: bool = True) -> bool
                     "RA/DEC not found in input FITS header (%s)." % fits_fname)
                 pass
 
-        astro_cmd = '/home/mcnowinski/astrometry/bin/solve-field ' + '--no-verify ' + '--overwrite ' + '--no-remove-lines ' + '--downsample %d ' % downsample + '--scale-units ' + 'arcsecperpix ' + '--no-plots ' + \
+        astro_cmd = '/home/chultun/astrometry/bin/solve-field ' + '--no-verify ' + '--overwrite ' + '--no-remove-lines ' + '--downsample %d ' % downsample + '--scale-units ' + 'arcsecperpix ' + '--no-plots ' + \
             '--scale-low %f ' % scale_low + '--scale-high %f ' % scale_high + '--ra %s ' % ra_target + \
             '--dec %s ' % dec_target + '--radius %f ' % radius + \
             '--cpulimit %d ' % cpu_limit + '%s' % fits_fname

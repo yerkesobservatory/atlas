@@ -12,14 +12,14 @@ import routines.lightcurve as lightcurve
 import routines.focus as focus
 import paho.mqtt.client as mqtt
 import routines.lookup as lookup
-import config.telescope as telescope
+import config.telescope as telescope_cmds 
+# config.telescope "obviously" points to a python script containing the list of all telescope commands...
 import routines.pinpoint as pinpoint
 from config import config
 from imqueue import database
 from telescope.exception import *
 import random
 from slacker_log_handler import SlackerLogHandler
-
 
 class SSHTelescope(object):
     """ This class allows for a telescope to be remotely controlled
@@ -135,9 +135,9 @@ class SSHTelescope(object):
         # check that weather is OK to open
         if self.weather_ok(sun):
             self.update({'slit': 'opening', 'status': 'opening'})
-            result = self.run_command(telescope.open_dome)
+            result = self.run_command(telescope_cmds.open_dome)
 
-            if re.search(telescope.open_dome_re, result):
+            if re.search(telescope_cmds.open_dome_re, result):
                 self.update({'slit': 'open', 'status': 'open'})
                 return True
 
@@ -149,8 +149,8 @@ class SSHTelescope(object):
 
         Returns True if open, False if closed.
         """
-        result = self.run_command(telescope.dome_open)
-        slit = re.search(telescope.dome_open_re, result)
+        result = self.run_command(telescope_cmds.dome_open)
+        slit = re.search(telescope_cmds.dome_open_re, result)
 
         # if open, return True
         if slit and slit.group(0) == 'open':
@@ -166,7 +166,7 @@ class SSHTelescope(object):
         True if successful in closing down, False otherwise.
         """
         self.update({'slit': 'closing', 'status': 'closing'})
-        result = self.run_command(telescope.close_dome)
+        result = self.run_command(telescope_cmds.close_dome)
         self.update({'slit': 'closed', 'status': 'closed'})
 
         # if re.search(telescope.close_dome_re, result):
@@ -186,16 +186,16 @@ class SSHTelescope(object):
     def lamps_on(self) -> bool:
         """ Turn on all dome lamps.
         """
-        result = self.run_command(telescope.dome_lamps.format(state='on'))
+        result = self.run_command(telescope_cmds.dome_lamps.format(state='on'))
 
-        return re.search(telescope.dome_lamps_on_re, result)
+        return re.search(telescope_cmds.dome_lamps_on_re, result)
 
     def lamps_off(self) -> bool:
         """ Turn off all dome lamps.
         """
-        result = self.run_command(telescope.dome_lamps.format(state='off'))
+        result = self.run_command(telescope_cmds.dome_lamps.format(state='off'))
 
-        return re.search(telescope.dome_lamps_off_re, result)
+        return re.search(telescope_cmds.dome_lamps_off_re, result)
 
     def chip_temp(self, chip: str) -> bool:
         """ Return temperature (in C) of the chip with identifier
@@ -209,11 +209,11 @@ class SSHTelescope(object):
         """ Compare current chip temperature to the set temperature.
         If the same, return True; else, return False
         """
-        result = self.run_command(telescope.get_ccd_status)
+        result = self.run_command(telescope_cmds.get_ccd_status)
 
         # search for chip and setpoint temperatures
-        tchip = re.search(telescope.tchip_ccd_re, result)
-        setpoint = re.search(telescope.setpoint_ccd_re, result)
+        tchip = re.search(telescope_cmds.tchip_ccd_re, result)
+        setpoint = re.search(telescope_cmds.setpoint_ccd_re, result)
 
         # extract group and return
         if tchip and setpoint:
@@ -229,7 +229,7 @@ class SSHTelescope(object):
     def cool_ccd(self) -> bool:
         """ Cool the CCD
         """
-        result = self.run_command(telescope.cool_ccd)
+        result = self.run_command(telescope_cmds.cool_ccd)
 
         return True
 
@@ -238,15 +238,15 @@ class SSHTelescope(object):
         """
         # try and substitute the user and comment values
         try:
-            command = telescope.lock.format(user=user, comment=comment)
+            command = telescope_cmds.lock.format(user=user, comment=comment)
         except Exception as e:
-            command = telescope.lock
+            command = telescope_cmds.lock
 
         result = self.run_command(
-            telescope.lock.format(user=user, comment=comment))
+            telescope_cmds.lock.format(user=user, comment=comment))
 
         # check that we were successful
-        if re.search(telescope.lock_re, result):
+        if re.search(telescope_cmds.lock_re, result):
             self.update({'user': user})
             return True
 
@@ -255,9 +255,9 @@ class SSHTelescope(object):
     def unlock(self) -> bool:
         """ Unlock the telescope if you have the lock.
         """
-        result = self.run_command(telescope.unlock)
+        result = self.run_command(telescope_cmds.unlock)
 
-        if re.search(telescope.unlock_re, result):
+        if re.search(telescope_cmds.unlock_re, result):
             self.update({'user': None})
             return True
 
@@ -267,12 +267,12 @@ class SSHTelescope(object):
         """ Check whether the telescope is locked. If it is,
         return the username of the lock holder.
         """
-        result = self.run_command(telescope.check_lock)
+        result = self.run_command(telescope_cmds.check_lock)
 
         if result == 'done lock':
             return False, ''
 
-        if re.search(telescope.check_lock_re, result):
+        if re.search(telescope_cmds.check_lock_re, result):
             return True, 'unknown'
 
         return False, ''
@@ -285,7 +285,7 @@ class SSHTelescope(object):
             self.log.warn('Slit must be opened before calling keep_open()')
             return False
 
-        result = self.run_command(telescope.keep_open.format(time=time))
+        result = self.run_command(telescope_cmds.keep_open.format(time=time))
 
         # TODO: Parse output to extract username and lock status
         return True
@@ -294,12 +294,12 @@ class SSHTelescope(object):
         """ Get the current cloud coverage.
         """
         # run the command
-        result = self.run_command(telescope.get_weather)
+        result = self.run_command(telescope_cmds.get_weather)
 
         # run regex
-        cloud = re.search(telescope.get_cloud_re, result)
-        dew = re.search(telescope.get_dew_re, result)
-        rain = re.search(telescope.get_rain_re, result)
+        cloud = re.search(telescope_cmds.get_cloud_re, result)
+        dew = re.search(telescope_cmds.get_dew_re, result)
+        rain = re.search(telescope_cmds.get_rain_re, result)
 
         # extract group and return
         if cloud:
@@ -329,10 +329,10 @@ class SSHTelescope(object):
         """ Get the current cloud coverage.
         """
         # run the command
-        result = self.run_command(telescope.get_cloud)
+        result = self.run_command(telescope_cmds.get_cloud)
 
         # run regex
-        cloud = re.search(telescope.get_cloud_re, result)
+        cloud = re.search(telescope_cmds.get_cloud_re, result)
 
         # extract group and return
         if cloud:
@@ -346,10 +346,10 @@ class SSHTelescope(object):
         """ Get the current dew value.
         """
         # run the command
-        result = self.run_command(telescope.get_dew)
+        result = self.run_command(telescope_cmds.get_dew)
 
         # run regex
-        dew = re.search(telescope.get_dew_re, result)
+        dew = re.search(telescope_cmds.get_dew_re, result)
 
         # extract group and return
         if dew:
@@ -363,10 +363,10 @@ class SSHTelescope(object):
         """ Get the current rain value.
         """
         # run the command
-        result = self.run_command(telescope.get_rain)
+        result = self.run_command(telescope_cmds.get_rain)
 
         # run regex
-        rain = re.search(telescope.get_rain_re, result)
+        rain = re.search(telescope_cmds.get_rain_re, result)
 
         # extract group and return
         if rain:
@@ -380,11 +380,11 @@ class SSHTelescope(object):
         """ Get the current telescope pointing location.
         """
         # run the command
-        result = self.run_command(telescope.get_where)
+        result = self.run_command(telescope_cmds.get_where)
 
         # run regex
-        ra = re.search(telescope.where_ra_re, result)
-        dec = re.search(telescope.where_dec_re, result)
+        ra = re.search(telescope_cmds.where_ra_re, result)
+        dec = re.search(telescope_cmds.where_dec_re, result)
 
         # extract group and return
         if ra and dec:
@@ -399,10 +399,10 @@ class SSHTelescope(object):
         """ Get the current altitude of the sun.
         """
         # run the command
-        result = self.run_command(telescope.get_sun_alt)
+        result = self.run_command(telescope_cmds.get_sun_alt)
 
         # run regex
-        alt = re.search(telescope.get_sun_alt_re, result)
+        alt = re.search(telescope_cmds.get_sun_alt_re, result)
 
         # extract group and return
         if alt:
@@ -416,10 +416,10 @@ class SSHTelescope(object):
         """ Get the current altitude of the moon.
         """
         # run the command
-        result = self.run_command(telescope.get_moon_alt)
+        result = self.run_command(telescope_cmds.get_moon_alt)
 
         # run regex
-        alt = re.search(telescope.get_moon_alt_re, result)
+        alt = re.search(telescope_cmds.get_moon_alt_re, result)
 
         # extract group and return
         if alt:
@@ -434,10 +434,10 @@ class SSHTelescope(object):
         """
         # run the command
         result = self.run_command(
-            telescope.get_mean_image_count.format(file=fname))
+            telescope_cmds.get_mean_image_count.format(file=fname))
 
         # run regex
-        mean_count = re.search(telescope.get_mean_image_count_re, result)
+        mean_count = re.search(telescope_cmds.get_mean_image_count_re, result)
 
         # extract group and return
         if mean_count:
@@ -520,7 +520,7 @@ class SSHTelescope(object):
         if lookup.target_visible(target) and self.target_visible(target):
 
             # do a rough pointing of the telescope
-            if self.run_command(telescope.goto_target.format(target=target)):
+            if self.run_command(telescope_cmds.goto_target.format(target=target)):
 
                 # convert name to ra/dec
                 ra, dec = lookup.lookup(target)
@@ -546,7 +546,7 @@ class SSHTelescope(object):
 
         # print ('ha=%f, dec=%f'%(ha,dec))
 
-        self.run_command(telescope.goto_for_flats.format(
+        self.run_command(telescope_cmds.goto_for_flats.format(
             ha='%0.4f' % ha, dec='%0.4f' % dec))
 
         return True
@@ -567,7 +567,7 @@ class SSHTelescope(object):
 
         # print ('ha=%f, dec=%f'%(ha,dec))
 
-        self.run_command(telescope.goto_for_flats.format(
+        self.run_command(telescope_cmds.goto_for_flats.format(
             ha='%0.4f' % ha, dec='%0.4f' % dec))
 
         return True
@@ -600,7 +600,7 @@ class SSHTelescope(object):
         if self.point_visible(ra, dec):
 
             # Do basic pointing
-            status = self.run_command(telescope.goto.format(ra=ra, dec=dec))
+            status = self.run_command(telescope_cmds.goto.format(ra=ra, dec=dec))
             if status:
                 self.update({'location': ra+' '+dec})
 
@@ -619,37 +619,42 @@ class SSHTelescope(object):
         the telescope controller commands.
         """
 
-        result = self.run_command(telescope.altaz_target.format(target=target))
+        #result = self.run_command(telescope_cmds.altaz_target.format(target=target))
 
-        alt = re.search(telescope.alt_target_re, result)
+        #alt = re.search(telescope_cmds.alt_target_re, result)
 
-        if alt and (float(alt.group(0)) >= config.telescope.min_alt):
-            return True
+        #if alt and (float(alt.group(0)) >= config.telescope.min_alt):
+        #    return True
 
-        return False
+        
+        #return False
 
+        return True
+        
     def point_visible(self, ra: str, dec: str) -> bool:
         """ Check whether a given RA/Dec pair is visible.
         """
-        result = self.run_command(telescope.altaz.format(ra=ra, dec=dec))
+        #result = self.run_command(telescope_cmds.altaz.format(ra=ra, dec=dec))
 
-        alt = re.search(telescope.alt_re, result)
+        #alt = re.search(telescope_cmds.alt_re, result)
 
-        if alt and (float(alt.group(0)) >= config.telescope.min_alt):
-            return True
+        #if alt and (float(alt.group(0)) >= config.telescope.min_alt):
+        #    return True
 
-        return False
+        #return False
 
+        return True
+        
     def target_altaz(self, target: str) -> (float, float):
         """ Return a (alt, az) pair containing floats indicating
         the altitude and azimuth of a target - i.e 'M31', 'NGC4779'
         """
         # run the command
-        result = self.run_command(telescope.altaz_target.format(target))
+        result = self.run_command(telescope_cmds.altaz_target.format(target))
 
         # search for altitude and azimuth
-        alt = re.search(telescope.alt_target_re, result)
-        az = re.search(telescope.az_target_re, result)
+        alt = re.search(telescope_cmds.alt_target_re, result)
+        az = re.search(telescope_cmds.az_target_re, result)
 
         # check the search was successful and return
         if alt and alt.group(0):
@@ -664,11 +669,11 @@ class SSHTelescope(object):
         the altitude and azimuth of a given RA/Dec'
         """
         # run the command
-        result = self.run_command(telescope.altaz.format(target=target))
+        result = self.run_command(telescope_cmds.altaz.format(target=target))
 
         # search for altitude and azimuth
-        alt = re.search(telescope.alt_re, result)
-        az = re.search(telescope.az_re, result)
+        alt = re.search(telescope_cmds.alt_re, result)
+        az = re.search(telescope_cmds.az_re, result)
 
         # check the search was successful and return
         if alt and alt.group(0):
@@ -682,52 +687,52 @@ class SSHTelescope(object):
         """ Offset the pointing of the telescope by a given
         dRa and dDec
         """
-        result = self.run_command(telescope.offset.format(ra=dra, dec=ddec))
+        result = self.run_command(telescope_cmds.offset.format(ra=dra, dec=ddec))
 
-        return (re.search(telescope.offset_re, result) and True) or False
+        return (re.search(telescope_cmds.offset_re, result) and True) or False
 
     def enable_tracking(self) -> bool:
         """ Enable the tracking motor for the telescope.
         """
-        result = self.run_command(telescope.enable_tracking)
+        result = self.run_command(telescope_cmds.enable_tracking)
         self.update({'tracking': 'on'})
 
-        return (re.search(telescope.enable_tracking_re, result) and True) or False
+        return (re.search(telescope_cmds.enable_tracking_re, result) and True) or False
 
     def disable_tracking(self) -> bool:
         """ Disable the tracking motor for the telescope.
         """
-        result = self.run_command(telescope.disable_tracking)
+        result = self.run_command(telescope_cmds.disable_tracking)
 
-        return (re.search(telescope.disable_tracking_re, result) and True) or False
+        return (re.search(telescope_cmds.disable_tracking_re, result) and True) or False
 
     def move_dome(self, daz: float) -> bool:
         """ Move the dome to az=daz
         """
-        result = self.run_command(telescope.move_dome.format(az=daz))
+        result = self.run_command(telescope_cmds.move_dome.format(az=daz))
 
-        return (re.search(telescope.move_dome_re, result) and True) or False
+        return (re.search(telescope_cmds.move_dome_re, result) and True) or False
 
     def home_dome(self) -> bool:
         """ Calibrate the dome motor
         """
-        result = self.run_command(telescope.home_dome)
+        result = self.run_command(telescope_cmds.home_dome)
 
-        return (re.search(telescope.home_dome_re, result) and True) or False
+        return (re.search(telescope_cmds.home_dome_re, result) and True) or False
 
     def home_ha(self) -> bool:
         """ Calibrate the HA motor
         """
-        result = self.run_command(telescope.home_ha)
+        result = self.run_command(telescope_cmds.home_ha)
 
-        return (re.search(telescope.home_ha_re, result) and True) or False
+        return (re.search(telescope_cmds.home_ha_re, result) and True) or False
 
     def home_dec(self) -> bool:
         """ Calibrate the DEC motor
         """
-        result = self.run_command(telescope.home_dec)
+        result = self.run_command(telescope_cmds.home_dec)
 
-        return (re.search(telescope.home_dec_re, result) and True) or False
+        return (re.search(telescope_cmds.home_dec_re, result) and True) or False
 
     def calibrate_motors(self) -> bool:
         """ Run the motor calibration routine.
@@ -739,9 +744,9 @@ class SSHTelescope(object):
         """ Return the current focus value of the
         telescope.
         """
-        result = self.run_command(telescope.get_focus)
+        result = self.run_command(telescope_cmds.get_focus)
 
-        focus = re.search(telescope.get_focus_re, result)
+        focus = re.search(telescope_cmds.get_focus_re, result)
         # extract group and return
         if focus:
             focus = float(focus.group(0))
@@ -755,9 +760,9 @@ class SSHTelescope(object):
         """ Set the focus value of the telescope to
         `focus`.
         """
-        result = self.run_command(telescope.set_focus.format(focus=focus))
+        result = self.run_command(telescope_cmds.set_focus.format(focus=focus))
 
-        return (re.search(telescope.set_focus_re, result) and True) or False
+        return (re.search(telescope_cmds.set_focus_re, result) and True) or False
 
     def auto_focus(self) -> (bool, int):
         """ Automatically focus the telescope
@@ -768,7 +773,7 @@ class SSHTelescope(object):
     def current_filter(self) -> str:
         """ Return the string name of the current filter.
         """
-        result = self.run_command(telescope.current_filter)
+        result = self.run_command(telescope_cmds.current_filter)
         self.update({'filter': result})
 
         return result
@@ -776,7 +781,7 @@ class SSHTelescope(object):
     def change_filter(self, name: str) -> bool:
         """ Change the current filter specified by {filtname}.
         """
-        result = self.run_command(telescope.change_filter.format(name=name))
+        result = self.run_command(telescope_cmds.change_filter.format(name=name))
 
         # get new filter
         current_filter = self.current_filter()
@@ -900,7 +905,7 @@ class SSHTelescope(object):
 
             # take exposure
 
-            self.run_command(telescope.take_exposure.format(time=exposure_time, binning=binning,
+            self.run_command(telescope_cmds.take_exposure.format(time=exposure_time, binning=binning,
                                                             filename=fname))
 
             # if the telescope has randomly closed, open up and repeat the exposure
@@ -930,7 +935,7 @@ class SSHTelescope(object):
 
             self.log.info(f'Taking dark {n+1}/{count} with name: {fname}')
 
-            self.run_command(telescope.take_dark.format(time=exposure_time, binning=binning,
+            self.run_command(telescope_cmds.take_dark.format(time=exposure_time, binning=binning,
                                                         filename=fname))
 
         self.update({'status': 'open'})
@@ -951,7 +956,7 @@ class SSHTelescope(object):
             # create filename
             fname = filename + f'_bias_{n}.fits'
 
-            self.run_command(telescope.take_dark.format(time=0.1, binning=binning,
+            self.run_command(telescope_cmds.take_dark.format(time=0.1, binning=binning,
                                                         filename=fname))
             time.sleep(1)
 
