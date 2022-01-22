@@ -155,6 +155,8 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     time = Time.now()
     sunset_tonight = seo.sun_set_time(time, which='nearest')
     sunrise_tomorrow = seo.sun_rise_time(time, which=u'next')
+    if sunrise_tomorrow < sunset_tonight:
+        sunset_tonight = seo.sun_set_time(time, which='previous')
 
     global_constraints = [AltitudeConstraint(30*u.deg),
                         AtNightConstraint.twilight_astronomical(),
