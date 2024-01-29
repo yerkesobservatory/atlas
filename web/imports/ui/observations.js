@@ -142,7 +142,7 @@ Template.newObservationForm.events({
         CoffeeAlerts.clearSeen();
 
         // load visiblity curves
-        HTTP.get('https://sirius.stoneedgeobservatory.com/visibility/'+event.target.value,
+        HTTP.get('https://queue.stoneedgeobservatory.org/visibility/'+event.target.value,
                  function (error, response) {
                      if (error) {
                          console.log(error);
@@ -153,7 +153,7 @@ Template.newObservationForm.events({
                  });
 
         // load target preview
-        HTTP.get('https://sirius.stoneedgeobservatory.com/preview/'+event.target.value,
+        HTTP.get('https://queue.stoneedgeobservatory.org/preview/'+event.target.value,
                  function (error, response) {
                      if (error) {
                          console.log(error);
