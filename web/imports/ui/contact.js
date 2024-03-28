@@ -83,7 +83,7 @@ Template.contact.events({
         	if (this.status.online != true){
         		var to = this.emails[0];
         		var subject = 'New Message from '+othername+ ' in Stone Edge Observatory. '
-        		var text = subject + 'Click here to view '+'https://queue.stoneedgeobservatory.com/'+url;
+        		var text = subject + 'Click here to view '+'https://queue.stoneedgeobservatory.org/'+url;
         		Meteor.call('sendEmail',to,subject,text);
         	}
         	Meteor.call('users.newMessageRead', Meteor.userId(), this._id);
