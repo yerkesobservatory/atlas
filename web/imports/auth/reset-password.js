@@ -24,7 +24,7 @@ Template.forgotPassword.events({
                     CoffeeAlerts.error(error.message);
                 }
             } else {
-                CoffeeAlerts.success('Your password has been reset. Please check your email for a link to set a new password');
+                CoffeeAlerts.success('Password reset initiated. Please check your email for a link to set your new password.');
                 //fade out modal
                 $('.modal-backdrop').remove();
             }
@@ -101,7 +101,7 @@ Template.resetPassword.onRendered(function() {
         messages: {
             password: {
                 required: "You have to choose a new password!",
-                minlength: "Your password has to be atleast 12 characters",
+                minlength: "Your password has to be at least 12 characters",
                 maxlength: "For the purpose of sanity, we restrict passwords to 128 characters.",
             },
             passwordRepeat: {

@@ -19,21 +19,21 @@
       </div>
       <div class="col-xs-7">
 
+	<div class="panel panel-default" style="height:350px; border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0); color:white;">
+	<div class="panel-body">
+		<p style="font-size: 20px; color:white;">VISIBILITY CHART:</p>
+		<img id="visibility" src="" alt="" style="width:550px; border-radius:20px;">
+	</div> <!-- panel-body -->
+	</div> <!-- panel -->
+	      
 	  <div class="panel panel-default" style="height:100%; border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0); color:white;">
 	    <div class="panel-body">
-        <p style="font-size: 20px; margin-top:-43px;">DIGITIZED SKY SURVEY (DSS) PREVIEW:</p>
+        <p style="font-size: 20px;">DIGITIZED SKY SURVEY (DSS) PREVIEW:</p>
 	      <!-- <div id="aladin-lite-div" style="width:400px;height:400px;"></div> -->
 	      <!-- <div id="aladin-lite-div" style="height:550px; width:550px; border-radius:20px;"></div> -->
 	      <img id="preview" src="" alt="" style="width:550px; border-radius:20px;">
 	    </div> <!-- panel-body -->
 	  </div> <!-- panel -->
-
-    <p style="font-size: 20px; margin-top:70px; color:white;">VISIBILITY CHART:</p>
-  <div class="panel panel-default" style="height:350px; border-style: none;  border-color=rgba(0,0,0,0); background-color:rgba(0,0,0,0); color:white;">
-  <div class="panel-body">
-    <img id="visibility" src="" alt="" style="width:550px; border-radius:20px;">
-  </div> <!-- panel-body -->
-  </div> <!-- panel -->
 
       </div>
     </div>
@@ -96,7 +96,7 @@
       <div class="form-group" id="form-binning">
         <label for="binning" class="col-lg-3 control-label" style="font-family:Futura; color:white; ">BIN</label>
         <div class="col-lg-9">
-          <input class="form-control" id="binning" placeholder="Binning" type="number" min=1 max=8 value="2" name="binning" required>
+          <input class="form-control" id="binning" placeholder="Binning" type="number" min=1 max=8 value="1" name="binning" required>
         </div>
       </div>
 
@@ -238,7 +238,6 @@
 
 <template name="observationAction">
   <div class="btn-group">
-    <a href="#" class="btn btn-info">Actions</a>
     <a href="#" class="btn btn-info dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></a>
     <ul class="dropdown-menu">
       {{#unless completed}}
@@ -247,8 +246,8 @@
       <li><a href="#" class="action-completed">Re-execute</a></li>
       <li><a class="gotoimages" href="http://stars.uchicago.edu/queue/data/{{starspath}}" target="_blank" rel="noopener">Go To Images</a></li>
       <li><a class="gotostars" href="http://stars.uchicago.edu/queue/" target="_blank" rel="noopener">Go to Stars</a></li>
-      <li><a class="download" href="https://queue.stoneedgeobservatory.com/data/{{directory}}.zip" download="{{directory}}">Download Raw Data</a></li>
-      <!--<li><a href="#" class="copy-link" data-clipboard-text="https://queue.stoneedgeobservatory.com/data/{{directory}}.zip">Copy Link to Files</a></li>-->
+<!--       <li><a class="download" href="https://queue.stoneedgeobservatory.org/data/{{directory}}.zip" download="{{directory}}">Download Raw Data</a></li> -->
+      <!--<li><a href="#" class="copy-link" data-clipboard-text="https://queue.stoneedgeobservatory.org/data/{{directory}}.zip">Copy Link to Files</a></li>-->
       {{/unless}}
       <li class="divider"></li>
       <li><a href="#" class="action-delete">Delete</a></li>
