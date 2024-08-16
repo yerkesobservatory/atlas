@@ -6,7 +6,8 @@
     "pretest": "npm run lint --silent"
   },
   "dependencies": {
-    "@babel/runtime": "7.0.0-beta.55",
+    "@babel/runtime": "^7.25.0",
+    "ajv": "^8.17.1",
     "babel-runtime": "^6.26.0",
     "bcrypt": "^1.0.3",
     "clipboard": "^1.7.1",
