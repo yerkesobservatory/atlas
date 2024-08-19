@@ -311,7 +311,8 @@ class SSHTelescope(object):
 
         if dew:
             self.update({'weather.dew': dew.group(0)})
-            dew = float(dew.group(0))
+            self.log.info(f'Removing NORAIN since rain sensor is down: got dew: {dew.group(0).split(" ")[0]}')
+            dew = float(dew.group(0).split(" ")[0])
         else:
             self.log.warning(f'Unable to parse dew in get_taux: \"{result}\"')
             dew = 0

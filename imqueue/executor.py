@@ -76,7 +76,8 @@ class Executor(object):
 
             # otherwise wait until we are meant to start at night
             self.log.info(f'Executor is initialized and waiting {run.idle_seconds()/60/60:.1f} hours to the designated start time...')
-            time.sleep(int((1/24)*run.idle_seconds())) # check in roughly every hour
+            if (run.idle_seconds() > 0):
+                time.sleep(int((1/24)*run.idle_seconds())) # check in roughly every hour
 
             self.log.info('Executor is awake; checking if any jobs need to be run...')
             run.run_pending()
@@ -238,7 +239,7 @@ class Executor(object):
         # check if this is a regular session
         if session.get('_id'):
             # find program that session belongs to
-            program = self.programs.find_one({'sessions': session['_id']})
+            program = self.db.programs.find_one({'sessions': session['_id']})
 
             if program:
                 return list(self.db.observations.find({'program': program['_id'],
@@ -468,13 +469,13 @@ class Executor(object):
             # channel
             channel = config.notification.slack_channel
 
-            client = WebClient(token=config.notification.slack_token)
+            # client = WebClient(token=config.notification.slack_token)
             # create slack handler
             #slack_handler = SlackerLogHandler(config.notification.slack_token, channel, stack_trace=True,
             #                                  username='sirius', icon_emoji=':dizzy', fail_silent=True)
 
             # add slack handler to logger
-            cls.log.addHandler(slack_handler)
+            # cls.log.addHandler(slack_handler)
 
             # define the minimum level of log messages
             #slack_handler.setLevel(logging.DEBUG)

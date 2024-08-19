@@ -23,6 +23,8 @@ class StatusServer(base.MQTTServer):
         # MUST INIT SUPERCLASS FIRST
         super().__init__("Status Server")
 
+        self.log.info("Attempting to connect to database...")
+
         # get a connection to the database
         self.db = database.Database()
 
