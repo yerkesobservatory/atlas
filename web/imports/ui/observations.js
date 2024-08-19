@@ -142,7 +142,7 @@ Template.newObservationForm.events({
         CoffeeAlerts.clearSeen();
 
         // load visiblity curves
-        HTTP.get('https://sirius.stoneedgeobservatory.com/visibility/'+event.target.value,
+        HTTP.get('https://queue.stoneedgeobservatory.org/visibility/'+event.target.value,
                  function (error, response) {
                      if (error) {
                          console.log(error);
@@ -153,7 +153,7 @@ Template.newObservationForm.events({
                  });
 
         // load target preview
-        HTTP.get('https://sirius.stoneedgeobservatory.com/preview/'+event.target.value,
+        HTTP.get('https://queue.stoneedgeobservatory.org/preview/'+event.target.value,
                  function (error, response) {
                      if (error) {
                          console.log(error);
@@ -358,17 +358,17 @@ Template.newObservation.onRendered(function() {
             exptime: {
                 required: "We need to know how long you want to expose for!",
                 min: "That exposure time is too short; minimum exposure-time is 0.1s",
-                max: "That exposure time is waaaaay too long; most things will be saturated"
+                max: "That exposure time is waaaaay too long; most things will be saturated."
             },
             expcount: {
-                required: "Please enter a valid integer nmber of exposure counts",
-                min: "You need to take atleast 1 exposure!",
+                required: "Please enter a valid integer number of exposure counts",
+                min: "You need to take at least 1 exposure!",
                 max: "That is an excessive number of exposures; please make this less than 100",
                 digits: "This needs to be an integer - we can't have any half exposures can we?"
             },
             binning: {
                 required: "You need to set a binning - we recommend 1 or 2",
-                min: "CCD Binning needs to be greated than 1!",
+                min: "CCD Binning needs to be greater than or equal to 1!",
                 max: "A CCD binning over 8 is excessive - please lower the binning",
                 digits: "This needs to be an integer!"
             }

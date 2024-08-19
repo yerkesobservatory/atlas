@@ -97,7 +97,6 @@ def lookup(target: str) -> (str, str):
         except Exception as e:
             return None, None
 
-
 def target_visible(target: str) -> bool:
     """ Check whether an object is visible.
 
