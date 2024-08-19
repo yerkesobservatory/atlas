@@ -66,8 +66,8 @@ class ResourceServer(object):
         response.headers['Content-Transfer-Encoding'] = 'BASE64'
 
         # support CORS
-        response.headers['Access-Control-Allow-Origin'] = (
-            flask.request.headers.get('ORIGIN') or 'https://queue.stoneedgeobservatory.com' or 'https://sirius.stoneedgeobservatory.com:8179/*')
+        # response.headers['Access-Control-Allow-Origin'] = (
+        #     flask.request.headers.get('ORIGIN') or 'https://queue.stoneedgeobservatory.com' or 'https://sirius.stoneedgeobservatory.com:8179/*')
 
         # close image and figures
         img.close()
@@ -80,7 +80,9 @@ class ResourceServer(object):
         """
 
         self.log.info('visibility called!')
-        fig = plots.visibility_curve(target, figsize=(8, 4))
+        fig = plots.visibility_curve(target, self.log, figsize=(8, 4))
+        self.log.debug("got past vis curve")
+        self.log.debug(fig)
         if fig:
             response = self.make_plot_response(fig, transparent=False)
             plt.close(fig)

@@ -7,6 +7,7 @@ import astropy.coordinates as coordinates
 from astroplan import FixedTarget
 import datetime
 
+"""
 def lookup(obs):
     # location of observatory
     target = obs['target']
@@ -35,9 +36,10 @@ def lookup(obs):
         except Exception as e:
             print(e)
             return None, None
-
 """
+
 def lookup(target: str) -> (str, str):
+    """
     Convert a target name 'M31', 'NGC6946', to a RA/Dec pair using the location
     of the observatory.
 
@@ -60,6 +62,7 @@ def lookup(target: str) -> (str, str):
     Notes
     -----
     Author: rprechelt
+    """
 
     # location of observatory
     obs_location = coordinates.EarthLocation(lat=config.general.latitude*units.deg,
@@ -93,7 +96,7 @@ def lookup(target: str) -> (str, str):
                     target_coordinates.dec.to_string(unit=units.degree,sep=':'))
         except Exception as e:
             return None, None
-"""
+
 
 def target_visible(target: str) -> bool:
     """ Check whether an object is visible.
