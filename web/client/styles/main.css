@@ -5,6 +5,10 @@ html *
     color: white;
 }
 
+.fa {
+    font-family: "FontAwesome" !important; 
+}
+
 /* ==== FORGOT ==== */
 .form-forgot {
     max-width: 330px;
