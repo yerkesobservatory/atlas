@@ -23,7 +23,7 @@ itsdangerous==0.24
 Jinja2==2.10
 jplephem==2.6
 keyring==11.0.0
-MarkupSafe==1.0
+MarkupSafe==1.1.1
 matplotlib
 #matplotlib==2.0.2
 networkx==2.0
@@ -38,7 +38,7 @@ py==1.4.34
 pyasn1==0.4.2
 pyasn1-modules==0.2.1
 pycparser==2.18
-pymongo==3.4.0
+pymongo
 PyNaCl==1.2.1
 pyparsing==2.2.0
 pytest==3.2.2

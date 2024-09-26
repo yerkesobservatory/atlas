@@ -124,3 +124,9 @@ class ResourceServer(object):
         cls.log = logging.getLogger('resource')
         cls.log.setLevel(logging.DEBUG)
         cls.log.addHandler(stream)
+
+        # create filehandler
+        logfile = time.strftime(config.logging.filename)
+        fhand = logging.FileHandler(logfile)
+        fhand.setFormatter(formatter)
+        cls.log.addHandler(fhand)

@@ -1,3 +1,4 @@
+import time
 import pymongo
 import logging
 import colorlog
@@ -75,3 +76,9 @@ class Database(object):
         cls.log = logging.getLogger('database')
         cls.log.setLevel(logging.DEBUG)
         cls.log.addHandler(stream)
+
+        # create filehandler
+        logfile = time.strftime(config.logging.filename)
+        fhand = logging.FileHandler(logfile)
+        fhand.setFormatter(formatter)
+        cls.log.addHandler(fhand)

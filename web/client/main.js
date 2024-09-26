@@ -27,10 +27,10 @@ import '../imports/ui/sessions.js';
 import '../imports/ui/programs.js';
 
 // contact
-import '../imports/ui/contact.js';
+// import '../imports/ui/contact.js';
 
 // message
-import '../imports/ui/message.js';
+// import '../imports/ui/message.js';
 
 // auth
 import '../imports/auth/login.js';
@@ -44,7 +44,7 @@ import '../imports/ui/control.js';
 import '../imports/admin/admin.js';
 import '../imports/admin/groups.js';
 
-import {SimpleChat} from 'meteor/cesarve:simple-chat/config'
+// import {SimpleChat} from 'meteor/cesarve:simple-chat/config'
 
 // deny client side updates to users
 //Meteor.users.deny({

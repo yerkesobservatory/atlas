@@ -138,7 +138,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
          The time (in seconds) to wait before imaging this observation.
     Authors: apagul
     """
-    f = open('/live/production/atlas/imqueue/schedulers/log_scheduler.txt', 'w')
+    f = open('/scripts/queue/atlas/imqueue/schedulers/log_scheduler.txt', 'w')
     ############## Set up observatory ###############
 
 #    longitude = 237.49604 * u.deg
