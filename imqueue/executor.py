@@ -428,8 +428,8 @@ class Executor(object):
                 self.completed_observations.append(observation)
 
             except Exception as e:
-                self.log.warn(f'Error while executing {observation}')
-                self.log.warn(f'{e}')
+                self.log.warn(f'Error while executing {observation}', exc_info=True)
+                #self.log.warn(f'{e}') - not needed anymore - exc_info should do the trick
                 continue
 
         return True

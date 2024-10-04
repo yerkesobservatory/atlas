@@ -77,19 +77,19 @@ def schedule(observations: List[Dict], session: Dict, program: Dict, telescope: 
                 if not ra or not dec:
                     print(f'Unable to compute RA/Dec for {observation.get("target")}.')
                     if database.Database.is_connected:
-                        database.Database.observations.update({'_id': observation['_id']},
-                                                              {'$set':
-                                                               {'error': 'lookup'}})
+                        database.Database.observations.update_one({'_id': observation['_id']},
+                                                                  {'$set':
+                                                                   {'error': 'lookup'}})
                     continue
 
                 # save the RA/Dec
                 observation['RA'] = ra
                 observation['Dec'] = dec
                 if database.Database.is_connected:
-                    database.Database.observations.update({'_id': observation['_id']},
-                                                          {'$set':
-                                                           {'RA': ra,
-                                                            'Dec': dec}})
+                    database.Database.observations.update_one({'_id': observation['_id']},
+                                                              {'$set':
+                                                               {'RA': ra,
+                                                                'Dec': dec}})
 
         # check whether observation has RA and Dec values
         if observation.get('RA') is None:
@@ -303,8 +303,8 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
         # take exposures!
         telescope.take_exposure(basename_science.replace(
             '{filter}', filt), exposure_time, exposure_count, binning, filt)
-        database.Database.observations.update({'_id': observation['_id']}, {
-                                              '$push': {'filenames': basename_science.replace('{filter}', filt)}})
+        database.Database.observations.update_one({'_id': observation['_id']},
+                                                  {'$push': {'filenames': basename_science.replace('{filter}', filt)}})
 
     # reset filter back to clear
     telescope.log.info('Switching back to clear filter')
@@ -322,14 +322,14 @@ def execute(observation: Dict[str, str], program: Dict[str, str], telescope) -> 
     telescope.take_bias(basename_bias, 10*exposure_count, binning)
 
     # we set the directory for the observations
-    database.Database.observations.update({'_id': observation['_id']}, {'$set': {'directory': f'{rawdirname}'}})
+    database.Database.observations.update_one({'_id': observation['_id']}, {'$set': {'directory': f'{rawdirname}'}})
 
     # we have finished the observation, let's update record
     # with execDate and mark it completed
     # TODO: we have to get rid of stars.uchicago.edu reference here
-    database.Database.observations.update({'_id': observation['_id']},
-                                          {'$set':
-                                           {'completed': True,
-                                            'execDate': datetime.datetime.now()}})
+    database.Database.observations.update_one({'_id': observation['_id']},
+                                              {'$set':
+                                               {'completed': True,
+                                                'execDate': datetime.datetime.now()}})
 
     return True

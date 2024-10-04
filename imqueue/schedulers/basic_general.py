@@ -192,7 +192,7 @@ class Scheduler():
                     if not ra or not dec:
                         print(f'Unable to compute RA/Dec for {observation.get("target")}.')
                         if database.Database.is_connected:
-                            database.Database.observations.update({'_id': observation['_id']},
+                            database.Database.observations.update_one({'_id': observation['_id']},
                                                                       {'$set':
                                                                        {'error': 'lookup'}})
                         continue
@@ -200,7 +200,7 @@ class Scheduler():
                     # save the RA/Dec
                     observation['RA'] = ra; observation['Dec'] = dec;
                     if database.Database.is_connected:
-                        database.Database.observations.update({'_id': observation['_id']},
+                        database.Database.observations.update_one({'_id': observation['_id']},
                                                                   {'$set':
                                                                    {'RA': ra,
                                                                     'Dec': dec}})
