@@ -18,7 +18,7 @@ import '../imports/api/message.js';
 import {SimpleChat} from 'meteor/cesarve:simple-chat/config'
 import { UserStatus } from 'meteor/mizzao:user-status';
 
-
+//console.log('MAIL_URL env var', process.env.MAIL_URL); // to confirm mail url on startup
 
 Meteor.startup(() => {
     // code to run on server at startup

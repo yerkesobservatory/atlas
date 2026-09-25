@@ -388,11 +388,12 @@ class Executor(object):
             # run the scheduler and get the next observation to complete
             self.log.debug(f'Calling the {program.get("executor")} scheduler...')
             observing_schedule = schedule.schedule(observations, session, program)
+            self.log.debug('Next observation in %.2f seconds' % observing_schedule[1])
             if observing_schedule is None:
                 self.log.error('Scheduler did not return a valid schedule.')
                 break
             # if the scheduler returns no observations, we are done
-            if (observing_schedule[1]<-30) | (len(observing_schedule)<1):
+            if (observing_schedule[1]<-300) | (len(observing_schedule)<1):
             #if len(observing_schedule.scheduled_blocks) == 0:
                 self.log.debug('Scheduler reports no observations left for this session...')
                 break
