@@ -177,7 +177,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
     #night = TimeConstraint(sunset_tonight, sunrise_tomorrow)
     night = TimeConstraint(sunset_tonight, sunrise_tomorrow)
-    obstime_constraint = TimeConstraint(time - 1*u.minute, sunrise_tomorrow)
+    obstime_constraint = TimeConstraint(time - 5*u.second, sunrise_tomorrow)
     # Create ObservingBlocks for each filter and target with our time
     # constraint, and durations determined by the exposures needed
     for j,obs in enumerate(observations):
