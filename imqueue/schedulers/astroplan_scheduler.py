@@ -268,7 +268,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     
     print("initializing a schedule object")
     # Initialize a Schedule object, to contain the new schedule
-    sequential_schedule = Schedule(max(sunset_tonight, time), sunrise_tomorrow)
+    sequential_schedule = Schedule(sunset_tonight, sunrise_tomorrow)
     print(blocks)
     # log.debug('Observing blocks:\n%s', blocks)
 
