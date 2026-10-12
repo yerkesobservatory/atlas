@@ -264,13 +264,13 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     seq_scheduler = SequentialScheduler(constraints = global_constraints,
                                         observer = seo,
                                         transitioner = transitioner,
-                                        gap_time = 60*u.second) # max time to wait between targets
+                                        gap_time = 120*u.second) # max time to wait between targets
     
     print("initializing a schedule object")
     # Initialize a Schedule object, to contain the new schedule
     sequential_schedule = Schedule(sunset_tonight, sunrise_tomorrow)
     print(blocks)
-    log.debug('Observing blocks:\n%s', blocks)
+    # log.debug('Observing blocks:\n%s', blocks)
 
     print("schedule the blocks")
     # Call the schedule with the observing blocks and schedule to schedule the blocks
@@ -290,7 +290,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
     tab = to_table(sequential_schedule, show_transitions=True)
     print(tab)
-    log.debug('Schedule table:\n%s', tab)
+    log.debug('Schedule table:\n%s', '\n'.join(tab.pformat(max_lines=-1, max_width=-1)))
     idval = tab['target'][0].split(" ")[-1]
     #print("idval:", idval)
     #print(observations)
