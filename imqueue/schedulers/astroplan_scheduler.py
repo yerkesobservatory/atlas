@@ -1,4 +1,5 @@
 import re
+import logging
 import pymongo
 
 import numpy as np
@@ -31,6 +32,9 @@ from pytz import timezone
 #from astroplan.scheduling import Transitioner
 
 download_IERS_A()
+
+# same named logger configured by Executor.__init_log
+log = logging.getLogger('executor')
 
 longitude = 237.49604 * u.deg
 latitude = 38.288709 * u.deg
@@ -259,12 +263,15 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     print("starting sequential scheduler")
     seq_scheduler = SequentialScheduler(constraints = global_constraints,
                                         observer = seo,
-                                        transitioner = transitioner)
+                                        transitioner = transitioner,
+                                        gap_time = 60*u.second) # max time to wait between targets
+    
     print("initializing a schedule object")
     # Initialize a Schedule object, to contain the new schedule
     sequential_schedule = Schedule(sunset_tonight, sunrise_tomorrow)
     print(blocks)
-    
+    log.debug('Observing blocks:\n%s', blocks)
+
     print("schedule the blocks")
     # Call the schedule with the observing blocks and schedule to schedule the blocks
     seq_scheduler(blocks, sequential_schedule)
@@ -283,6 +290,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
     tab = to_table(sequential_schedule, show_transitions=True)
     print(tab)
+    log.debug('Schedule table:\n%s', tab)
     idval = tab['target'][0].split(" ")[-1]
     #print("idval:", idval)
     #print(observations)
