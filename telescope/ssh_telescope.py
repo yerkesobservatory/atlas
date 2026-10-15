@@ -1036,22 +1036,33 @@ class SSHTelescope(object):
                     except Exception as e:
                         pass
                 else:
+                    self.log.debug(f'Running command: {command}')
                     stdin, stdout, stderr = self.ssh.exec_command(command)
+                    self.log.debug(f'Finished running command: {command}')
+                    
                     numtries += 1
                     result = stdout.readlines()
-
+                    err_text = stderr.readlines()
+                    
                     # check exit code
                     exit_code = stdout.channel.recv_exit_status()
                     if exit_code != 0:
-                        self.log.warn(f'Command returned {exit_code}. Retrying in 3 seconds...')
+                        self.log.warning(f'Command returned {exit_code}. Retrying in 3 seconds...')
                         time.sleep(3)
                         continue
-
+                    
+                    if err_text:
+                        if len(err_text) > 0:
+                            err_text = ' '.join(err_text).strip()
+                            self.log.debug(f'Error text: {err_text}')
+                    
                     if result:
                         # valid result received
                         if len(result) > 0:
                             result = ' '.join(result).strip()
                             self.log.info(f'Result: {result}')
+                            
+                        
                             return result
 
             except Exception as e:
