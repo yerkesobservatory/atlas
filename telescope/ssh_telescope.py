@@ -128,14 +128,20 @@ class SSHTelescope(object):
 
         Returns True if the dome was opened, False otherwise.
         """
+        self.log.debug("Started open_dome()")
         # check if dome is already open
         if self.dome_open():
+            self.log.debug("Dome is already open")
             return True
 
         # check that weather is OK to open
+        self.log.debug("Checking weather")
         if self.weather_ok(sun):
+            self.log.debug("Weather is OK, attempting to open dome")
             self.update({'slit': 'opening', 'status': 'opening'})
             result = self.run_command(telescope_cmds.open_dome)
+            
+            self.log.debug(f"Result of open_dome attempt: {result}")
 
             if re.search(telescope_cmds.open_dome_re, result):
                 self.update({'slit': 'open', 'status': 'open'})
