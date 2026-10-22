@@ -258,20 +258,19 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
 
     # Initialize the sequential scheduler with the constraints and transitioner
-    print("starting sequential scheduler")
+    log.info("Starting sequential scheduler")
     seq_scheduler = SequentialScheduler(constraints = global_constraints,
                                         observer = seo,
                                         transitioner = transitioner,
                                         gap_time = 300*u.second) # max time to wait between targets
     # Initialize a Schedule object, to contain the new schedule
-    print("initializing a schedule object")
-    starting_time = max(sunset_tonight, time)
-    log.debug(f"Start time for scheduling: {starting_time.iso()}")
-    sequential_schedule = Schedule(starting_time, sunrise_tomorrow)
-    print(blocks)
+    log.info("Initializing a schedule object")
+    schedule_start_time = max(sunset_tonight, time)
+    log.debug(f"Start time for scheduling: {schedule_start_time.iso}")
+    sequential_schedule = Schedule(schedule_start_time, sunrise_tomorrow)
     # log.debug('Observing blocks:\n%s', blocks) # redundant with table
 
-    print("schedule the blocks")
+    log.info("Scheduling the blocks")
     # Call the schedule with the observing blocks and schedule to schedule the blocks
     seq_scheduler(blocks, sequential_schedule)
     
