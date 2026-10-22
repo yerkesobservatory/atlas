@@ -159,9 +159,12 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     time = Time.now()
     sunset_tonight = seo.sun_set_time(time, which='nearest')
     sunrise_tomorrow = seo.sun_rise_time(time, which=u'next')
+    
     if sunrise_tomorrow < sunset_tonight:
         # Correct if next sunset is <12hrs away
         sunset_tonight = seo.sun_set_time(time, which='previous')
+
+    log.debug(f"Current time: {time.iso}, Sunset tonight: {sunset_tonight.iso}, Sunrise tomorrow: {sunrise_tomorrow.iso}")
 
     global_constraints = [AltitudeConstraint(30*u.deg),
                         AtNightConstraint.twilight_astronomical(),
@@ -170,10 +173,6 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     # Define the read-out time, exposure duration and number of exposures
     read_out = 1
     blocks = []
-
-    time = Time.now()
-    sunset_tonight = seo.sun_set_time(time, which='nearest')
-    sunrise_tomorrow = seo.sun_rise_time(time, which=u'next')
 
     night = TimeConstraint(sunset_tonight, sunrise_tomorrow)
     obstime_constraint = TimeConstraint(time, sunrise_tomorrow)
@@ -264,12 +263,13 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
                                         observer = seo,
                                         transitioner = transitioner,
                                         gap_time = 300*u.second) # max time to wait between targets
-    
-    print("initializing a schedule object")
     # Initialize a Schedule object, to contain the new schedule
-    sequential_schedule = Schedule(max(sunset_tonight, time-10*u.second), sunrise_tomorrow)
+    print("initializing a schedule object")
+    start_time = max(sunset_tonight, time)
+    log.debug(f"Start time for scheduling: {start_time.iso()}")
+    sequential_schedule = Schedule(start_time, sunrise_tomorrow)
     print(blocks)
-    # log.debug('Observing blocks:\n%s', blocks)
+    # log.debug('Observing blocks:\n%s', blocks) # redundant with table
 
     print("schedule the blocks")
     # Call the schedule with the observing blocks and schedule to schedule the blocks
