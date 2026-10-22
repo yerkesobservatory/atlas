@@ -266,7 +266,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     seq_scheduler = SequentialScheduler(constraints = global_constraints,
                                         observer = seo,
                                         transitioner = transitioner,
-                                        gap_time = 10*u.second) # max time to wait between targets
+                                        gap_time = 200*u.second) # max time to wait between targets
     # Initialize a Schedule object, to contain the new schedule
     log.info("Initializing a schedule object")
     schedule_start_time = max(sunset_tonight, time)
