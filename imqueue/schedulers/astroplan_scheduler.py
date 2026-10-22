@@ -269,11 +269,11 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     log.debug(f"Start time for scheduling: {schedule_start_time.iso}")
     sequential_schedule = Schedule(schedule_start_time, sunrise_tomorrow)
     # log.debug('Observing blocks:\n%s', blocks) # redundant with table
-
+    log.debug(f"Sequential schedule: {sequential_schedule}")
     log.info("Scheduling the blocks")
     # Call the schedule with the observing blocks and schedule to schedule the blocks
     seq_scheduler(blocks, sequential_schedule)
-    
+    log.debug(f"Scheduled blocks: {sequential_schedule}")
 
     # Initialize the priority scheduler with the constraints and transitioner
     prior_scheduler = PriorityScheduler(constraints = global_constraints,
@@ -305,11 +305,9 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
             continue
         #nextobs_index = observations['_id'].index(idval)
         #nextobs = observations[nextobs_index]
-    print(nextobs)
+    log.debug(f"Next observation: {nextobs}")
 
     wait = ((Time(tab['start time (UTC)'][0])-Time.now()).to(u.second)).value
-
-    print("wait:", wait)
 
     return nextobs, wait
 
