@@ -265,9 +265,9 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
                                         gap_time = 300*u.second) # max time to wait between targets
     # Initialize a Schedule object, to contain the new schedule
     print("initializing a schedule object")
-    start_time = max(sunset_tonight, time)
-    log.debug(f"Start time for scheduling: {start_time.iso()}")
-    sequential_schedule = Schedule(start_time, sunrise_tomorrow)
+    starting_time = max(sunset_tonight, time)
+    log.debug(f"Start time for scheduling: {starting_time.iso()}")
+    sequential_schedule = Schedule(starting_time, sunrise_tomorrow)
     print(blocks)
     # log.debug('Observing blocks:\n%s', blocks) # redundant with table
 
