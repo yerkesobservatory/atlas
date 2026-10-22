@@ -28,6 +28,10 @@ from astroplan.plots import plot_parallactic
 from astroplan.plots import plot_sky, plot_altitude
 from astroplan import download_IERS_A
 
+import warnings
+from astropy.utils.exceptions import ErfaWarning
+warnings.filterwarnings("ignore", category=ErfaWarning) # ignore warnings about leap seconds
+
 from pytz import timezone
 #from astroplan.scheduling import Transitioner
 
@@ -262,14 +266,14 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     seq_scheduler = SequentialScheduler(constraints = global_constraints,
                                         observer = seo,
                                         transitioner = transitioner,
-                                        gap_time = 300*u.second) # max time to wait between targets
+                                        gap_time = 10*u.second) # max time to wait between targets
     # Initialize a Schedule object, to contain the new schedule
     log.info("Initializing a schedule object")
     schedule_start_time = max(sunset_tonight, time)
     log.debug(f"Start time for scheduling: {schedule_start_time.iso}")
     sequential_schedule = Schedule(schedule_start_time, sunrise_tomorrow)
     # log.debug('Observing blocks:\n%s', blocks) # redundant with table
-    log.debug(f"Sequential schedule: {sequential_schedule}")
+
     log.info("Scheduling the blocks")
     # Call the schedule with the observing blocks and schedule to schedule the blocks
     seq_scheduler(blocks, sequential_schedule)
