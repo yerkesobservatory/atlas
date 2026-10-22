@@ -1044,18 +1044,23 @@ class SSHTelescope(object):
                 else:
                     self.log.debug(f'Running command: {command}')
                     stdin, stdout, stderr = self.ssh.exec_command(command)
-                    self.log.debug(f'Finished running command: {command}')
                     
-                    numtries += 1
-                    result = stdout.readlines()
-                    err_text = stderr.readlines()
+                    # Read data to empty buffer so we don't get deadlock on recv_exit_status()
+                    output = stdout.read().decode('utf-8')
+                    errors = stderr.read().decode('utf-8')
                     
                     # check exit code
                     exit_code = stdout.channel.recv_exit_status()
+                    self.log.debug(f'Finished running command: {command}')
+                    
                     if exit_code != 0:
                         self.log.warning(f'Command returned {exit_code}. Retrying in 3 seconds...')
                         time.sleep(3)
                         continue
+                    
+                    numtries += 1
+                    result = stdout.readlines()
+                    err_text = stderr.readlines()
                     
                     if err_text:
                         if len(err_text) > 0:
