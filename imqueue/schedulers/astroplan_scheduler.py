@@ -175,9 +175,8 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     sunset_tonight = seo.sun_set_time(time, which='nearest')
     sunrise_tomorrow = seo.sun_rise_time(time, which=u'next')
 
-    #night = TimeConstraint(sunset_tonight, sunrise_tomorrow)
     night = TimeConstraint(sunset_tonight, sunrise_tomorrow)
-    obstime_constraint = TimeConstraint(time - 1*u.minute, sunrise_tomorrow)
+    obstime_constraint = TimeConstraint(time, sunrise_tomorrow)
     # Create ObservingBlocks for each filter and target with our time
     # constraint, and durations determined by the exposures needed
     for j,obs in enumerate(observations):
@@ -268,7 +267,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     
     print("initializing a schedule object")
     # Initialize a Schedule object, to contain the new schedule
-    sequential_schedule = Schedule(max(sunset_tonight, time), sunrise_tomorrow)
+    sequential_schedule = Schedule(max(sunset_tonight, time-10*u.second), sunrise_tomorrow)
     print(blocks)
     # log.debug('Observing blocks:\n%s', blocks)
 
@@ -284,12 +283,12 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
     # Initialize a Schedule object, to contain the new schedule
     priority_schedule = Schedule(sunset_tonight, sunrise_tomorrow)
 
-    print(priority_schedule)
+    # print(priority_schedule)
     # Call the schedule with the observing blocks and schedule to schedule the blocks
     prior_scheduler(blocks, priority_schedule)
 
     tab = to_table(sequential_schedule, show_transitions=True)
-    print(tab)
+    # print(tab)
     log.debug('Schedule table:\n%s', '\n'.join(tab.pformat(max_lines=-1, max_width=-1)))
     idval = tab['target'][0].split(" ")[-1]
     #print("idval:", idval)
