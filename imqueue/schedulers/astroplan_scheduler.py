@@ -1,5 +1,6 @@
 import re
 import logging
+from astropy.utils import iers
 import pymongo
 
 import numpy as np
@@ -36,6 +37,8 @@ from pytz import timezone
 #from astroplan.scheduling import Transitioner
 
 download_IERS_A()
+iers.conf.auto_download = True # update IERS data
+iers.IERS_Auto.open()
 
 # same named logger configured by Executor.__init_log
 log = logging.getLogger('executor')
