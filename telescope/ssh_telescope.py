@@ -1044,7 +1044,7 @@ class SSHTelescope(object):
                 else:
                     self.log.debug(f'Running command: {command}')
                     stdin, stdout, stderr = self.ssh.exec_command(command)
-                    self.log.debug(f'Finished running command: {command}')
+                    stdin.close()
                     
                     numtries += 1
                     result = stdout.readlines()
@@ -1052,8 +1052,7 @@ class SSHTelescope(object):
                     
                     # check exit code
                     exit_code = stdout.channel.recv_exit_status()
-                    
-                    
+                    self.log.debug(f'Finished running command: {command}')
                     
                     if exit_code != 0:
                         self.log.warning(f'Command returned {exit_code}. Retrying in 3 seconds...')

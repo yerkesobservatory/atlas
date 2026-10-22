@@ -30,14 +30,15 @@ from astroplan.plots import plot_sky, plot_altitude
 from astroplan import download_IERS_A
 
 import warnings
-from astropy.utils.exceptions import ErfaWarning
+from astropy.utils.exceptions import ErfaWarning, AstropyWarning
 warnings.filterwarnings("ignore", category=ErfaWarning) # ignore warnings about leap seconds
+warnings.filterwarnings("ignore", category=AstropyWarning, message=".*Tried to get polar motions for times after IERS data is valid.*") # Ignore polar motion warnings
 
 from pytz import timezone
 #from astroplan.scheduling import Transitioner
 
 download_IERS_A()
-iers.conf.auto_download = True # update IERS data
+conf.auto_download = True
 iers.IERS_Auto.open()
 
 # same named logger configured by Executor.__init_log
