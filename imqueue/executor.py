@@ -149,25 +149,6 @@ class Executor(object):
         # self.log.info('Starting calibration routines...')
         # self.calibrate()
 
-        # we attempt to load any sessions that are scheduled and end
-        # by the end of the telescope availability
-        now = datetime.datetime.now()
-        sessions = self.db.sessions.find({'end': {'$gte' : now, '$lt' : endtime},
-                                          'start': {'$gt' : now - datetime.timedelta(hours=2)}})
-        # sort the sessions
-        if sessions:
-            # sort in ascending order
-            sessions = list(sessions.sort('start_time', pymongo.ASCENDING))
-
-        # if there are no scheduled sessions, we create a session to execute
-        # general observations
-        if not len(sessions):
-            self.log.info('No scheduled sessions. Creating a session for the General program...')
-            sessions = [{'_id': None, 'programId': None, 'start': datetime.datetime.now(),
-                         'end': endtime, 'owner': None, 'email': None, 'completed': False}]
-        else:
-            self.log.info(f'Executor has found {len(sessions)} sessions.')
-
         # wait until the weather is good to observe
         self.telescope.wait_until_good()
 
