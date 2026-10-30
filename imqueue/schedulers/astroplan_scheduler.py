@@ -180,6 +180,8 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
     # Define the read-out time, exposure duration and number of exposures
     read_out = 1
+    # grid (in seconds) used by the priority scheduler; block durations are rounded up to a multiple of it
+    time_resolution = 10
     blocks = []
 
     night = TimeConstraint(sunset_tonight, sunrise_tomorrow)
@@ -221,6 +223,8 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
             else:
                 aux = obs['exposure_time']
 
+            # PriorityScheduler fails on durations that are not a multiple of its time resolution
+            aux = time_resolution*np.ceil((aux + read_out)/time_resolution) - read_out
 
             # list to store local constraints
             local_constraints = []
@@ -252,7 +256,8 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
                                             obs['exposure_count'],
                                             read_out*u.second,
                                             configuration = {'filter': filt},
-                                            constraints = [obstime_constraint])#, local_constraints])
+                                            constraints = [obstime_constraint,
+                                                           AirmassConstraint(max=3, boolean_constraint=False)])#, local_constraints])
             blocks.append(b)
 
 
@@ -265,36 +270,25 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
 
 
-    # Initialize the sequential scheduler with the constraints and transitioner
-    log.info("Starting sequential scheduler")
-    seq_scheduler = SequentialScheduler(constraints = global_constraints,
-                                        observer = seo,
-                                        transitioner = transitioner,
-                                        gap_time = 30*u.second) # max time to wait between targets, but also 
-                                                                # determines how long to wait before first observation
-    # Initialize a Schedule object, to contain the new schedule
-    log.info("Initializing a schedule object")
-    sequential_schedule = Schedule(max(sunset_tonight, time), sunrise_tomorrow)
-    # log.debug('Observing blocks:\n%s', blocks) # redundant with table
+    print(blocks)
+    log.debug('Observing blocks:\n%s', blocks)
 
-    log.info("Scheduling the blocks")
-    # Call the schedule with the observing blocks and schedule to schedule the blocks
-    seq_scheduler(blocks, sequential_schedule)
-    log.debug(f"Scheduled blocks: {sequential_schedule}")
-
-    # Initialize the priority scheduler with the constraints and transitioner
+    # Initialize the priority scheduler with the constraints and transitioner. Each block is
+    # placed at the time that maximizes its airmass score, i.e. centered on the target's transit
+    print("Starting priority scheduler")
     prior_scheduler = PriorityScheduler(constraints = global_constraints,
                                         observer = seo,
-                                        transitioner = transitioner)
+                                        transitioner = transitioner,
+                                        time_resolution = time_resolution*u.second)
     # Initialize a Schedule object, to contain the new schedule
-    priority_schedule = Schedule(sunset_tonight, sunrise_tomorrow)
+    priority_schedule = Schedule(max(sunset_tonight, time), sunrise_tomorrow)
 
-    # print(priority_schedule)
+    print("Scheduling the blocks")
     # Call the schedule with the observing blocks and schedule to schedule the blocks
     prior_scheduler(blocks, priority_schedule)
 
-    tab = to_table(sequential_schedule, show_transitions=True)
-    # print(tab)
+    tab = to_table(priority_schedule, show_transitions=True)
+    
     log.debug('Schedule table:\n%s', '\n'.join(tab.pformat(max_lines=-1, max_width=-1)))
     idval = tab['target'][0].split(" ")[-1]
     #print("idval:", idval)
