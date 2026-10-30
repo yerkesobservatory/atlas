@@ -98,6 +98,35 @@ class Executor(object):
             self.log.info('Telescope is not available tonight. Shutting down...')
             return
 
+        # we attempt to load any sessions that are scheduled and end
+        # by the end of the telescope availability
+        now = datetime.datetime.now()
+        sessions = self.db.sessions.find({'end': {'$gte' : now, '$lt' : endtime},
+                                          'start': {'$gt' : now - datetime.timedelta(hours=2)}})
+        # sort the sessions
+        if sessions:
+            # sort in ascending order
+            sessions = list(sessions.sort('start_time', pymongo.ASCENDING))
+
+        # if there are no scheduled sessions, we create a session to execute
+        # general observations
+        if not len(sessions):
+            self.log.info('No scheduled sessions. Creating a session for the General program...')
+            sessions = [{'_id': None, 'programId': None, 'start': datetime.datetime.now(),
+                         'end': endtime, 'owner': None, 'email': None, 'completed': False}]
+        else:
+            self.log.info(f'Executor has found {len(sessions)} sessions.')
+
+        # show the schedule first, before connecting to the telescope or checking the weather
+        for session in sessions:
+            try:
+                observations, program = self.load_observations(session)
+                if observations:
+                    next_obs, wait = schedule.schedule(observations, session, program)
+                    self.log.info(f'Schedule preview: {next_obs["target"]} for {next_obs["email"]} starts in {wait/3600:.2f} h')
+            except Exception:
+                self.log.warning('Schedule preview failed', exc_info=True)
+
         # instantiate telescope object for control
         try:
             self.log.info('Connecting to telescope controller...')
