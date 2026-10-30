@@ -274,9 +274,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
                                                                 # determines how long to wait before first observation
     # Initialize a Schedule object, to contain the new schedule
     log.info("Initializing a schedule object")
-    schedule_start_time = max(sunset_tonight, time)
-    log.debug(f"Start time for scheduling: {schedule_start_time.iso}")
-    sequential_schedule = Schedule(schedule_start_time, sunrise_tomorrow)
+    sequential_schedule = Schedule(max(sunset_tonight, time), sunrise_tomorrow)
     # log.debug('Observing blocks:\n%s', blocks) # redundant with table
 
     log.info("Scheduling the blocks")

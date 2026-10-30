@@ -373,46 +373,44 @@ class Executor(object):
             # wait until the session is meant to start
             self.telescope.wait((session['start'] - datetime.datetime.now()).seconds)
 
+        skipped_ids = set() # list of observations to skip if unobservable currently
         # continually execute observations from the queue
         while True:
 
             # load observations from the database
             # we load it in the loop so that database changes can be made after the queue has started
             observations, program = self.load_observations(session)
+            observations = [o for o in observations if o['_id'] not in skipped_ids]
 
             # if there are no observations left in the program, we return
             if not len(observations):
                 self.log.debug('No uncompleted observations left in program...')
                 return
 
+
+            
             # run the scheduler and get the next observation to complete
             self.log.debug(f'Calling the {program.get("executor")} scheduler...')
             observing_schedule = schedule.schedule(observations, session, program)
-            self.log.debug('Next observation in %.2f seconds' % observing_schedule[1])
             if observing_schedule is None:
                 self.log.error('Scheduler did not return a valid schedule.')
                 break
+            self.log.debug('Next observation in %.2f seconds' % observing_schedule[1])
             # if the scheduler returns no observations, we are done
             if (observing_schedule[1]<-300) | (len(observing_schedule)<1):
-            #if len(observing_schedule.scheduled_blocks) == 0:
                 self.log.debug('Scheduler reports no observations left for this session...')
                 break
 
-            # we wait until this observation needs to start
-            #start_time = observing_schedule.slots[0].start.datetime
-            #wait_time = (start_time - datetime.datetime.now()).seconds
             wait_time = observing_schedule[1]
-            # some time elapses between scheduling and execution, must
-            # account for wait times that are only a few seconds past
-            # the current time. We have one-minute windows on either side
-            #if (wait_time >= 23.5*60*60.lg) and (wait_time <= 24*60*60):
-            if (wait_time >= (12*60*60)):
-                pass
-            # if (wait_time >= (23.5*60*60)) and (wait_time <= (24*60*60 + 600)):
-            #     pass # we start immedatiately
-            else:
-                self.telescope.wait(wait_time)
 
+            # skip observations that are scheduled more than 10 hours away
+            if wait_time > 10*60*60:
+                self.log.info(f'{observing_schedule[0]["target"]} is scheduled in {wait_time/3600:.1f} h (> 10 h). Skipping...')
+                skipped_ids.add(observing_schedule[0]['_id'])
+                continue
+
+            self.telescope.wait(wait_time)
+            
             # make sure that the weather is still good
             self.telescope.wait_until_good()
 
