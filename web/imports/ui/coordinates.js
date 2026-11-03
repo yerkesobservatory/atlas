@@ -1,5 +1,6 @@
 import $ from 'jquery';
 // create a new validator to check for a taget string or valid RA/DEC
+var simbadDown = false;
 $.validator.addMethod("validCoordinate", function(value, element) {
     var check_length=0;
     var solar_system = ['mercury','venus','moon','mars','jupiter','saturn','uranus','neptune','pluto']
@@ -16,7 +17,7 @@ $.validator.addMethod("validCoordinate", function(value, element) {
         // 00h00m00.00s +-00d00m00s
         // 00h00m00.00s +-00d00m00.00s
 
-        re = /\d{1,2}[h:]\d{1,2}[m:]\d{1,2}(?:.\d{1,2}){0,1}s{0,1}\s[+-]\d{1,2}[d:]\d{1,2}[m:]\d{1,2}(?:.\d{1,2}){0,1}s{0,1}/;
+        re = /\d{1,2}[h:]\d{1,2}[m:]\d{1,2}(?:.\d{1,2}){0,1}s{0,1}\s[+-]?\d{1,2}[d:]\d{1,2}[m:]\d{1,2}(?:.\d{1,2}){0,1}s{0,1}/;
         if (re.exec(value)) {
             return true;
         }
@@ -34,7 +35,8 @@ $.validator.addMethod("validCoordinate", function(value, element) {
         var targetIsValid = false;
         $.ajax({
           type: "GET",
-          url: "https://simbad.u-strasbg.fr/simbad/sim-id?output.format=ASCII&Ident="+value,
+          //url: "https://simbad.u-strasbg.fr/simbad/sim-id?output.format=ASCII&Ident="+value,
+          url: "https://simbad.cfa.harvard.edu/simbad/sim-id?output.format=ASCII&Ident="+encodeURIComponent(value),
           async: false, //this flag makes the call synchronous, i.e. waits for the HTTP response!
           success: function(result){
             if(result.length > 300) { //300 is the magic number
