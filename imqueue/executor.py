@@ -118,16 +118,6 @@ class Executor(object):
         else:
             self.log.info(f'Executor has found {len(sessions)} sessions.')
 
-        # show the schedule first, before connecting to the telescope or checking the weather
-        for session in sessions:
-            try:
-                observations, program = self.load_observations(session)
-                if observations:
-                    next_obs, wait = schedule.schedule(observations, session, program)
-                    self.log.info(f'Schedule preview: {next_obs["target"]} for {next_obs["email"]} starts in {wait/3600:.2f} h')
-            except Exception:
-                self.log.warning('Schedule preview failed', exc_info=True)
-
         # instantiate telescope object for control
         try:
             self.log.info('Connecting to telescope controller...')
@@ -273,7 +263,7 @@ class Executor(object):
                        'sessions': [], 'observations': [obs['_id'] for obs in observations],
                        'createdAt': datetime.datetime.now()}
 
-            self.log.debug(observations)
+            # self.log.debug(observations)
             return observations, program
 
     def open_telescope(self):
@@ -398,8 +388,6 @@ class Executor(object):
                 self.log.debug('No uncompleted observations left in program...')
                 return
 
-
-            
             # run the scheduler and get the next observation to complete
             self.log.debug(f'Calling the {program.get("executor")} scheduler...')
             observing_schedule = schedule.schedule(observations, session, program, self.minimize_airmass)
