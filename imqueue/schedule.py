@@ -6,7 +6,7 @@ import imqueue.schedulers.astroplan_scheduler as general
 from typing import List, Dict
 
 
-def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, int):
+def schedule(observations: List[Dict], session: Dict, program: Dict, minimize_airmass: bool = False) -> (Dict, int):
     """ Call the requested scheduler and return the next requested observation.
 
     This function is responsible for finding the correct scheduler to use
@@ -31,11 +31,11 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
     # the normal scheduler
     # if program.get('executor') == 'general':
-    #     return general.schedule(observations, session, program)
+    #     return general.schedule(observations, session, program, minimize_airmass)
 
     # asteroids
     # elif program.get('executor') == 'asteroid':
-    #     return asteroid.schedule(observations, program)
+    #     return asteroid.schedule(observations, program, minimize_airmass)
 
     # try and load the scheduler dynamically
     # else:
@@ -47,12 +47,12 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
         # temporary commented
         #if 'schedule' in dir(scheduler) and 'execute' in dir(scheduler):
         #    return scheduler.schedule(observations, session, program)
-        return general.schedule(observations, session, program)
+        return general.schedule(observations, session, program, minimize_airmass)
         # if the above does not work, use general scheduler
     except Exception as e:
         imqueue.Executor.log.warning('Unable to load desired scheduler. Using "general" scheduler...')
         imqueue.Executor.log.debug(e)
-        return general.schedule(observations, session, program)
+        return general.schedule(observations, session, program, minimize_airmass)
         #return scheduler.general.schedule(observations, session, program)
 
 
