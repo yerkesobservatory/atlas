@@ -193,7 +193,6 @@ def schedule(observations: List[Dict], session: Dict, program: Dict, minimize_ai
         input_obs = lookup(obs)
         ra = input_obs.ra.to_string(unit=u.hour, sep=':')
         dec = input_obs.dec.to_string(unit=u.degree,sep=':')
-        #print(ra,dec)
         obs['RA'] = ra
         obs['Dec'] = dec
         #print input_obs, obs['exposure_time']*u.second, obs['exposure_count'],read_out*u.second
@@ -272,7 +271,6 @@ def schedule(observations: List[Dict], session: Dict, program: Dict, minimize_ai
                                 {'filter':{('h-alpha','[OIII]','[SII]','g-band','r-band','i-band','clear'): 0.16*u.second,
                                             'default': 0.1*u.second}})
 
-    # print(blocks) # these are just <astroplan.scheduling.ObservingBlock> objects
 
     # the schedule window starts now (or at sunset, if that is later)
     final_schedule = Schedule(max(sunset_tonight, time), sunrise_tomorrow)
@@ -292,17 +290,13 @@ def schedule(observations: List[Dict], session: Dict, program: Dict, minimize_ai
         seq_scheduler = SequentialScheduler(constraints = global_constraints,
                                             observer = seo,
                                             transitioner = transitioner,
-                                            gap_time = 60*u.second) # max time to wait between targets
+                                            gap_time = 60*u.second) # time before first observation
         seq_scheduler(blocks, final_schedule)
 
     tab = to_table(final_schedule, show_transitions=True)
     
     log.debug('Schedule table:\n%s', '\n'.join(tab.pformat(max_lines=-1, max_width=-1)))
     idval = tab['target'][0].split(" ")[-1]
-    #print("idval:", idval)
-    #print(observations)
-    #print("database connected?:", database.Database.is_connected)
-    #print("database observations:", database.Database.observations.find({'_id': idval}))
 
     #if database.Database.is_connected:
 
@@ -314,7 +308,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict, minimize_ai
             continue
         #nextobs_index = observations['_id'].index(idval)
         #nextobs = observations[nextobs_index]
-    log.debug(f"Next observation: {nextobs}")
+    # log.debug(f"Next observation: {nextobs}")
 
     wait = ((Time(tab['start time (UTC)'][0])-Time.now()).to(u.second)).value
 
