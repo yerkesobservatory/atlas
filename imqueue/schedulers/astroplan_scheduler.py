@@ -272,8 +272,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict, minimize_ai
                                 {'filter':{('h-alpha','[OIII]','[SII]','g-band','r-band','i-band','clear'): 0.16*u.second,
                                             'default': 0.1*u.second}})
 
-    print(blocks)
-    log.debug('Observing blocks:\n%s', blocks)
+    # print(blocks) # these are just <astroplan.scheduling.ObservingBlock> objects
 
     # the schedule window starts now (or at sunset, if that is later)
     final_schedule = Schedule(max(sunset_tonight, time), sunrise_tomorrow)
