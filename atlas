@@ -23,6 +23,7 @@ subparsers = parser.add_subparsers(title='subcommands', dest='subparser')
 server_parser = subparsers.add_parser('start', help="Start Atlas server components")
 server_parser.add_argument('server', nargs='+', help='The Atlas server or module to start')
 server_parser.add_argument('--no-authentication', help='Disable authentication for server components', action='store_false')
+server_parser.add_argument('--minimize-airmass', help='Schedule each observation at the time of lowest airmass (using priority scheduler).', action='store_true')
 
 ### Parse!
 args = parser.parse_args()
@@ -44,7 +45,7 @@ if args.subparser == 'start':
         args.server.remove('telescope')
     # start the queue executor
     if 'executor' in args.server:
-        p = multiprocessing.Process(target=imqueue.Executor)
+        p = multiprocessing.Process(target=imqueue.Executor, kwargs={'minimize_airmass': args.minimize_airmass})
         p.start()
         args.server.remove('executor')
     if 'status' in args.server:

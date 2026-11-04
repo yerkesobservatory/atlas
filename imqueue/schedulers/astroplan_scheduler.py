@@ -133,7 +133,7 @@ def lookup(obs):
             print(e)
             return None, None
 
-def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, int):
+def schedule(observations: List[Dict], session: Dict, program: Dict, minimize_airmass: bool = False) -> (Dict, int):
     """ Return the next object to be imaged according to the 'general' scheduling
     algorithm, and the time that the executor must wait before imaging this observation.
     Parameters
@@ -180,7 +180,7 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
 
     # Define the read-out time, exposure duration and number of exposures
     read_out = 1
-    # grid (in seconds) used by the priority scheduler; block durations are rounded up to a multiple of it
+    # grid (in seconds) used by the priority scheduler (only used with --minimize-airmass)
     time_resolution = 10
     blocks = []
 
@@ -224,8 +224,9 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
                 aux = obs['exposure_time']
 
             # PriorityScheduler fails on durations that are not a multiple of its time resolution
-            aux = time_resolution*np.ceil((aux + read_out)/time_resolution) - read_out
-
+            if minimize_airmass:
+                aux = time_resolution*np.ceil((aux + read_out)/time_resolution) - read_out
+            
             # list to store local constraints
             local_constraints = []
 
@@ -250,14 +251,17 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
             local_constraints.append(
                 astroplan.MoonSeparationConstraint(min=moon_sep*u.deg))
 
-
+            # the scored (non-boolean) airmass constraint is what centers a block on its target's transit
+            block_constraints = [obstime_constraint]
+            if minimize_airmass:
+                block_constraints.append(AirmassConstraint(max=3, boolean_constraint=False))
+                
             b = ObservingBlock.from_exposures(input_obs,bpriority,
                                             aux*u.second,
                                             obs['exposure_count'],
                                             read_out*u.second,
                                             configuration = {'filter': filt},
-                                            constraints = [obstime_constraint,
-                                                           AirmassConstraint(max=3, boolean_constraint=False)])#, local_constraints])
+                                            constraints = block_constraints)
             blocks.append(b)
 
 
@@ -268,26 +272,31 @@ def schedule(observations: List[Dict], session: Dict, program: Dict) -> (Dict, i
                                 {'filter':{('h-alpha','[OIII]','[SII]','g-band','r-band','i-band','clear'): 0.16*u.second,
                                             'default': 0.1*u.second}})
 
-
-
     print(blocks)
     log.debug('Observing blocks:\n%s', blocks)
 
-    # Initialize the priority scheduler with the constraints and transitioner. Each block is
-    # placed at the time that maximizes its airmass score, i.e. centered on the target's transit
-    print("Starting priority scheduler")
-    prior_scheduler = PriorityScheduler(constraints = global_constraints,
-                                        observer = seo,
-                                        transitioner = transitioner,
-                                        time_resolution = time_resolution*u.second)
-    # Initialize a Schedule object, to contain the new schedule
-    priority_schedule = Schedule(max(sunset_tonight, time), sunrise_tomorrow)
+    # the schedule window starts now (or at sunset, if that is later)
+    final_schedule = Schedule(max(sunset_tonight, time), sunrise_tomorrow)
 
-    print("Scheduling the blocks")
-    # Call the schedule with the observing blocks and schedule to schedule the blocks
-    prior_scheduler(blocks, priority_schedule)
+    if minimize_airmass:
+        # priority scheduler: each block is placed at the time that maximizes its airmass score,
+        # i.e. centered on the target's transit
+        print("starting priority scheduler")
+        prior_scheduler = PriorityScheduler(constraints = global_constraints,
+                                            observer = seo,
+                                            transitioner = transitioner,
+                                            time_resolution = time_resolution*u.second)
+        prior_scheduler(blocks, final_schedule)
+    else:
+        # sequential scheduler: each block is placed at the earliest time its constraints allow
+        print("starting sequential scheduler")
+        seq_scheduler = SequentialScheduler(constraints = global_constraints,
+                                            observer = seo,
+                                            transitioner = transitioner,
+                                            gap_time = 60*u.second) # max time to wait between targets
+        seq_scheduler(blocks, final_schedule)
 
-    tab = to_table(priority_schedule, show_transitions=True)
+    tab = to_table(final_schedule, show_transitions=True)
     
     log.debug('Schedule table:\n%s', '\n'.join(tab.pformat(max_lines=-1, max_width=-1)))
     idval = tab['target'][0].split(" ")[-1]

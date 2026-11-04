@@ -35,7 +35,7 @@ class Executor(object):
     # default logger
     log = None
 
-    def __init__(self):
+    def __init__(self, minimize_airmass: bool = False):
         """ This creates a new queue executor.
 
         This creates a new Executor object; it does not start the executor, or load
@@ -51,7 +51,8 @@ class Executor(object):
 
         # dummy telescope variable
         self.telescope: telescope.Telescope = None
-
+        self.minimize_airmass = minimize_airmass
+        
         # create connection to database; this raises a fatal
         # exception if it fails
         self.db = database.Database()
@@ -401,7 +402,7 @@ class Executor(object):
             
             # run the scheduler and get the next observation to complete
             self.log.debug(f'Calling the {program.get("executor")} scheduler...')
-            observing_schedule = schedule.schedule(observations, session, program)
+            observing_schedule = schedule.schedule(observations, session, program, self.minimize_airmass)
             if observing_schedule is None:
                 self.log.error('Scheduler did not return a valid schedule.')
                 break
